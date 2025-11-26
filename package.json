@@ -12,7 +12,8 @@
     "prepare": "husky",
     "db:migrate": "supabase migration up",
     "db:push": "supabase db push",
-    "db:types": "supabase gen types typescript --project-id \"$SUPABASE_PROJECT_ID\" > types/database.ts"
+    "db:types": "supabase gen types typescript --project-id \"$SUPABASE_PROJECT_ID\" > types/database.ts",
+    "stripe:listen": "stripe listen --forward-to localhost:9901/api/webhooks/stripe"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

@@ -69,11 +69,54 @@ npx supabase db reset
 # 6. (Optional) Seed test data
 psql -h localhost -p 54322 -U postgres -d postgres -f supabase/seed.sql
 
-# 7. Start the development server
+# 7. Start the development server (Runs on port 9901)
 pnpm dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) 🎉
+Open [http://localhost:9901](http://localhost:9901) 🎉
+
+### 🔑 Environment Variables
+
+Create a `.env.local` file with the following keys:
+
+```env
+# App
+NEXT_PUBLIC_APP_URL=http://localhost:9901
+
+# Supabase
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+
+# Stripe
+STRIPE_SECRET_KEY=sk_test_...
+STRIPE_WEBHOOK_SECRET=whsec_...
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_...
+
+# Web Push (VAPID Keys)
+# Generate with: npx web-push generate-vapid-keys
+NEXT_PUBLIC_VAPID_PUBLIC_KEY=your_public_key
+VAPID_PRIVATE_KEY=your_private_key
+VAPID_SUBJECT=mailto:support@pedagogi.ai
+
+# Auth
+NEXTAUTH_SECRET=your_generated_secret # Generate with: openssl rand -base64 32
+NEXTAUTH_URL=http://localhost:9901
+```
+
+### 💳 Stripe Webhook Setup
+
+To test Stripe webhooks locally:
+
+1. Install Stripe CLI
+2. Login: `stripe login`
+3. Listen to events forwarding to port 9901:
+
+```bash
+stripe listen --forward-to localhost:9901/api/webhooks/stripe
+```
+
+4. Copy the `whsec_...` secret to your `.env.local` as `STRIPE_WEBHOOK_SECRET`.
 
 ---
 
