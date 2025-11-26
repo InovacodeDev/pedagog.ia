@@ -126,14 +126,14 @@ export async function POST(req: Request) {
 
     if (event.type === 'customer.subscription.updated') {
       const subscription = event.data.object as StripeSubscription;
-      const currentPeriodEnd = toISOString(subscription.current_period_end);
+      const cancelAt = toISOString(subscription.cancel_at);
 
-      if (currentPeriodEnd) {
+      if (cancelAt) {
         const { error } = await supabaseAdmin
           .from('subscriptions')
           .update({
             stripe_price_id: subscription.items.data[0].price.id,
-            stripe_current_period_end: currentPeriodEnd,
+            stripe_current_period_end: cancelAt,
             status: subscription.status,
             updated_at: new Date().toISOString(),
           })

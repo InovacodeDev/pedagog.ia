@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
+import { stripe } from '@/lib/stripe';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { SettingsProfileForm } from '@/components/settings/settings-profile-form';
 import { SettingsAppearance } from '@/components/settings/settings-appearance';
@@ -7,7 +8,14 @@ import { SettingsBilling } from '@/components/settings/settings-billing';
 import { User, Palette, CreditCard } from 'lucide-react';
 import { SubscriptionDetails } from '@/types/app';
 
-export default async function SettingsPage() {
+export default async function SettingsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
+  const resolvedSearchParams = await searchParams;
+  const tab = typeof resolvedSearchParams.tab === 'string' ? resolvedSearchParams.tab : 'general';
+
   const supabase = await createClient();
   const {
     data: { user },
@@ -20,15 +28,38 @@ export default async function SettingsPage() {
   // Fetch subscription
   const { data: subscription } = await supabase
     .from('subscriptions')
-    .select('status, stripe_customer_id')
+    .select('status, stripe_customer_id, stripe_subscription_id, stripe_current_period_end')
     .eq('user_id', user.id)
     .maybeSingle();
 
   const sub = subscription as unknown as SubscriptionDetails;
   const isPro = sub?.status === 'active' || sub?.status === 'trialing';
 
-  // Mock user profile data since we might not have a separate profile table yet
-  // or we just use auth metadata
+  let subscriptionData = null;
+  if (sub) {
+    subscriptionData = {
+      status: sub.status || 'inactive',
+      current_period_end: sub.stripe_current_period_end || '',
+      cancel_at_period_end: false,
+    };
+
+    if (sub.stripe_subscription_id) {
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const stripeSub: any = await stripe.subscriptions.retrieve(sub.stripe_subscription_id);
+        subscriptionData.cancel_at_period_end = stripeSub.cancel_at_period_end;
+        subscriptionData.status = stripeSub.status;
+        const endDate = stripeSub.cancel_at || stripeSub.current_period_end;
+        if (endDate) {
+          subscriptionData.current_period_end = new Date(endDate * 1000).toISOString();
+        }
+      } catch (error) {
+        console.error('Error fetching stripe subscription:', error);
+      }
+    }
+  }
+
+  // Use auth metadata for user profile data
   const userData = {
     name: user.user_metadata?.full_name || user.email?.split('@')[0] || '',
     email: user.email || '',
@@ -42,7 +73,7 @@ export default async function SettingsPage() {
         <p className="text-muted-foreground">Gerencie suas preferências, perfil e assinatura.</p>
       </div>
 
-      <Tabs defaultValue="general" className="space-y-6">
+      <Tabs defaultValue={tab} className="space-y-6">
         <TabsList>
           <TabsTrigger value="general" className="gap-2">
             <User className="h-4 w-4" /> Geral
@@ -64,7 +95,7 @@ export default async function SettingsPage() {
         </TabsContent>
 
         <TabsContent value="billing">
-          <SettingsBilling isPro={isPro} />
+          <SettingsBilling isPro={isPro} subscription={subscriptionData} />
         </TabsContent>
       </Tabs>
     </div>

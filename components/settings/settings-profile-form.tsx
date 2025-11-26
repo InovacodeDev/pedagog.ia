@@ -18,6 +18,8 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Pencil } from 'lucide-react';
 import { toast } from 'sonner';
+import { useTransition } from 'react';
+import { updateProfileAction } from '@/server/actions/profile';
 
 const profileFormSchema = z.object({
   name: z.string().min(2, {
@@ -39,6 +41,7 @@ interface SettingsProfileFormProps {
 }
 
 export function SettingsProfileForm({ user }: SettingsProfileFormProps) {
+  const [isPending, startTransition] = useTransition();
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileFormSchema),
     defaultValues: {
@@ -49,8 +52,18 @@ export function SettingsProfileForm({ user }: SettingsProfileFormProps) {
   });
 
   function onSubmit(data: ProfileFormValues) {
-    toast.success('Perfil atualizado com sucesso!');
-    console.log(data);
+    startTransition(async () => {
+      const formData = new FormData();
+      formData.append('name', data.name);
+
+      const result = await updateProfileAction(formData);
+
+      if (result.success) {
+        toast.success(result.message);
+      } else {
+        toast.error(result.message);
+      }
+    });
   }
 
   return (
@@ -87,7 +100,7 @@ export function SettingsProfileForm({ user }: SettingsProfileFormProps) {
                   <FormItem>
                     <FormLabel>Nome Completo</FormLabel>
                     <FormControl>
-                      <Input placeholder="Seu nome" {...field} />
+                      <Input placeholder="Seu nome" {...field} disabled={isPending} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -107,7 +120,9 @@ export function SettingsProfileForm({ user }: SettingsProfileFormProps) {
                   </FormItem>
                 )}
               />
-              <Button type="submit">Salvar Alterações</Button>
+              <Button type="submit" disabled={isPending}>
+                {isPending ? 'Salvando...' : 'Salvar Alterações'}
+              </Button>
             </form>
           </Form>
         </div>

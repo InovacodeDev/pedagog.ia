@@ -27,4 +27,6 @@ export interface DecryptedStudent {
 export interface SubscriptionDetails {
   status: string | null;
   stripe_customer_id: string | null;
+  stripe_subscription_id?: string | null;
+  stripe_current_period_end?: string | null;
 }

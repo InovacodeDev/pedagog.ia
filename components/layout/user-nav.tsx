@@ -57,9 +57,11 @@ export function UserNav() {
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
-          <DropdownMenuItem onClick={() => router.push('/profile')}>Perfil</DropdownMenuItem>
           <DropdownMenuItem onClick={() => router.push('/settings')}>
             Configurações
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => router.push('/settings?tab=billing')}>
+            Assinatura
           </DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />

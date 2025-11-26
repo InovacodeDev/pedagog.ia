@@ -4,17 +4,23 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { CreditCard, Zap, Loader2 } from 'lucide-react';
+import { CreditCard, Zap, Loader2, AlertTriangle } from 'lucide-react';
 import { PricingDialog } from '@/components/subscription/pricing-dialog';
 import { createPortalSessionAction } from '@/server/actions/stripe';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 interface SettingsBillingProps {
   isPro?: boolean;
+  subscription?: {
+    status: string;
+    current_period_end: string;
+    cancel_at_period_end: boolean;
+  } | null;
 }
 
-export function SettingsBilling({ isPro = false }: SettingsBillingProps) {
+export function SettingsBilling({ isPro = false, subscription }: SettingsBillingProps) {
   const [isLoadingPortal, setIsLoadingPortal] = useState(false);
   const [isPricingOpen, setIsPricingOpen] = useState(false);
 
@@ -36,6 +42,12 @@ export function SettingsBilling({ isPro = false }: SettingsBillingProps) {
     }
   };
 
+  const showCancellationAlert =
+    subscription?.cancel_at_period_end && subscription?.status === 'active';
+  const formattedDate = subscription?.current_period_end
+    ? new Intl.DateTimeFormat('pt-BR').format(new Date(subscription.current_period_end))
+    : '';
+
   return (
     <Card>
       <CardHeader>
@@ -43,6 +55,17 @@ export function SettingsBilling({ isPro = false }: SettingsBillingProps) {
         <CardDescription>Gerencie seu plano e cobrança.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
+        {showCancellationAlert && (
+          <Alert variant="warning">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertTitle>Renovação Cancelada</AlertTitle>
+            <AlertDescription>
+              Sua assinatura permanecerá ativa até <strong>{formattedDate}</strong>. Após essa data,
+              sua conta voltará para o plano gratuito.
+            </AlertDescription>
+          </Alert>
+        )}
+
         <div className="flex items-center justify-between p-4 border rounded-lg bg-card">
           <div className="flex items-center gap-4">
             <div className="p-2 bg-primary/10 rounded-full">
