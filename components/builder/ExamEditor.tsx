@@ -36,7 +36,7 @@ import { saveAs } from 'file-saver';
 import { Document, Packer, Paragraph, TextRun } from 'docx';
 import { pdf } from '@react-pdf/renderer';
 import { BuilderPDFDocument } from './BuilderPDF';
-import { QuestionBankDrawer } from './QuestionBankDrawer';
+import { QuestionBankDrawer, QuestionBankItem } from './QuestionBankDrawer';
 
 // Types
 export type BlockType = 'header' | 'multiple_choice' | 'essay' | 'text';
@@ -263,7 +263,7 @@ export function ExamEditor() {
     setSelectedBlock(newBlock);
   };
 
-  const handleAddFromBank = (question: any) => {
+  const handleAddFromBank = (question: QuestionBankItem) => {
     const newBlock: ExamBlock = {
       id: `block-${Date.now()}`,
       type: question.type === 'multiple_choice' ? 'multiple_choice' : 'essay',
@@ -285,7 +285,7 @@ export function ExamEditor() {
     setSelectedBlock(newBlock);
   };
 
-  const updateBlock = (id: string, content: any) => {
+  const updateBlock = (id: string, content: Partial<ExamBlock['content']>) => {
     setBlocks((prev) =>
       prev.map((b) => (b.id === id ? { ...b, content: { ...b.content, ...content } } : b))
     );

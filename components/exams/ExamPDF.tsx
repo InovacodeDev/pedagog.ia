@@ -89,6 +89,7 @@ export const ExamDocument = ({ exam, qrCodeUrl }: ExamPDFProps) => (
           </Text>
         </View>
         <View style={styles.headerRight}>
+          {/* eslint-disable-next-line jsx-a11y/alt-text */}
           <Image src={qrCodeUrl} style={styles.qrCode} />
           <Text style={{ fontSize: 8, marginTop: 2 }}>ID: {exam.id.slice(0, 8)}</Text>
         </View>

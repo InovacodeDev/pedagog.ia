@@ -15,7 +15,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Loader2, Plus, Trash2, Save, Wand2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { generateQuestionsAction, saveExamAction } from '@/app/(app)/exams/actions';
+import { generateQuestionsAction, saveExamAction } from '@/app/(app)/scan/actions';
 import { createClient } from '@/lib/supabase/client';
 
 interface Question {
@@ -57,13 +57,16 @@ export function ExamBuilder() {
         .eq('id', jobId)
         .single();
 
-      if (job?.status === 'completed') {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      if ((job as any)?.status === 'completed') {
         clearInterval(interval);
-        const questions = job.result as Question[];
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const questions = (job as any).result as Question[];
         setValue('questions', questions);
         setStep('review');
         toast.success('Questões geradas com sucesso!');
-      } else if (job?.status === 'failed') {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } else if ((job as any)?.status === 'failed') {
         clearInterval(interval);
         setStep('config');
         toast.error('Falha ao gerar questões. Tente novamente.');
@@ -134,7 +137,9 @@ export function ExamBuilder() {
             <div className="space-y-2">
               <Label>Dificuldade</Label>
               <Select
-                onValueChange={(val: string) => setValue('difficulty', val as any)}
+                onValueChange={(val: string) =>
+                  setValue('difficulty', val as 'easy' | 'medium' | 'hard')
+                }
                 defaultValue="medium"
               >
                 <SelectTrigger>
@@ -150,7 +155,7 @@ export function ExamBuilder() {
           </div>
         </CardContent>
         <CardFooter>
-          <Button onClick={handleSubmit(onGenerate as any)} className="w-full">
+          <Button onClick={handleSubmit(onGenerate)} className="w-full">
             <Wand2 className="mr-2 h-4 w-4" />
             Gerar com IA
           </Button>

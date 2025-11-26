@@ -57,7 +57,7 @@ export function QuestionsTable({ initialQuestions }: QuestionsTableProps) {
     toast.success('Questão excluída com sucesso!');
   };
 
-  const handleAddToExam = (id: string) => {
+  const handleAddToExam = () => {
     toast.info('Funcionalidade de adicionar à prova em breve!');
   };
 
@@ -179,7 +179,7 @@ export function QuestionsTable({ initialQuestions }: QuestionsTableProps) {
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => handleAddToExam(q.id)}
+                        onClick={() => handleAddToExam()}
                         title="Adicionar à Prova"
                       >
                         <PlusCircle className="h-4 w-4" />

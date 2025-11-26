@@ -1,5 +1,4 @@
 import { createClient } from '@/lib/supabase/server';
-import { notFound } from 'next/navigation';
 import { DownloadPDFButton } from '@/components/exams/DownloadPDFButton';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -13,15 +12,30 @@ interface ExamPageProps {
   }>;
 }
 
+interface Question {
+  stem: string;
+  options: string[];
+  correct_answer: string;
+}
+
 export default async function ExamPage({ params }: ExamPageProps) {
   const { id } = await params;
   const supabase = await createClient();
 
-  const { data: exam, error } = await supabase.from('exams').select('*').eq('id', id).single();
+  const { data: examData } = await supabase.from('exams').select('*').eq('id', id).single();
 
-  if (error || !exam) {
-    notFound();
+  if (!examData) {
+    return <div>Prova não encontrada</div>;
   }
+
+  // Cast to unknown first to avoid "never" issues, then to Exam
+  const exam = examData as unknown as {
+    id: string;
+    title: string;
+    status: string;
+    created_at: string;
+    questions_list: Question[];
+  };
 
   return (
     <div className="container mx-auto py-8 space-y-8">
@@ -55,7 +69,7 @@ export default async function ExamPage({ params }: ExamPageProps) {
             <CardTitle>Questões ({exam.questions_list.length})</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
-            {exam.questions_list.map((question: any, index: number) => (
+            {exam.questions_list.map((question: Question, index: number) => (
               <div key={index} className="border-b last:border-0 pb-4 last:pb-0">
                 <p className="font-medium mb-2">
                   {index + 1}. {question.stem}

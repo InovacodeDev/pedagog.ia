@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import {
   Table,
   TableBody,
@@ -28,7 +27,7 @@ interface Exam {
   title: string;
   created_at: string;
   status: string;
-  questions_list: any[];
+  questions_list: unknown[];
   correction_count: number;
 }
 
@@ -38,17 +37,18 @@ interface ExamListProps {
 
 export function ExamList({ initialExams }: ExamListProps) {
   const [exams, setExams] = useState<Exam[]>(initialExams);
-  const router = useRouter();
 
   const handleDuplicate = async (examId: string) => {
     toast.promise(duplicateExamAction(examId), {
       loading: 'Duplicando prova...',
       success: (result) => {
-        if (result.success && result.exam) {
-          setExams([result.exam, ...exams]);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const res = result as any;
+        if (res.success && res.exam) {
+          setExams([res.exam, ...exams]);
           return 'Prova duplicada com sucesso!';
         } else {
-          throw new Error(result.error);
+          throw new Error(res.error);
         }
       },
       error: (err) => `Erro ao duplicar: ${err.message}`,

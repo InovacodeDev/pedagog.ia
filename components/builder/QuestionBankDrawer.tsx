@@ -25,8 +25,18 @@ import { searchQuestionsAction } from '@/server/actions/questions';
 import { useDebounce } from '@/hooks/use-debounce';
 import { toast } from 'sonner';
 
+export interface QuestionBankItem {
+  id: string;
+  stem: string;
+  type: string;
+  options?: string[];
+  correct_answer?: string;
+  discipline?: string;
+  subject?: string;
+}
+
 interface QuestionBankDrawerProps {
-  onAddQuestion: (question: any) => void;
+  onAddQuestion: (question: QuestionBankItem) => void;
 }
 
 const DISCIPLINES = [
@@ -47,7 +57,7 @@ const QUESTION_TYPES = [
 
 export function QuestionBankDrawer({ onAddQuestion }: QuestionBankDrawerProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [questions, setQuestions] = useState<any[]>([]);
+  const [questions, setQuestions] = useState<QuestionBankItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
   // Filters
@@ -58,33 +68,33 @@ export function QuestionBankDrawer({ onAddQuestion }: QuestionBankDrawerProps) {
   const debouncedSearch = useDebounce(searchQuery, 500);
 
   useEffect(() => {
+    async function fetchQuestions() {
+      setIsLoading(true);
+      try {
+        const result = await searchQuestionsAction({
+          query: debouncedSearch,
+          discipline,
+          type,
+        });
+
+        if (result.success && result.questions) {
+          setQuestions(result.questions);
+        } else {
+          toast.error('Erro ao buscar questões.');
+        }
+      } catch {
+        toast.error('Erro de conexão.');
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
     if (isOpen) {
       fetchQuestions();
     }
   }, [isOpen, debouncedSearch, discipline, type]);
 
-  async function fetchQuestions() {
-    setIsLoading(true);
-    try {
-      const result = await searchQuestionsAction({
-        query: debouncedSearch,
-        discipline,
-        type,
-      });
-
-      if (result.success && result.questions) {
-        setQuestions(result.questions);
-      } else {
-        toast.error('Erro ao buscar questões.');
-      }
-    } catch (error) {
-      toast.error('Erro de conexão.');
-    } finally {
-      setIsLoading(false);
-    }
-  }
-
-  const handleAdd = (question: any) => {
+  const handleAdd = (question: QuestionBankItem) => {
     onAddQuestion(question);
     toast.success('Questão adicionada à prova!');
   };

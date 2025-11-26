@@ -19,9 +19,10 @@ export async function POST(req: Request) {
 
   try {
     event = stripe.webhooks.constructEvent(body, signature, process.env.STRIPE_WEBHOOK_SECRET!);
-  } catch (error: any) {
-    console.error('Webhook signature verification failed:', error.message);
-    return new NextResponse(`Webhook Error: ${error.message}`, { status: 400 });
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Webhook signature verification failed:', errorMessage);
+    return new NextResponse(`Webhook Error: ${errorMessage}`, { status: 400 });
   }
 
   const supabaseAdmin = createClient(
@@ -56,7 +57,7 @@ export async function POST(req: Request) {
         return new NextResponse('No subscriptionId', { status: 400 });
       }
 
-      const subscription = (await stripe.subscriptions.retrieve(subscriptionId)) as any;
+      const subscription = await stripe.subscriptions.retrieve(subscriptionId);
 
       let currentPeriodEnd = toISOString(subscription.current_period_end);
       if (!currentPeriodEnd) {
@@ -89,7 +90,7 @@ export async function POST(req: Request) {
       const subscriptionId = invoice.subscription as string;
 
       if (subscriptionId) {
-        const subscription = (await stripe.subscriptions.retrieve(subscriptionId)) as any;
+        const subscription = await stripe.subscriptions.retrieve(subscriptionId);
         const currentPeriodEnd = toISOString(subscription.current_period_end);
 
         if (currentPeriodEnd) {
@@ -112,7 +113,7 @@ export async function POST(req: Request) {
     }
 
     if (event.type === 'customer.subscription.updated') {
-      const subscription = event.data.object as any;
+      const subscription = event.data.object as Stripe.Subscription;
       const currentPeriodEnd = toISOString(subscription.current_period_end);
 
       if (currentPeriodEnd) {

@@ -28,25 +28,38 @@ export async function generateQuestionsAction(formData: FormData) {
 
   const validated = generateQuestionsSchema.parse(data);
 
-  const { data: job, error } = await supabase
+  const { data: job, error } = (await supabase
     .from('background_jobs')
     .insert({
       user_id: user.id,
       job_type: 'generate_questions',
       payload: validated,
       status: 'pending',
-    })
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } as any)
     .select('id')
-    .single();
+    .single()) as unknown as { data: { id: string } | null; error: unknown };
 
-  if (error) {
-    throw new Error(error.message);
+  if (error || !job) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    throw new Error((error as any)?.message || 'Failed to create job');
   }
 
   return { jobId: job.id };
 }
 
-export async function saveExamAction(examData: any) {
+interface Question {
+  stem: string;
+  options: string[];
+  correct_answer: string;
+}
+
+interface ExamData {
+  title: string;
+  questions: Question[];
+}
+
+export async function saveExamAction(examData: ExamData) {
   const supabase = await createClient();
   const {
     data: { user },
@@ -57,12 +70,15 @@ export async function saveExamAction(examData: any) {
   }
 
   // Transform questions array to answer_key map
-  const answerKey = examData.questions.reduce((acc: any, q: any, index: number) => {
-    acc[index + 1] = q.correct_answer; // Assuming correct_answer is "1", "2", etc. or "A", "B"
-    return acc;
-  }, {});
+  const answerKey = examData.questions.reduce(
+    (acc: Record<string, string>, q: Question, index: number) => {
+      acc[index + 1] = q.correct_answer; // Assuming correct_answer is "1", "2", etc. or "A", "B"
+      return acc;
+    },
+    {}
+  );
 
-  const { data: exam, error } = await supabase
+  const { data: exam, error } = (await supabase
     .from('exams')
     .insert({
       teacher_id: user.id,
@@ -70,12 +86,14 @@ export async function saveExamAction(examData: any) {
       status: 'published', // Or draft
       questions_list: examData.questions,
       answer_key: answerKey,
-    })
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } as any)
     .select('id')
-    .single();
+    .single()) as unknown as { data: { id: string } | null; error: unknown };
 
-  if (error) {
-    throw new Error(error.message);
+  if (error || !exam) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    throw new Error((error as any)?.message || 'Failed to create exam');
   }
 
   redirect(`/scan/${exam.id}`);
