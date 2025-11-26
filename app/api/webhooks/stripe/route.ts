@@ -1,7 +1,15 @@
 import { headers } from 'next/headers';
-import Stripe from 'stripe';
-import { createClient } from '@supabase/supabase-js';
 import { stripe } from '@/lib/stripe';
+import { createClient } from '@supabase/supabase-js';
+import Stripe from 'stripe';
+
+// Helper type to ensure we have the fields we need, avoiding SDK version mismatches
+type StripeSubscription = Stripe.Subscription & {
+  current_period_end: number;
+};
+type StripeInvoice = Stripe.Invoice & {
+  subscription: string | Stripe.Subscription | null;
+};
 import { NextResponse } from 'next/server';
 
 function toISOString(timestamp: number | null | undefined): string | null {
@@ -57,7 +65,9 @@ export async function POST(req: Request) {
         return new NextResponse('No subscriptionId', { status: 400 });
       }
 
-      const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+      const subscription = (await stripe.subscriptions.retrieve(
+        subscriptionId
+      )) as unknown as StripeSubscription;
 
       let currentPeriodEnd = toISOString(subscription.current_period_end);
       if (!currentPeriodEnd) {
@@ -86,11 +96,13 @@ export async function POST(req: Request) {
     }
 
     if (event.type === 'invoice.payment_succeeded') {
-      const invoice = event.data.object as Stripe.Invoice;
+      const invoice = event.data.object as StripeInvoice;
       const subscriptionId = invoice.subscription as string;
 
       if (subscriptionId) {
-        const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+        const subscription = (await stripe.subscriptions.retrieve(
+          subscriptionId
+        )) as unknown as StripeSubscription;
         const currentPeriodEnd = toISOString(subscription.current_period_end);
 
         if (currentPeriodEnd) {
@@ -113,7 +125,7 @@ export async function POST(req: Request) {
     }
 
     if (event.type === 'customer.subscription.updated') {
-      const subscription = event.data.object as Stripe.Subscription;
+      const subscription = event.data.object as StripeSubscription;
       const currentPeriodEnd = toISOString(subscription.current_period_end);
 
       if (currentPeriodEnd) {

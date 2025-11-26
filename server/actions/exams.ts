@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
+import { BackgroundJobInsert, ExamInsert, ExamRow } from '@/types/app';
 
 // =====================================================
 // VALIDATION SCHEMAS
@@ -94,24 +95,29 @@ export async function uploadExamAction(formData: FormData): Promise<UploadExamRe
     } = supabase.storage.from('exams').getPublicUrl(uploadData.path);
 
     // 5. Create background job (this triggers the Edge Function via database trigger)
-    const { data: jobData, error: jobError } = await supabase
-      .from('background_jobs')
-      .insert({
-        user_id: user.id,
-        job_type: 'ocr_correction',
-        payload: {
-          image_url: publicUrl,
-          file_name: file.name,
-          uploaded_at: new Date().toISOString(),
-          exam_id: examId || undefined,
-        },
-        status: 'pending',
-      })
-      .select('id')
-      .single();
+    const jobPayload: BackgroundJobInsert = {
+      user_id: user.id,
+      job_type: 'ocr_correction',
+      payload: {
+        image_url: publicUrl,
+        file_name: file.name,
+        uploaded_at: new Date().toISOString(),
+        exam_id: examId || undefined,
+      },
+      status: 'pending',
+    };
 
-    if (jobError) {
-      console.error('[Upload Exam] Job creation error:', jobError);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: jobData, error } = (await supabase
+      .from('background_jobs')
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .insert(jobPayload as any)
+      .select('id')
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .single()) as any;
+
+    if (error) {
+      console.error('[Upload Exam] Job creation error:', error);
 
       // Clean up uploaded file
       await supabase.storage.from('exams').remove([uploadData.path]);
@@ -207,25 +213,32 @@ export async function duplicateExamAction(examId: string) {
   if (!user) return { success: false, error: 'Unauthorized' };
 
   // 1. Fetch original exam
-  const { data: originalExam, error: fetchError } = await supabase
+
+  const { data: originalExam, error } = await supabase
     .from('exams')
     .select('*')
     .eq('id', examId)
     .single();
 
-  if (fetchError || !originalExam) return { success: false, error: 'Exam not found' };
+  if (error || !originalExam) {
+    return { success: false, error: 'Exam not found' };
+  }
 
-  // 2. Create new exam record
+  const exam = originalExam as unknown as ExamRow; // 2. Create new exam record
+  const newExamData: ExamInsert = {
+    user_id: user.id,
+    title: `Cópia de ${exam.title}`,
+    description: exam.description,
+    status: 'draft',
+    questions_list: exam.questions_list, // Copy JSONB questions directly
+    correction_count: 0, // Reset correction count
+  };
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: newExam, error: createError } = await supabase
     .from('exams')
-    .insert({
-      user_id: user.id,
-      title: `Cópia de ${originalExam.title}`,
-      description: originalExam.description,
-      status: 'draft',
-      questions_list: originalExam.questions_list, // Copy JSONB questions directly
-      correction_count: 0, // Reset correction count
-    })
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    .insert(newExamData as any)
     .select()
     .single();
 

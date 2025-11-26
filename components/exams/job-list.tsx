@@ -97,12 +97,12 @@ export function JobList({ initialJobs }: { initialJobs: Job[] }) {
                 <span className="font-medium">
                   {job.job_type === 'ocr_correction' ? 'Correção de Prova' : 'Geração de Prova'}
                 </span>
-                {getStatusBadge(job.status)}
+                {getStatusBadge(job.status || 'pending')}
               </div>
               <p className="text-xs text-muted-foreground">ID: {job.id.slice(0, 8)}</p>
             </div>
             <div className="text-sm text-muted-foreground">
-              {formatDistanceToNow(new Date(job.created_at), {
+              {formatDistanceToNow(new Date(job.created_at || new Date()), {
                 addSuffix: true,
                 locale: ptBR,
               })}

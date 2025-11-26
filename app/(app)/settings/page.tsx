@@ -5,6 +5,7 @@ import { SettingsProfileForm } from '@/components/settings/settings-profile-form
 import { SettingsAppearance } from '@/components/settings/settings-appearance';
 import { SettingsBilling } from '@/components/settings/settings-billing';
 import { User, Palette, CreditCard } from 'lucide-react';
+import { SubscriptionDetails } from '@/types/app';
 
 export default async function SettingsPage() {
   const supabase = await createClient();
@@ -23,7 +24,8 @@ export default async function SettingsPage() {
     .eq('user_id', user.id)
     .maybeSingle();
 
-  const isPro = subscription?.status === 'active' || subscription?.status === 'trialing';
+  const sub = subscription as unknown as SubscriptionDetails;
+  const isPro = sub?.status === 'active' || sub?.status === 'trialing';
 
   // Mock user profile data since we might not have a separate profile table yet
   // or we just use auth metadata

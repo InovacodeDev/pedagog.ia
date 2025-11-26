@@ -3,6 +3,8 @@
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
+import { BackgroundJobRow, ExamGradeInsert } from '@/types/app';
+import { Database } from '@/types/database';
 
 // Schema for saving grades
 const SaveGradeSchema = z.object({
@@ -19,6 +21,8 @@ const SaveGradeSchema = z.object({
   ),
 });
 
+// ...
+
 export async function getJobForValidation(jobId: string) {
   const supabase = await createClient();
 
@@ -32,8 +36,11 @@ export async function getJobForValidation(jobId: string) {
     throw new Error('Job not found');
   }
 
+  // ...
+
   // Ensure job is completed and has result
-  if (job.status !== 'completed' || !job.result) {
+  const jobRow = job as BackgroundJobRow;
+  if (jobRow.status !== 'completed' || !jobRow.result) {
     throw new Error('Job is not ready for validation');
   }
 
@@ -58,13 +65,18 @@ export async function saveExamGradeAction(data: z.infer<typeof SaveGradeSchema>)
 
   const { job_id, student_id, final_score, answers } = validation.data;
 
-  const { error } = await supabase.from('exam_grades').insert({
+  // ...
+
+  const gradePayload: ExamGradeInsert = {
     job_id,
     student_id: student_id || null, // Handle optional student_id
     final_score,
-    answers: answers as any, // Supabase JSON type handling
+    answers: answers as unknown as Database['public']['Tables']['exam_grades']['Insert']['answers'], // Explicit cast to match Json type
     verified_at: new Date().toISOString(),
-  });
+  };
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await supabase.from('exam_grades').insert(gradePayload as any);
 
   if (error) {
     console.error('Error saving grade:', error);
