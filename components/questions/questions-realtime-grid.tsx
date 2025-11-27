@@ -15,13 +15,20 @@ import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 
 import { Question } from '@/types/questions';
+import { useRealtimeSubscription } from '@/hooks/use-realtime-subscription';
 
-interface QuestionsTableProps {
+interface QuestionsRealtimeGridProps {
   initialQuestions: Question[];
 }
 
-export function QuestionsTable({ initialQuestions }: QuestionsTableProps) {
-  const [questions, setQuestions] = useState<Question[]>(initialQuestions);
+export function QuestionsRealtimeGrid({ initialQuestions }: QuestionsRealtimeGridProps) {
+  const questions = useRealtimeSubscription({
+    table: 'questions',
+    initialData: initialQuestions,
+    orderBy: (a, b) =>
+      new Date(b.created_at || '').getTime() - new Date(a.created_at || '').getTime(),
+  });
+
   const [showUnusedOnly, setShowUnusedOnly] = useState(false);
   const [filterType, setFilterType] = useState<string>('all');
   const [filterStyle, setFilterStyle] = useState<string>('all');
@@ -35,9 +42,10 @@ export function QuestionsTable({ initialQuestions }: QuestionsTableProps) {
 
   const handleDelete = async (id: string) => {
     if (!confirm('Tem certeza que deseja excluir esta questão?')) return;
-    // Call server action here
-    setQuestions(questions.filter((q) => q.id !== id));
-    toast.success('Questão excluída com sucesso!');
+    // Call server action here - TODO: Implement server action
+    // Note: The realtime subscription will automatically update the list when the deletion happens on the server
+    console.log('Deleting question:', id);
+    toast.info('Solicitação de exclusão enviada...');
   };
 
   return (

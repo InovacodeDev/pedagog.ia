@@ -27,9 +27,11 @@ import { toast } from 'sonner';
 
 export interface QuestionBankItem {
   id: string;
-  stem: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  content: any;
   type: string;
-  options?: string[];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  options?: any;
   correct_answer?: string;
   discipline?: string;
   subject?: string;
@@ -97,6 +99,13 @@ export function QuestionBankDrawer({ onAddQuestion }: QuestionBankDrawerProps) {
   const handleAdd = (question: QuestionBankItem) => {
     onAddQuestion(question);
     toast.success('Questão adicionada à prova!');
+  };
+
+  const getStem = (question: QuestionBankItem) => {
+    if (typeof question.content === 'object' && question.content !== null) {
+      return question.content.stem || 'Questão sem enunciado';
+    }
+    return typeof question.content === 'string' ? question.content : 'Questão sem enunciado';
   };
 
   return (
@@ -181,7 +190,7 @@ export function QuestionBankDrawer({ onAddQuestion }: QuestionBankDrawerProps) {
                     className="flex flex-col gap-2 rounded-lg border p-4 hover:bg-muted/50 transition-colors"
                   >
                     <div className="flex justify-between items-start gap-2">
-                      <p className="text-sm font-medium line-clamp-2">{q.stem}</p>
+                      <p className="text-sm font-medium line-clamp-2">{getStem(q)}</p>
                       <Button size="sm" variant="ghost" onClick={() => handleAdd(q)}>
                         <Plus className="h-4 w-4" />
                       </Button>

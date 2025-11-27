@@ -232,53 +232,145 @@ Deno.serve(async (req: Request): Promise<Response> => {
         break;
     }
 
-    // Handle generate_questions_v2 as a separate block since it updates the job and returns early
+    // Handle generate_questions_v2 as a separate block
     if (job.job_type === 'generate_questions_v2') {
-      const { content, quantity, types, style, discipline, subject } = job.payload as {
+      const { content, quantity, types, style, discipline, subject, grade_level } = job.payload as {
         content?: string;
         quantity: number;
         types: string[];
         style: string;
         discipline?: string;
         subject?: string;
+        grade_level?: string;
       };
 
-      // Mock AI Generation for V2
       console.log(
         `Generating ${quantity} questions (v2) for topic: ${content ? content.substring(0, 50) : 'Files provided'}...`
       );
-      console.log(
-        `Types: ${types.join(', ')}, Style: ${style}, Discipline: ${discipline}, Subject: ${subject}`
+
+      // 1. Calculate Distribution
+      const distribution: string[] = [];
+      // First, assign 1 question to each selected type
+      types.forEach((type) => distribution.push(type));
+
+      // Then, distribute remaining slots randomly
+      const remainingSlots = quantity - types.length;
+      if (remainingSlots > 0) {
+        for (let i = 0; i < remainingSlots; i++) {
+          const randomType = types[Math.floor(Math.random() * types.length)];
+          distribution.push(randomType);
+        }
+      }
+
+      // 2. Construct System Prompt
+      const prompt = `
+        Você é um especialista em avaliação educacional brasileira (ENEM/Vestibular).
+        Sua tarefa é criar um array JSON de questões baseadas no conteúdo fornecido.
+
+        PARÂMETROS:
+        - Quantidade: ${quantity} questões
+        - Tipos Solicitados: ${types.join(', ')} (Distribua equitativamente)
+        - Estilo: ${style}
+        - Disciplina/Assunto: ${discipline || 'Geral'} / ${subject || 'Geral'}
+        - Nível: ${grade_level || 'Geral'}
+
+        REGRAS ESTRUTURAIS ESTRITAS (JSON):
+        Para cada tipo de questão, siga OBRIGATORIAMENTE esta estrutura de objetos:
+
+        1. TIPO: "multiple_choice"
+           - "options": Array de 5 strings (A, B, C, D, E).
+           - "correct_answer": O índice numérico da correta (0 a 4).
+
+        2. TIPO: "true_false"
+           - "options": Array de EXATAMENTE 5 afirmações.
+           - "correct_answer": Uma string com a sequência de V e F (ex: "V-F-V-V-F").
+
+        3. TIPO: "sum" (Somatória)
+           - "options": Array de 4 a 7 proposições (Texto apenas).
+           - "correct_answer": A SOMA numérica dos valores das proposições corretas.
+           - REGRA MATEMÁTICA: Considere que a 1ª opção vale 01, a 2ª vale 02, a 3ª vale 04, a 4ª vale 08, etc.
+           - CRÍTICO: A soma das corretas NÃO PODE EXCEDER 99. Selecione proposições corretas de modo que a soma fique <= 99.
+
+        4. TIPO: "association" (Associação de Colunas)
+           - "options": Array de strings (Coluna da Esquerda/Parênteses).
+           - "content": { "column_b": ["Item A", "Item B", "Item C", "Item D", "Item E"] } (Coluna da Direita).
+           - "correct_answer": A sequência de letras que preenche a Coluna da Esquerda (ex: "C-A-B-E-D").
+
+        5. TIPO: "essay" (Redação)
+           - "stem": O Tema da redação.
+           - "content": {
+               "genre": "Gênero textual (Dissertação, Carta, Crônica...)",
+               "support_texts": ["Texto motivador 1...", "Texto motivador 2..."]
+             }
+           - "options": null
+           - "correct_answer": null
+           - "correction_criteria": Array de strings com competências avaliativas.
+
+        6. TIPO: "open_ended" (Discursiva)
+           - "stem": A pergunta aberta.
+           - "options": null
+           - "correct_answer": Um gabarito/modelo de resposta ideal.
+           - "correction_criteria": Array de strings com pontos chave que o aluno deve citar.
+
+        FORMATO DE SAÍDA (Array JSON Puro):
+        [
+          {
+            "stem": "Texto do enunciado...",
+            "type": "tipo_da_questao",
+            "options": [...],
+            "content": { ...extras como column_b ou support_texts... },
+            "correct_answer": "...",
+            "explanation": "Explicação pedagógica do gabarito.",
+            "bncc": "Código BNCC",
+            "difficulty": "medium",
+            "discipline": "${discipline}",
+            "subject": "${subject}"
+          }
+        ]
+
+        Conteúdo Base para Geração:
+        "${content || 'Nenhum conteúdo textual identificado. Gere com base no Assunto/Disciplina informados.'}"
+        
+        Retorne APENAS o JSON válido, sem markdown ou explicações extras.
+      `;
+
+      // 3. Call Gemini API
+      const geminiApiKey = Deno.env.get('GEMINI_API_KEY');
+      if (!geminiApiKey) {
+        throw new Error('Missing GEMINI_API_KEY');
+      }
+
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }],
+            generationConfig: {
+              responseMimeType: 'application/json',
+            },
+          }),
+        }
       );
 
-      // SIMULATED PROMPT CONSTRUCTION (for reference)
-      // const prompt = `
-      //   Generate ${quantity} questions about the provided content.
-      //   ...
-      //   Return ONLY a valid JSON array of objects. No markdown, no whitespace between keys/values.
-      //   Example: [{"stem":"...","options":["..."],"correct_answer":"...","type":"...","bncc":"...","explanation":"...","discipline":"...","subject":"..."}]
-      //   User Input: ${content}
-      // `;
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Gemini API Error: ${response.status} - ${errorText}`);
+      }
 
-      await new Promise((resolve) => setTimeout(resolve, 3000)); // Simulate delay
+      const data = await response.json();
+      const generatedText = data.candidates[0].content.parts[0].text;
 
-      const generatedQuestions = Array.from({ length: quantity }).map((_, i) => {
-        const type = types[i % types.length]; // Distribute types
-        const isMultipleChoice = type === 'multiple_choice';
-
-        return {
-          stem: `(Questão ${i + 1} - ${style.toUpperCase()}) Baseado no conteúdo fornecido - Gere uma questão sobre este tópico.`,
-          options: isMultipleChoice
-            ? ['Alternativa A', 'Alternativa B', 'Alternativa C', 'Alternativa D']
-            : undefined,
-          correct_answer: isMultipleChoice ? '0' : 'Resposta esperada...',
-          type: type,
-          bncc: 'EM13LGG102',
-          explanation: 'Explicação detalhada da resposta correta.',
-          discipline: discipline || 'Geral',
-          subject: subject || 'Geral',
-        };
-      });
+      let generatedQuestions;
+      try {
+        generatedQuestions = JSON.parse(generatedText);
+      } catch (e) {
+        console.error('Failed to parse Gemini response:', generatedText);
+        throw new Error('Invalid JSON response from AI');
+      }
 
       // Update job with result
       await supabase

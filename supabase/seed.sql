@@ -53,19 +53,19 @@ begin
     ''
   ) on conflict (id) do nothing;
 
-  -- 2. CREATE PROFILE
+  -- 2. CREATE PROFILE (REMOVED - Table Dropped)
   -- =====================================================
-  insert into public.profiles (
-    id,
-    institution_id,
-    role,
-    full_name
-  ) values (
-    test_user_id,
-    test_institution_id,
-    'teacher',
-    'Professor Demo'
-  ) on conflict (id) do nothing;
+  -- insert into public.profiles (
+  --   id,
+  --   institution_id,
+  --   role,
+  --   full_name
+  -- ) values (
+  --   test_user_id,
+  --   test_institution_id,
+  --   'teacher',
+  --   'Professor Demo'
+  -- ) on conflict (id) do nothing;
 
   -- 3. CREATE ENCRYPTED STUDENTS
   -- =====================================================
@@ -80,60 +80,60 @@ begin
 
   -- 4. CREATE COMPLETED BACKGROUND JOB (For Testing ValidationDeck)
   -- =====================================================
-  insert into public.background_jobs (
-    id,
-    user_id,
-    job_type,
-    payload,
-    status,
-    result,
-    created_at,
-    updated_at
-  ) values (
-    '770e8400-e29b-41d4-a716-446655440000',
-    test_user_id,
-    'ocr_correction',
-    jsonb_build_object(
-      'image_url', 'https://placehold.co/800x1200/indigo/white?text=Prova+Matematica',
-      'exam_id', gen_random_uuid()
-    ),
-    'completed',
-    jsonb_build_object(
-      'total_questions', 10,
-      'confidence', 0.92,
-      'answers', jsonb_build_array(
-        jsonb_build_object('question', 1, 'score', 1.0, 'correct', true, 'confidence', 0.95),
-        jsonb_build_object('question', 2, 'score', 0.5, 'correct', false, 'confidence', 0.88),
-        jsonb_build_object('question', 3, 'score', 1.0, 'correct', true, 'confidence', 0.97),
-        jsonb_build_object('question', 4, 'score', 1.0, 'correct', true, 'confidence', 0.91),
-        jsonb_build_object('question', 5, 'score', 0.0, 'correct', false, 'confidence', 0.85),
-        jsonb_build_object('question', 6, 'score', 1.0, 'correct', true, 'confidence', 0.93),
-        jsonb_build_object('question', 7, 'score', 1.0, 'correct', true, 'confidence', 0.96),
-        jsonb_build_object('question', 8, 'score', 0.5, 'correct', false, 'confidence', 0.79),
-        jsonb_build_object('question', 9, 'score', 1.0, 'correct', true, 'confidence', 0.94),
-        jsonb_build_object('question', 10, 'score', 1.0, 'correct', true, 'confidence', 0.98)
-      ),
-      'suggested_score', 8.5
-    ),
-    now() - interval '5 minutes',
-    now() - interval '2 minutes'
-  ) on conflict (id) do nothing;
+  -- insert into public.background_jobs (
+  --   id,
+  --   user_id,
+  --   job_type,
+  --   payload,
+  --   status,
+  --   result,
+  --   created_at,
+  --   updated_at
+  -- ) values (
+  --   '770e8400-e29b-41d4-a716-446655440000',
+  --   test_user_id,
+  --   'ocr_correction',
+  --   jsonb_build_object(
+  --     'image_url', 'https://placehold.co/800x1200/indigo/white?text=Prova+Matematica',
+  --     'exam_id', gen_random_uuid()
+  --   ),
+  --   'completed',
+  --   jsonb_build_object(
+  --     'total_questions', 10,
+  --     'confidence', 0.92,
+  --     'answers', jsonb_build_array(
+  --       jsonb_build_object('question', 1, 'score', 1.0, 'correct', true, 'confidence', 0.95),
+  --       jsonb_build_object('question', 2, 'score', 0.5, 'correct', false, 'confidence', 0.88),
+  --       jsonb_build_object('question', 3, 'score', 1.0, 'correct', true, 'confidence', 0.97),
+  --       jsonb_build_object('question', 4, 'score', 1.0, 'correct', true, 'confidence', 0.91),
+  --       jsonb_build_object('question', 5, 'score', 0.0, 'correct', false, 'confidence', 0.85),
+  --       jsonb_build_object('question', 6, 'score', 1.0, 'correct', true, 'confidence', 0.93),
+  --       jsonb_build_object('question', 7, 'score', 1.0, 'correct', true, 'confidence', 0.96),
+  --       jsonb_build_object('question', 8, 'score', 0.5, 'correct', false, 'confidence', 0.79),
+  --       jsonb_build_object('question', 9, 'score', 1.0, 'correct', true, 'confidence', 0.94),
+  --       jsonb_build_object('question', 10, 'score', 1.0, 'correct', true, 'confidence', 0.98)
+  --     ),
+  --     'suggested_score', 8.5
+  --   ),
+  --   now() - interval '5 minutes',
+  --   now() - interval '2 minutes'
+  -- ) on conflict (id) do nothing;
 
   -- 5. CREATE PENDING JOB (For Testing Job Monitor)
   -- =====================================================
-  insert into public.background_jobs (
-    user_id,
-    job_type,
-    payload,
-    status
-  ) values (
-    test_user_id,
-    'ocr_correction',
-    jsonb_build_object(
-      'image_url', 'https://placehold.co/800x1200/teal/white?text=Prova+Portugues'
-    ),
-    'pending'
-  ) on conflict do nothing;
+  -- insert into public.background_jobs (
+  --   user_id,
+  --   job_type,
+  --   payload,
+  --   status
+  -- ) values (
+  --   test_user_id,
+  --   'ocr_correction',
+  --   jsonb_build_object(
+  --     'image_url', 'https://placehold.co/800x1200/teal/white?text=Prova+Portugues'
+  --   ),
+  --   'pending'
+  -- ) on conflict do nothing;
 
 end $$;
 

@@ -1,5 +1,5 @@
 import { getStudentsAction } from '@/server/actions/students';
-import { StudentList } from '@/components/students/student-list';
+import { StudentsRealtimeTable } from '@/components/students/students-realtime-table';
 import { NewStudentDialog } from '@/components/students/new-student-dialog';
 import { ShieldCheck } from 'lucide-react';
 
@@ -19,7 +19,7 @@ export default async function StudentsPage() {
         <NewStudentDialog />
       </div>
 
-      <StudentList students={students || []} />
+      <StudentsRealtimeTable initialStudents={students || []} />
     </div>
   );
 }

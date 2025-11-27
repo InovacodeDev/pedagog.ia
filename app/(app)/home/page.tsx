@@ -10,18 +10,10 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import {
-  FileText,
-  Database,
-  CheckCircle,
-  Clock,
-  Plus,
-  Camera,
-  Wand2,
-  ArrowRight,
-} from 'lucide-react';
+import { FileText, Plus, Camera, Wand2, ArrowRight } from 'lucide-react';
 import { getDashboardMetrics } from '@/server/actions/dashboard';
 import { EmptyState } from '@/components/ui/empty-state';
+import { DashboardRealtimeMetrics } from '@/components/dashboard/realtime-metrics';
 
 export default async function DashboardPage() {
   const { data } = await getDashboardMetrics();
@@ -43,48 +35,7 @@ export default async function DashboardPage() {
       </div>
 
       {/* Top Row: Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Provas Criadas</CardTitle>
-            <FileText className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{metrics.examsCount}</div>
-            <p className="text-xs text-muted-foreground">Total de avaliações geradas</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Banco de Questões</CardTitle>
-            <Database className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{metrics.questionsCount}</div>
-            <p className="text-xs text-muted-foreground">Questões disponíveis</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Correções</CardTitle>
-            <CheckCircle className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{metrics.correctionsCount}</div>
-            <p className="text-xs text-muted-foreground">Provas corrigidas via IA</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Tempo Economizado</CardTitle>
-            <Clock className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{metrics.timeSavedHours}h</div>
-            <p className="text-xs text-muted-foreground">Estimado (5min/prova)</p>
-          </CardContent>
-        </Card>
-      </div>
+      <DashboardRealtimeMetrics initialMetrics={metrics} />
 
       {/* Middle Row */}
       <div className="grid gap-4 md:grid-cols-7">

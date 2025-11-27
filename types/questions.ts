@@ -1,10 +1,18 @@
+import { Database } from './database';
+
+export type Question = Database['public']['Tables']['questions']['Row'];
+
 export interface GeneratedQuestion {
   stem: string;
-  options?: string[];
-  correct_answer?: string;
-  type: string;
+  type: 'multiple_choice' | 'true_false' | 'sum' | 'association' | 'open_ended' | 'essay';
+  support_texts?: string[] | null;
+  options?: string[] | null;
+  correct_answer: string;
+  explanation?: string;
+  correction_criteria?: string[] | null;
   bncc?: string;
   discipline?: string;
   subject?: string;
-  difficulty?: string;
+  difficulty?: 'easy' | 'medium' | 'hard';
+  style?: string;
 }

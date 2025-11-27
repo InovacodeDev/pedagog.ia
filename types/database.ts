@@ -98,6 +98,8 @@ export type Database = {
           correction_count: number | null;
           created_at: string | null;
           description: string | null;
+          discipline: string | null;
+          grade_level: string | null;
           id: string;
           questions_list: Json;
           status: Database['public']['Enums']['exam_status'] | null;
@@ -110,6 +112,8 @@ export type Database = {
           correction_count?: number | null;
           created_at?: string | null;
           description?: string | null;
+          discipline?: string | null;
+          grade_level?: string | null;
           id?: string;
           questions_list?: Json;
           status?: Database['public']['Enums']['exam_status'] | null;
@@ -122,6 +126,8 @@ export type Database = {
           correction_count?: number | null;
           created_at?: string | null;
           description?: string | null;
+          discipline?: string | null;
+          grade_level?: string | null;
           id?: string;
           questions_list?: Json;
           status?: Database['public']['Enums']['exam_status'] | null;
@@ -133,27 +139,41 @@ export type Database = {
       };
       profiles: {
         Row: {
-          created_at: string | null;
+          avatar_url: string | null;
           full_name: string | null;
           id: string;
           institution_id: string | null;
-          role: string | null;
+          updated_at: string | null;
+          username: string | null;
+          website: string | null;
         };
         Insert: {
-          created_at?: string | null;
+          avatar_url?: string | null;
           full_name?: string | null;
           id: string;
           institution_id?: string | null;
-          role?: string | null;
+          updated_at?: string | null;
+          username?: string | null;
+          website?: string | null;
         };
         Update: {
-          created_at?: string | null;
+          avatar_url?: string | null;
           full_name?: string | null;
           id?: string;
           institution_id?: string | null;
-          role?: string | null;
+          updated_at?: string | null;
+          username?: string | null;
+          website?: string | null;
         };
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: 'profiles_id_fkey';
+            columns: ['id'];
+            isOneToOne: true;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+        ];
       };
       questions: {
         Row: {
@@ -163,9 +183,13 @@ export type Database = {
           correct_answer: string;
           created_at: string | null;
           difficulty: Database['public']['Enums']['difficulty_level'];
+          discipline: string | null;
+          explanation: string | null;
           id: string;
+          options: Json | null;
           structured_data: Json | null;
           style: string | null;
+          subject: string | null;
           topic: string;
           type: string | null;
           updated_at: string | null;
@@ -179,9 +203,13 @@ export type Database = {
           correct_answer: string;
           created_at?: string | null;
           difficulty: Database['public']['Enums']['difficulty_level'];
+          discipline?: string | null;
+          explanation?: string | null;
           id?: string;
+          options?: Json | null;
           structured_data?: Json | null;
           style?: string | null;
+          subject?: string | null;
           topic: string;
           type?: string | null;
           updated_at?: string | null;
@@ -195,9 +223,13 @@ export type Database = {
           correct_answer?: string;
           created_at?: string | null;
           difficulty?: Database['public']['Enums']['difficulty_level'];
+          discipline?: string | null;
+          explanation?: string | null;
           id?: string;
+          options?: Json | null;
           structured_data?: Json | null;
           style?: string | null;
+          subject?: string | null;
           topic?: string;
           type?: string | null;
           updated_at?: string | null;
@@ -261,34 +293,14 @@ export type Database = {
           updated_at?: string | null;
           user_id?: string;
         };
-        Relationships: [
-          {
-            foreignKeyName: 'subscriptions_user_id_fkey';
-            columns: ['user_id'];
-            isOneToOne: true;
-            referencedRelation: 'users';
-            referencedColumns: ['id'];
-          },
-        ];
+        Relationships: [];
       };
     };
     Views: {
       [_ in never]: never;
     };
     Functions: {
-      create_secure_student: {
-        Args: { grade: string; name_text: string };
-        Returns: string;
-      };
-      get_students_decrypted: {
-        Args: { p_institution_id: string };
-        Returns: {
-          created_at: string;
-          grade_level: string;
-          id: string;
-          name: string;
-        }[];
-      };
+      [_ in never]: never;
     };
     Enums: {
       difficulty_level: 'easy' | 'medium' | 'hard';

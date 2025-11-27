@@ -30,7 +30,7 @@ import {
 } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { generateQuestionsV2Action } from '@/server/actions/questions';
+import { generateQuestionsV2Action, saveQuestionsAction } from '@/server/actions/questions';
 
 const formSchema = z
   .object({
@@ -67,9 +67,9 @@ const formSchema = z
 const QUESTION_TYPES = [
   { id: 'multiple_choice', label: 'Múltipla Escolha' },
   { id: 'true_false', label: 'Verdadeiro / Falso' },
-  { id: 'essay', label: 'Dissertativa' },
-  { id: 'summation', label: 'Somatória' },
-  { id: 'redaction', label: 'Redação' },
+  { id: 'open_ended', label: 'Dissertativa' },
+  { id: 'sum', label: 'Somatória' },
+  { id: 'essay', label: 'Redação' },
   { id: 'association', label: 'Associação' },
 ];
 
@@ -96,6 +96,7 @@ import { GeneratedQuestion } from '@/types/questions';
 
 export function GeneratorForm({ isPro = false }: { isPro?: boolean }) {
   const [isLoading, setIsLoading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [generatedQuestions, setGeneratedQuestions] = useState<GeneratedQuestion[] | null>(null);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
 
@@ -202,9 +203,22 @@ export function GeneratorForm({ isPro = false }: { isPro?: boolean }) {
   }
 
   const handleSave = async () => {
-    // Implement save logic here (e.g., save to 'questions' table via server action)
-    // For now, just a toast
-    toast.success('Questões salvas no Banco de Questões!');
+    if (!generatedQuestions) return;
+
+    setIsSaving(true);
+    try {
+      const result = await saveQuestionsAction(generatedQuestions);
+      if (result.success) {
+        toast.success('Questões salvas no Banco de Questões!');
+        setGeneratedQuestions(null);
+      } else {
+        toast.error(`Erro ao salvar: ${result.error}`);
+      }
+    } catch {
+      toast.error('Erro ao salvar questões.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -475,8 +489,16 @@ export function GeneratorForm({ isPro = false }: { isPro?: boolean }) {
             <>
               <div className="flex justify-between items-center">
                 <h3 className="text-xl font-semibold">Questões Geradas</h3>
-                <Button onClick={handleSave}>
-                  <Save className="mr-2 h-4 w-4" /> Salvar no Banco
+                <Button onClick={handleSave} disabled={isSaving}>
+                  {isSaving ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Salvando...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="mr-2 h-4 w-4" /> Salvar no Banco
+                    </>
+                  )}
                 </Button>
               </div>
               <div className="space-y-4">
@@ -499,7 +521,7 @@ export function GeneratorForm({ isPro = false }: { isPro?: boolean }) {
                       )}
                       <div className="flex gap-2 text-xs">
                         <span className="px-2 py-1 bg-secondary/20 rounded text-secondary-foreground font-medium">
-                          {q.type}
+                          {QUESTION_TYPES.find((t) => t.id === q.type)?.label || q.type}
                         </span>
                         <span className="px-2 py-1 bg-muted rounded text-muted-foreground">
                           BNCC: {q.bncc}

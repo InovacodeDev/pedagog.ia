@@ -1,6 +1,6 @@
 import React from 'react';
 import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
-import { ExamBlock } from './ExamEditor';
+import { ExamBlock } from './exam-block';
 
 const styles = StyleSheet.create({
   page: {
@@ -122,7 +122,7 @@ export const BuilderPDFDocument = ({ blocks }: BuilderPDFProps) => (
           return (
             <View key={block.id} style={styles.questionBlock} wrap={false}>
               <Text style={styles.questionText}>{block.content.text}</Text>
-              {block.content.options?.map((opt, idx) => (
+              {block.content.options?.map((opt: string, idx: number) => (
                 <Text key={idx} style={styles.option}>
                   {String.fromCharCode(65 + idx)}) {opt}
                 </Text>

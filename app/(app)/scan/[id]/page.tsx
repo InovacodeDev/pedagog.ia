@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
+import { getSubscriptionPlan } from '@/lib/subscription';
 
 interface ExamPageProps {
   params: Promise<{
@@ -14,13 +15,17 @@ interface ExamPageProps {
 
 interface Question {
   stem: string;
-  options: string[];
-  correct_answer: string;
+  type: string;
+  options?: string[] | null;
+  correct_answer?: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  content?: any;
 }
 
 export default async function ExamPage({ params }: ExamPageProps) {
   const { id } = await params;
   const supabase = await createClient();
+  const { isPro } = await getSubscriptionPlan();
 
   const { data: examData } = await supabase.from('exams').select('*').eq('id', id).single();
 
@@ -59,7 +64,7 @@ export default async function ExamPage({ params }: ExamPageProps) {
           </div>
         </div>
         <div className="flex gap-2">
-          <DownloadPDFButton exam={exam} />
+          <DownloadPDFButton exam={exam} isPro={!!isPro} />
         </div>
       </div>
 
@@ -75,7 +80,7 @@ export default async function ExamPage({ params }: ExamPageProps) {
                   {index + 1}. {question.stem}
                 </p>
                 <div className="grid gap-2 pl-4">
-                  {question.options.map((option: string, optIndex: number) => (
+                  {question.options?.map((option: string, optIndex: number) => (
                     <div
                       key={optIndex}
                       className={`text-sm p-2 rounded ${

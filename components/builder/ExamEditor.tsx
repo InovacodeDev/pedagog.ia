@@ -15,173 +15,34 @@ import {
   SortableContext,
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
-  useSortable,
 } from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import {
-  FileDown,
-  GripVertical,
-  Trash2,
-  Type,
-  List,
-  AlignLeft,
-  Image as ImageIcon,
-} from 'lucide-react';
+import { FileDown, Trash2, Type, List, AlignLeft, Image as ImageIcon } from 'lucide-react';
 import { saveAs } from 'file-saver';
-import { Document, Packer, Paragraph, TextRun } from 'docx';
 import { pdf } from '@react-pdf/renderer';
 import { BuilderPDFDocument } from './BuilderPDF';
 import { QuestionBankDrawer, QuestionBankItem } from './QuestionBankDrawer';
+import { generateDocx } from '@/lib/docx-generator';
+import { toast } from 'sonner';
 
-// Types
-export type BlockType = 'header' | 'multiple_choice' | 'essay' | 'text';
-
-export interface ExamBlock {
-  id: string;
-  type: BlockType;
-  content: {
-    title?: string;
-    text?: string;
-    options?: string[];
-    correctAnswer?: string;
-    schoolName?: string;
-    teacherName?: string;
-    discipline?: string;
-    gradeLevel?: string;
-    date?: string;
-    studentNameLabel?: boolean;
-  };
-}
+import { SortableBlock, ExamBlock, BlockType } from './exam-block';
 
 // Mock Hook
 const useSubscription = () => ({ isPro: false });
 
-// Sortable Item Component
-function SortableBlock({
-  block,
-  onDelete,
-  onEdit,
-}: {
-  block: ExamBlock;
-  onDelete: (id: string) => void;
-  onEdit: (block: ExamBlock) => void;
-}) {
-  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({
-    id: block.id,
-  });
+import { saveExamAction } from '@/server/actions/save-exam';
+import { useTransition } from 'react';
+import { Loader2, Save } from 'lucide-react';
 
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-  };
+// ...
 
-  const isWatermark = block.id === 'watermark';
-
-  return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      className={`group relative mb-4 rounded-lg border bg-white p-4 shadow-sm transition-shadow hover:shadow-md ${
-        isWatermark ? 'opacity-70 cursor-not-allowed bg-gray-50' : ''
-      }`}
-    >
-      {!isWatermark && (
-        <div className="absolute right-2 top-2 flex opacity-0 transition-opacity group-hover:opacity-100">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 text-destructive"
-            onClick={() => onDelete(block.id)}
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
-        </div>
-      )}
-
-      <div className="flex items-start gap-3">
-        {!isWatermark && (
-          <div
-            {...attributes}
-            {...listeners}
-            className="mt-1 cursor-grab text-gray-400 hover:text-gray-600 active:cursor-grabbing"
-          >
-            <GripVertical className="h-5 w-5" />
-          </div>
-        )}
-
-        <div className="flex-1" onClick={() => !isWatermark && onEdit(block)}>
-          {/* Render Block Content */}
-          {block.type === 'header' && (
-            <div className="text-center border-b-2 border-black pb-4 mb-2">
-              <h2 className="text-xl font-bold uppercase">
-                {block.content.schoolName || 'Nome da Escola'}
-              </h2>
-              <div className="grid grid-cols-2 gap-2 text-sm mt-4 text-left">
-                <div>
-                  <span className="font-semibold">Professor(a):</span>{' '}
-                  {block.content.teacherName || '_________________'}
-                </div>
-                <div className="text-right">
-                  <span className="font-semibold">Data:</span> {block.content.date || '___/___/___'}
-                </div>
-                <div>
-                  <span className="font-semibold">Matéria:</span>{' '}
-                  {block.content.discipline || '_________________'}
-                </div>
-                <div className="text-right">
-                  <span className="font-semibold">Turma:</span>{' '}
-                  {block.content.gradeLevel || '________'}
-                </div>
-              </div>
-              {block.content.studentNameLabel !== false && (
-                <div className="mt-4 text-left">
-                  <span className="font-semibold">Nome:</span>{' '}
-                  __________________________________________________________________
-                </div>
-              )}
-            </div>
-          )}
-
-          {block.type === 'text' && (
-            <div className="prose max-w-none">
-              <p>{block.content.text || 'Texto de instrução...'}</p>
-            </div>
-          )}
-
-          {block.type === 'multiple_choice' && (
-            <div>
-              <p className="font-medium mb-2">{block.content.text || 'Enunciado da questão...'}</p>
-              <ul className="space-y-1 pl-4">
-                {block.content.options?.map((opt, idx) => (
-                  <li key={idx} className="list-[upper-alpha] list-outside text-sm">
-                    {opt || `Opção ${idx + 1}`}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          {block.type === 'essay' && (
-            <div>
-              <p className="font-medium mb-4">
-                {block.content.text || 'Enunciado da questão dissertativa...'}
-              </p>
-              <div className="h-24 border-b border-t border-dashed border-gray-200"></div>
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-export function ExamEditor() {
+export function ExamEditor({ examId, initialTitle }: { examId?: string; initialTitle?: string }) {
   const { isPro } = useSubscription();
+  const [isPending, startTransition] = useTransition();
   const [blocks, setBlocks] = useState<ExamBlock[]>([
     {
       id: 'header-1',
@@ -247,7 +108,9 @@ export function ExamEditor() {
       content: {
         text: type === 'multiple_choice' ? 'Nova Questão' : type === 'text' ? 'Instruções' : '',
         options:
-          type === 'multiple_choice' ? ['Opção A', 'Opção B', 'Opção C', 'Opção D'] : undefined,
+          type === 'multiple_choice'
+            ? ['Opção A', 'Opção B', 'Opção C', 'Opção D', 'Opção E']
+            : undefined,
       },
     };
 
@@ -264,14 +127,20 @@ export function ExamEditor() {
   };
 
   const handleAddFromBank = (question: QuestionBankItem) => {
+    const stem =
+      typeof question.content === 'object' && question.content !== null
+        ? question.content.stem
+        : question.content;
+
     const newBlock: ExamBlock = {
       id: `block-${Date.now()}`,
       type: question.type === 'multiple_choice' ? 'multiple_choice' : 'essay',
       content: {
-        text: question.stem,
+        text: stem || 'Questão sem enunciado',
         options: question.options,
         correctAnswer: question.correct_answer,
       },
+      questionData: question,
     };
 
     setBlocks((prev) => {
@@ -302,47 +171,53 @@ export function ExamEditor() {
   };
 
   const exportWord = async () => {
-    const doc = new Document({
-      sections: [
-        {
-          properties: {},
-          children: blocks.map((block) => {
-            if (block.type === 'header') {
-              return new Paragraph({
-                children: [
-                  new TextRun({ text: block.content.schoolName || '', bold: true, size: 28 }),
-                  new TextRun({ text: '\nAluno: _________________________________', break: 1 }),
-                ],
-                spacing: { after: 400 },
-              });
-            }
-            if (block.type === 'multiple_choice') {
-              return new Paragraph({
-                children: [
-                  new TextRun({ text: block.content.text || '', bold: true }),
-                  ...(block.content.options || []).map(
-                    (opt) => new TextRun({ text: `\n( ) ${opt}`, break: 1 })
-                  ),
-                ],
-                spacing: { after: 200 },
-              });
-            }
-            return new Paragraph({
-              children: [new TextRun(block.content.text || '')],
-              spacing: { after: 200 },
-            });
-          }),
-        },
-      ],
-    });
-
-    const blob = await Packer.toBlob(doc);
-    saveAs(blob, 'prova-pedagogi.docx');
+    try {
+      const blob = await generateDocx(blocks);
+      saveAs(blob, 'prova-pedagog-ia.docx');
+      toast.success('Prova exportada para Word!');
+    } catch (error) {
+      console.error('Erro ao exportar Word:', error);
+      toast.error('Erro ao exportar para Word.');
+    }
   };
 
   const exportPDF = async () => {
     const blob = await pdf(<BuilderPDFDocument blocks={blocks} />).toBlob();
-    saveAs(blob, 'prova-pedagogi.pdf');
+    saveAs(blob, 'prova-pedagog-ia.pdf');
+  };
+
+  // Keyboard shortcut for saving
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 's') {
+        e.preventDefault();
+        handleSave();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [blocks, examId, initialTitle]); // Added dependencies needed for handleSave closure
+
+  const handleSave = () => {
+    if (!examId) {
+      toast.error('Erro: ID da prova não encontrado.');
+      return;
+    }
+
+    startTransition(async () => {
+      const result = await saveExamAction({
+        examId,
+        blocks,
+        title: initialTitle, // Or current title state if editable
+      });
+
+      if (result.error) {
+        toast.error(result.error);
+      } else {
+        toast.success('Prova salva com sucesso!');
+      }
+    });
   };
 
   return (
@@ -388,20 +263,32 @@ export function ExamEditor() {
         </Card>
 
         <Card className="p-4">
-          <h3 className="mb-4 font-semibold">Exportar</h3>
+          <h3 className="mb-4 font-semibold">Ações</h3>
           <div className="space-y-2">
+            <Button className="w-full" onClick={handleSave} disabled={isPending}>
+              {isPending ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Save className="mr-2 h-4 w-4" />
+              )}
+              {isPending ? 'Salvando...' : 'Salvar Prova'}
+            </Button>
             <Button className="w-full" variant="secondary" onClick={exportWord}>
               <FileDown className="mr-2 h-4 w-4" /> Word (.docx)
             </Button>
-            <Button className="w-full" onClick={exportPDF}>
+            <Button className="w-full" variant="outline" onClick={exportPDF}>
               <FileDown className="mr-2 h-4 w-4" /> PDF
             </Button>
           </div>
         </Card>
       </div>
+      {/* ... rest of component ... */}
 
       {/* Center - Canvas */}
-      <div className="flex-1 overflow-y-auto bg-gray-100 p-8 rounded-lg shadow-inner">
+      <div
+        className="flex-1 overflow-y-auto bg-gray-100 p-8 rounded-lg shadow-inner"
+        onClick={() => setSelectedBlock(null)}
+      >
         <div className="mx-auto min-h-[29.7cm] w-[21cm] bg-white text-black p-[2cm] shadow-lg">
           <DndContext
             sensors={sensors}
@@ -425,7 +312,7 @@ export function ExamEditor() {
       {/* Right Panel - Properties */}
       {selectedBlock && selectedBlock.id !== 'watermark' && (
         <div className="w-80 flex-shrink-0">
-          <Card className="p-4 sticky top-4">
+          <Card className="p-4 sticky top-4 min-h-[200px]">
             <h3 className="mb-4 font-semibold">Propriedades</h3>
             <div className="space-y-4">
               {selectedBlock.type === 'header' && (

@@ -1,5 +1,5 @@
 import { getExamsAction } from '@/server/actions/exams';
-import { ExamList } from '@/components/exams/exam-list';
+import { ExamsRealtimeList } from '@/components/exams/exams-realtime-list';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { Plus } from 'lucide-react';
@@ -24,7 +24,11 @@ export default async function ExamsPage() {
         </Button>
       </div>
 
-      {!success ? <DataUnavailable message={error} /> : <ExamList initialExams={exams || []} />}
+      {!success ? (
+        <DataUnavailable message={error} />
+      ) : (
+        <ExamsRealtimeList initialExams={exams || []} />
+      )}
     </div>
   );
 }

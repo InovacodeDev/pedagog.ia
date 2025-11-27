@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { QuestionsTable } from '@/components/questions/questions-table';
+import { QuestionsRealtimeGrid } from '@/components/questions/questions-realtime-grid';
 import { getQuestionsAction } from '@/server/actions/questions';
 import { DataUnavailable } from '@/components/ui/data-unavailable';
 
@@ -27,7 +27,7 @@ export default async function QuestionsPage() {
       {!success ? (
         <DataUnavailable message={error} />
       ) : (
-        <QuestionsTable initialQuestions={questions || []} />
+        <QuestionsRealtimeGrid initialQuestions={questions || []} />
       )}
     </div>
   );

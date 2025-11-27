@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { PDFDownloadLink } from '@react-pdf/renderer';
-import { ExamDocument } from './ExamPDF';
+import { ExamDocument, Question } from './ExamPDF';
 import { Button } from '@/components/ui/button';
 import { Download, Loader2 } from 'lucide-react';
 import QRCode from 'qrcode';
@@ -10,19 +10,17 @@ import QRCode from 'qrcode';
 interface Exam {
   id: string;
   title: string;
-  questions_list: Array<{
-    stem: string;
-    options: string[];
-  }>;
+  questions_list: Question[];
   status: string;
   created_at: string;
 }
 
 interface DownloadPDFButtonProps {
   exam: Exam;
+  isPro?: boolean;
 }
 
-export function DownloadPDFButton({ exam }: DownloadPDFButtonProps) {
+export function DownloadPDFButton({ exam, isPro }: DownloadPDFButtonProps) {
   const [qrCodeUrl, setQrCodeUrl] = useState<string | null>(null);
   const [isClient, setIsClient] = useState(false);
 
@@ -42,7 +40,7 @@ export function DownloadPDFButton({ exam }: DownloadPDFButtonProps) {
 
   return (
     <PDFDownloadLink
-      document={<ExamDocument exam={exam} qrCodeUrl={qrCodeUrl} />}
+      document={<ExamDocument exam={exam} qrCodeUrl={qrCodeUrl} isPro={isPro} />}
       fileName={`${exam.title.replace(/\s+/g, '_')}.pdf`}
     >
       {({ loading }) => (

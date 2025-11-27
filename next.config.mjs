@@ -10,6 +10,7 @@ const withSerwist = withSerwistInit({
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  serverExternalPackages: ['pdf-parse', 'pdfjs-dist'],
   experimental: {
     reactCompiler: true,
     serverActions: {
