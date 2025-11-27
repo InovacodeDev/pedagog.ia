@@ -28,6 +28,8 @@ interface BackgroundJob {
     topic?: string;
     quantity?: number;
     difficulty?: 'easy' | 'medium' | 'hard';
+    model_tier?: 'fast' | 'quality';
+    exam_exists?: boolean;
     [key: string]: unknown;
   };
   status: string;
@@ -51,6 +53,60 @@ interface Question {
   options: string[];
   correct_answer: string;
   difficulty: string;
+}
+
+// =====================================================
+// PRICING LOGIC
+// =====================================================
+
+const USD_TO_BRL = 6.0;
+
+// Gemini Flash (Per 1M Tokens)
+const FLASH_INPUT_COST = 0.075;
+const FLASH_OUTPUT_COST = 0.3;
+
+// Gemini Pro (Per 1M Tokens)
+const PRO_INPUT_COST = 1.25;
+const PRO_OUTPUT_COST = 5.0;
+
+function calculateProviderCost(model: string, inputTokens: number, outputTokens: number): number {
+  let rateInput = 0;
+  let rateOutput = 0;
+
+  if (model.includes('flash')) {
+    rateInput = FLASH_INPUT_COST;
+    rateOutput = FLASH_OUTPUT_COST;
+  } else if (model.includes('pro')) {
+    rateInput = PRO_INPUT_COST;
+    rateOutput = PRO_OUTPUT_COST;
+  }
+
+  const inputCost = (inputTokens / 1_000_000) * rateInput;
+  const outputCost = (outputTokens / 1_000_000) * rateOutput;
+  const totalUsd = inputCost + outputCost;
+
+  return totalUsd * USD_TO_BRL;
+}
+
+function calculateCost(job: BackgroundJob): { cost: number; model: string } {
+  const tier = (job.payload.model_tier as 'fast' | 'quality') || 'fast';
+  const multiplier = tier === 'quality' ? 2 : 1;
+  // Map 'quality' to pro and 'fast' to flash
+  const model = tier === 'quality' ? 'gemini-1.5-pro' : 'gemini-1.5-flash';
+
+  let baseCost = 0;
+
+  if (job.job_type === 'generate_questions_v2') {
+    const quantity = (job.payload.quantity as number) || 0;
+    baseCost = 0.1 * quantity;
+  } else if (job.job_type === 'ocr_correction') {
+    baseCost = job.payload.exam_exists ? 0.5 : 1.0;
+  }
+
+  // Ensure floating point precision is handled (round to 2 decimals)
+  const totalCost = Math.round(baseCost * multiplier * 100) / 100;
+
+  return { cost: totalCost, model };
 }
 
 // =====================================================
@@ -185,7 +241,39 @@ Deno.serve(async (req: Request): Promise<Response> => {
       });
     }
 
-    // 4. Update Status to Processing
+    // 4. Pre-Flight: Calculate Cost & Deduct Credits
+    const { cost: estimatedCost, model: selectedModel } = calculateCost(job);
+    console.log(`[Process Job] Estimated Cost: ${estimatedCost}, Model: ${selectedModel}`);
+
+    if (estimatedCost > 0) {
+      const { data: deductionSuccess, error: deductionError } = await supabase.rpc(
+        'deduct_user_credits',
+        {
+          p_user_id: job.user_id,
+          p_amount: estimatedCost,
+        }
+      );
+
+      if (deductionError || !deductionSuccess) {
+        console.error('[Process Job] Insufficient credits or deduction error:', deductionError);
+
+        await supabase
+          .from('background_jobs')
+          .update({
+            status: 'failed',
+            error_message: 'Saldo insuficiente para realizar esta operação.',
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', job_id);
+
+        return new Response(JSON.stringify({ error: 'Insufficient credits' }), {
+          status: 402,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+    }
+
+    // 5. Update Status to Processing
     await supabase
       .from('background_jobs')
       .update({ status: 'processing', updated_at: new Date().toISOString() })
@@ -341,7 +429,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
       }
 
       const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent?key=${geminiApiKey}`,
         {
           method: 'POST',
           headers: {
@@ -382,6 +470,25 @@ Deno.serve(async (req: Request): Promise<Response> => {
         })
         .eq('id', job.id);
 
+      // 4. Audit Log
+      const usage = data.usageMetadata || { promptTokenCount: 0, candidatesTokenCount: 0 };
+      const providerCost = calculateProviderCost(
+        selectedModel,
+        usage.promptTokenCount || 0,
+        usage.candidatesTokenCount || 0
+      );
+
+      await supabase.from('ia_cost_log').insert({
+        user_id: job.user_id,
+        job_id: job.id,
+        feature: 'generate_questions_v2',
+        model_used: selectedModel,
+        input_tokens: usage.promptTokenCount || 0,
+        output_tokens: usage.candidatesTokenCount || 0,
+        cost_credits: estimatedCost,
+        provider_cost_brl: providerCost,
+      });
+
       return new Response(JSON.stringify({ success: true }), {
         headers: { 'Content-Type': 'application/json' },
       });
@@ -409,6 +516,20 @@ Deno.serve(async (req: Request): Promise<Response> => {
         updated_at: new Date().toISOString(),
       })
       .eq('id', job_id);
+
+    // 7. Audit Log (For other job types)
+    if (estimatedCost > 0) {
+      await supabase.from('ia_cost_log').insert({
+        user_id: job.user_id,
+        job_id: job.id,
+        feature: job.job_type,
+        model_used: selectedModel,
+        input_tokens: 0,
+        output_tokens: 0,
+        cost_credits: estimatedCost,
+        provider_cost_brl: 0,
+      });
+    }
 
     if (updateError) {
       console.error('[Process Job] Failed to update job:', updateError);

@@ -57,6 +57,25 @@ export async function POST(req: Request) {
         return new NextResponse('No userId in metadata', { status: 200 });
       }
 
+      // Handle Credit Top-Up
+      if (session.metadata?.type === 'top_up') {
+        const creditAmount = parseInt(session.metadata.credit_amount || '0', 10);
+        if (creditAmount > 0) {
+          console.log(`Processing top-up for user: ${userId}, amount: ${creditAmount}`);
+          // Use deduct_user_credits with negative amount to add credits atomically
+          const { error } = await supabaseAdmin.rpc('deduct_user_credits', {
+            p_user_id: userId,
+            p_amount: -creditAmount,
+          });
+
+          if (error) {
+            console.error('Error adding credits:', error);
+            return new NextResponse('Database Error', { status: 500 });
+          }
+        }
+        return new NextResponse(null, { status: 200 });
+      }
+
       console.log(`Processing subscription for user: ${userId}`);
 
       const subscriptionId = session.subscription as string;

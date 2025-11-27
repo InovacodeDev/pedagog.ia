@@ -3,7 +3,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
-import { BackgroundJobInsert, ExamInsert, ExamRow } from '@/types/app';
+import { ExamInsert, ExamRow } from '@/types/app';
 
 // =====================================================
 // VALIDATION SCHEMAS
@@ -61,6 +61,7 @@ export async function uploadExamAction(formData: FormData): Promise<UploadExamRe
     // 2. Validate form data
     const file = formData.get('exam_image') as File;
     const examId = formData.get('exam_id') as string | null;
+    const modelTier = (formData.get('model_tier') as 'fast' | 'quality') || 'fast';
 
     if (!file) {
       return { success: false, error: 'Nenhum arquivo foi enviado' };
@@ -95,7 +96,8 @@ export async function uploadExamAction(formData: FormData): Promise<UploadExamRe
     } = supabase.storage.from('exams').getPublicUrl(uploadData.path);
 
     // 5. Create background job (this triggers the Edge Function via database trigger)
-    const jobPayload: BackgroundJobInsert = {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const jobPayload: any = {
       user_id: user.id,
       job_type: 'ocr_correction',
       payload: {
@@ -103,6 +105,7 @@ export async function uploadExamAction(formData: FormData): Promise<UploadExamRe
         file_name: file.name,
         uploaded_at: new Date().toISOString(),
         exam_id: examId || undefined,
+        model_tier: modelTier,
       },
       status: 'pending',
     };
@@ -111,7 +114,7 @@ export async function uploadExamAction(formData: FormData): Promise<UploadExamRe
     const { data: jobData, error } = (await supabase
       .from('background_jobs')
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .insert(jobPayload as any)
+      .insert(jobPayload)
       .select('id')
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       .single()) as any;

@@ -5,8 +5,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { SettingsProfileForm } from '@/components/settings/settings-profile-form';
 import { SettingsAppearance } from '@/components/settings/settings-appearance';
 import { SettingsBilling } from '@/components/settings/settings-billing';
-import { User, Palette, CreditCard } from 'lucide-react';
+import { User, Palette, CreditCard, Receipt } from 'lucide-react';
 import { SubscriptionDetails } from '@/types/app';
+import { getUserInvoices } from '@/server/queries/get-invoices';
+import { InvoicesList } from '@/components/settings/invoices-list';
 
 export default async function SettingsPage({
   searchParams,
@@ -66,6 +68,9 @@ export default async function SettingsPage({
     avatar_url: user.user_metadata?.avatar_url || '',
   };
 
+  // Fetch invoices
+  const invoices = await getUserInvoices(user.id);
+
   return (
     <div className="container mx-auto py-8 space-y-8">
       <div>
@@ -84,6 +89,9 @@ export default async function SettingsPage({
           <TabsTrigger value="billing" className="gap-2">
             <CreditCard className="h-4 w-4" /> Assinatura
           </TabsTrigger>
+          <TabsTrigger value="invoices" className="gap-2">
+            <Receipt className="h-4 w-4" /> Faturas
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="general">
@@ -96,6 +104,10 @@ export default async function SettingsPage({
 
         <TabsContent value="billing">
           <SettingsBilling isPro={isPro} subscription={subscriptionData} />
+        </TabsContent>
+
+        <TabsContent value="invoices">
+          <InvoicesList invoices={invoices} />
         </TabsContent>
       </Tabs>
     </div>

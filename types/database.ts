@@ -262,9 +262,64 @@ export type Database = {
         };
         Relationships: [];
       };
+      ia_cost_log: {
+        Row: {
+          cost_credits: number;
+          created_at: string | null;
+          feature: string;
+          id: string;
+          input_tokens: number;
+          job_id: string | null;
+          model_used: string;
+          output_tokens: number;
+          user_id: string;
+          provider_cost_brl: number | null;
+        };
+        Insert: {
+          cost_credits: number;
+          created_at?: string | null;
+          feature: string;
+          id?: string;
+          input_tokens: number;
+          job_id?: string | null;
+          model_used: string;
+          output_tokens: number;
+          user_id: string;
+          provider_cost_brl?: number | null;
+        };
+        Update: {
+          cost_credits?: number;
+          created_at?: string | null;
+          feature?: string;
+          id?: string;
+          input_tokens?: number;
+          job_id?: string | null;
+          model_used?: string;
+          output_tokens?: number;
+          user_id?: string;
+          provider_cost_brl?: number | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'ia_cost_log_job_id_fkey';
+            columns: ['job_id'];
+            isOneToOne: false;
+            referencedRelation: 'background_jobs';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'ia_cost_log_user_id_fkey';
+            columns: ['user_id'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       subscriptions: {
         Row: {
           created_at: string | null;
+          credits_balance: number;
           status: string | null;
           stripe_current_period_end: string | null;
           stripe_customer_id: string | null;
@@ -275,6 +330,7 @@ export type Database = {
         };
         Insert: {
           created_at?: string | null;
+          credits_balance?: number;
           status?: string | null;
           stripe_current_period_end?: string | null;
           stripe_customer_id?: string | null;
@@ -285,6 +341,7 @@ export type Database = {
         };
         Update: {
           created_at?: string | null;
+          credits_balance?: number;
           status?: string | null;
           stripe_current_period_end?: string | null;
           stripe_customer_id?: string | null;
@@ -300,7 +357,13 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
-      [_ in never]: never;
+      deduct_user_credits: {
+        Args: {
+          p_user_id: string;
+          p_amount: number;
+        };
+        Returns: boolean;
+      };
     };
     Enums: {
       difficulty_level: 'easy' | 'medium' | 'hard';

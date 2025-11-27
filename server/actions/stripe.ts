@@ -14,15 +14,20 @@ export async function createCheckoutSessionAction() {
     throw new Error('User not authenticated');
   }
 
-  // Get existing subscription/customer
-  const { data: subscription } = await supabase
-    .from('subscriptions')
-    .select('stripe_customer_id')
-    .eq('user_id', user.id)
-    .maybeSingle();
+  // Check metadata for customer ID
+  let customerId = user.user_metadata?.stripe_customer_id;
 
-  const sub = subscription as unknown as Tables<'subscriptions'> | null;
-  let customerId = sub?.stripe_customer_id;
+  if (!customerId) {
+    // Fallback: Check DB (in case metadata is out of sync or not set yet)
+    const { data: subscription } = await supabase
+      .from('subscriptions')
+      .select('stripe_customer_id')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    const sub = subscription as unknown as Tables<'subscriptions'> | null;
+    customerId = sub?.stripe_customer_id;
+  }
 
   if (!customerId) {
     const customer = await stripe.customers.create({
@@ -33,7 +38,13 @@ export async function createCheckoutSessionAction() {
     });
     customerId = customer.id;
 
-    // Save customer ID to DB
+    // 1. Save to Auth Metadata (Fast Access)
+    await supabase.auth.updateUser({
+      data: { stripe_customer_id: customerId },
+    });
+
+    // 2. Save to DB (Legacy/Webhook support)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await (supabase.from('subscriptions') as any).upsert(
       {
         user_id: user.id,

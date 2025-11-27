@@ -2,11 +2,9 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { z } from 'zod';
-import { geminiModel } from '@/lib/gemini';
 import { extractTextFromFile } from '@/lib/file-processing';
 import { GeneratedQuestion } from '@/types/questions';
 import { Database } from '@/types/database';
-import { Part } from '@google/generative-ai';
 
 const GenerateQuestionsSchema = z
   .object({
@@ -40,7 +38,9 @@ const GenerateQuestionsSchema = z
     }
   });
 
-export async function generateQuestionsV2Action(data: z.infer<typeof GenerateQuestionsSchema>) {
+export async function generateQuestionsV2Action(
+  data: z.infer<typeof GenerateQuestionsSchema> & { model_tier?: 'fast' | 'quality' }
+) {
   const supabase = await createClient();
   const {
     data: { user },
@@ -81,106 +81,38 @@ export async function generateQuestionsV2Action(data: z.infer<typeof GenerateQue
   }
 
   try {
-    const prompt = `
-      Você é um especialista em avaliação educacional brasileira (ENEM/Vestibular).
-      Sua tarefa é criar um array JSON de questões baseadas no conteúdo fornecido.
+    // Create background job
+    const { data: job, error } = await supabase
+      .from('background_jobs')
+      .insert({
+        user_id: user.id,
+        job_type: 'generate_questions_v2',
+        payload: {
+          content: combinedContent,
+          quantity,
+          types,
+          style,
+          discipline,
+          subject,
+          grade_level,
+          model_tier: data.model_tier || 'fast',
+        },
+        status: 'pending',
+      } as any)
+      .select('id')
+      .single();
 
-      PARÂMETROS:
-      - Quantidade: ${quantity} questões
-      - Tipos Solicitados: ${types.join(', ')} (Distribua equitativamente)
-      - Estilo: ${style}
-      - Disciplina/Assunto: ${discipline || 'Geral'} / ${subject || 'Geral'}
-      - Nível: ${grade_level || 'Geral'}
+    if (error) {
+      console.error('Job Creation Error:', error);
+      return { success: false, error: 'Erro ao criar tarefa de geração.' };
+    }
 
-      REGRAS ESTRUTURAIS ESTRITAS (JSON):
-      Para cada tipo de questão, siga OBRIGATORIAMENTE esta estrutura de objetos:
-
-      1. TIPO: "multiple_choice"
-         - "options": Array de 5 strings (A, B, C, D, E).
-         - "correct_answer": O índice numérico da correta (0 a 4).
-
-      2. TIPO: "true_false"
-         - "options": Array de EXATAMENTE 5 afirmações.
-         - "correct_answer": Uma string com a sequência de V e F (ex: "V-F-V-V-F").
-
-      3. TIPO: "sum" (Somatória)
-         - "options": Array de 4 a 7 proposições (Texto apenas).
-         - "correct_answer": A SOMA numérica dos valores das proposições corretas.
-         - REGRA MATEMÁTICA: Considere que a 1ª opção vale 01, a 2ª vale 02, a 3ª vale 04, a 4ª vale 08, etc.
-         - CRÍTICO: A soma das corretas NÃO PODE EXCEDER 99. Selecione proposições corretas de modo que a soma fique <= 99.
-
-      4. TIPO: "association" (Associação de Colunas)
-         - "options": Array de strings (Coluna da Esquerda/Parênteses).
-         - "content": { "column_b": ["Item A", "Item B", "Item C", "Item D", "Item E"] } (Coluna da Direita).
-         - "correct_answer": A sequência de letras que preenche a Coluna da Esquerda (ex: "C-A-B-E-D").
-
-      5. TIPO: "essay" (Redação)
-         - "stem": O Tema da redação.
-         - "content": {
-             "genre": "Gênero textual (Dissertação, Carta, Crônica...)",
-             "support_texts": ["Texto motivador 1...", "Texto motivador 2..."]
-           }
-         - "options": null
-         - "correct_answer": null
-         - "correction_criteria": Array de strings com competências avaliativas.
-
-      6. TIPO: "open_ended" (Discursiva)
-         - "stem": A pergunta aberta.
-         - "options": null
-         - "correct_answer": Um gabarito/modelo de resposta ideal.
-         - "correction_criteria": Array de strings com pontos chave que o aluno deve citar.
-
-      FORMATO DE SAÍDA (Array JSON Puro):
-      [
-        {
-          "stem": "Texto do enunciado...",
-          "type": "tipo_da_questao",
-          "options": [...],
-          "content": { ...extras como column_b ou support_texts... },
-          "correct_answer": "...",
-          "explanation": "Explicação pedagógica do gabarito.",
-          "bncc": "Código BNCC",
-          "difficulty": "medium",
-          "discipline": "${discipline}",
-          "subject": "${subject}"
-        }
-      ]
-
-      Conteúdo Base para Geração:
-      "${combinedContent || 'Nenhum conteúdo textual identificado. Gere com base no Assunto/Disciplina informados.'}"
-      
-      Retorne APENAS o JSON válido, sem markdown ou explicações extras.
-    `;
-
-    const parts: Part[] = [{ text: prompt }];
-
-    const result = await geminiModel.generateContent(parts);
-    const response = await result.response;
-    const text = response.text();
-
-    // Clean up the response if it contains markdown code blocks
-    const cleanedText = text
-      .replace(/```json/g, '')
-      .replace(/```/g, '')
-      .trim();
-
-    const questions = JSON.parse(cleanedText) as GeneratedQuestion[];
-
-    // Inject metadata into questions
-    const questionsWithMetadata: GeneratedQuestion[] = questions.map((q) => ({
-      ...q,
-      style: style,
-      // Ensure other fields are present if AI missed them, defaulting to input values
-      discipline: q.discipline || discipline,
-      subject: q.subject || subject,
-    }));
-
-    return { success: true, questions: questionsWithMetadata };
+    return { success: true, jobId: job.id };
   } catch (error) {
-    console.error('Gemini Generation Error:', error);
+    console.error('Unexpected Error:', error);
     return {
       success: false,
-      error: 'Erro ao gerar questões com IA. Tente novamente ou verifique os arquivos.',
+      error: 'Erro inesperado ao iniciar geração.',
     };
   }
 }

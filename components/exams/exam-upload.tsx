@@ -16,6 +16,7 @@ import { uploadExamAction } from '@/server/actions/exams';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { createClient } from '@/lib/supabase/client';
+import { ModelSelector } from '@/components/ui/model-selector';
 
 interface Exam {
   id: string;
@@ -28,8 +29,11 @@ export function ExamUpload() {
   const [isPending, startTransition] = React.useTransition();
   const [exams, setExams] = React.useState<Exam[]>([]);
   const [selectedExamId, setSelectedExamId] = React.useState<string>('none');
+  const [modelTier, setModelTier] = React.useState<'fast' | 'quality'>('fast');
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const supabase = createClient();
+
+  const [currentJobId, setCurrentJobId] = React.useState<string | null>(null);
 
   React.useEffect(() => {
     async function fetchExams() {
@@ -44,6 +48,42 @@ export function ExamUpload() {
     }
     fetchExams();
   }, [supabase]);
+
+  // Polling for job completion
+  React.useEffect(() => {
+    if (!currentJobId) return;
+
+    const checkJobStatus = async () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: job, error } = (await supabase
+        .from('background_jobs')
+        .select('status, result, error_message')
+        .eq('id', currentJobId)
+        .single()) as any;
+
+      if (error) {
+        console.error('Error checking job status:', error);
+        return;
+      }
+
+      if (job.status === 'completed') {
+        setCurrentJobId(null);
+        toast.success('Processamento concluído!', {
+          description: 'A correção da prova foi finalizada.',
+        });
+        // Here you would typically redirect to the exam result page or update the UI
+        // For now, we just clear the state
+        setFile(null);
+        setSelectedExamId('none');
+      } else if (job.status === 'failed') {
+        setCurrentJobId(null);
+        toast.error(`Erro no processamento: ${job.error_message || 'Erro desconhecido'}`);
+      }
+    };
+
+    const interval = setInterval(checkJobStatus, 2000);
+    return () => clearInterval(interval);
+  }, [currentJobId, supabase]);
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -86,6 +126,7 @@ export function ExamUpload() {
 
     const formData = new FormData();
     formData.append('exam_image', file);
+    formData.append('model_tier', modelTier);
     if (selectedExamId && selectedExamId !== 'none') {
       formData.append('exam_id', selectedExamId);
     }
@@ -94,15 +135,14 @@ export function ExamUpload() {
       try {
         const result = await uploadExamAction(formData);
 
-        if (result.success) {
-          toast.success('Prova enviada com sucesso!', {
-            description: 'O processamento da IA começou.',
+        if (result.success && result.jobId) {
+          setCurrentJobId(result.jobId);
+          toast.info('Upload realizado!', {
+            description: 'Aguardando processamento da IA...',
           });
-          setFile(null);
-          setSelectedExamId('none');
         } else {
           toast.error('Erro ao enviar prova', {
-            description: result.error,
+            description: result.error || 'Erro desconhecido',
           });
         }
       } catch {
@@ -112,6 +152,8 @@ export function ExamUpload() {
       }
     });
   };
+
+  const isLoading = isPending || !!currentJobId;
 
   return (
     <Card className="p-8">
@@ -160,14 +202,18 @@ export function ExamUpload() {
                 {(file.size / 1024 / 1024).toFixed(2)} MB
               </p>
             </div>
-            <Button variant="ghost" size="icon" onClick={handleRemoveFile} disabled={isPending}>
+            <Button variant="ghost" size="icon" onClick={handleRemoveFile} disabled={isLoading}>
               <X className="w-4 h-4" />
             </Button>
           </div>
 
           <div className="space-y-2">
+            <ModelSelector value={modelTier} onValueChange={setModelTier} />
+          </div>
+
+          <div className="space-y-2">
             <Label>Vincular a uma Prova Existente (Opcional)</Label>
-            <Select value={selectedExamId} onValueChange={setSelectedExamId} disabled={isPending}>
+            <Select value={selectedExamId} onValueChange={setSelectedExamId} disabled={isLoading}>
               <SelectTrigger>
                 <SelectValue placeholder="Selecione uma prova..." />
               </SelectTrigger>
@@ -186,17 +232,17 @@ export function ExamUpload() {
           </div>
 
           <div className="flex gap-3">
-            <Button className="flex-1" onClick={handleUpload} disabled={isPending}>
-              {isPending ? (
+            <Button className="flex-1" onClick={handleUpload} disabled={isLoading}>
+              {isLoading ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Processando...
+                  {currentJobId ? 'Processando IA...' : 'Enviando...'}
                 </>
               ) : (
                 'Enviar para Correção'
               )}
             </Button>
-            <Button variant="outline" onClick={handleRemoveFile} disabled={isPending}>
+            <Button variant="outline" onClick={handleRemoveFile} disabled={isLoading}>
               Cancelar
             </Button>
           </div>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -31,6 +31,9 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { generateQuestionsV2Action, saveQuestionsAction } from '@/server/actions/questions';
+import { ModelSelector } from '@/components/ui/model-selector';
+import { createClient } from '@/lib/supabase/client';
+import { GeneratedQuestion } from '@/types/questions';
 
 const formSchema = z
   .object({
@@ -41,6 +44,7 @@ const formSchema = z
     discipline: z.string().min(1, 'Selecione uma matéria.'),
     subject: z.string().min(1, 'Informe o assunto.'),
     grade_level: z.string().min(1, 'Selecione o ano/série.'),
+    model_tier: z.enum(['fast', 'quality']).default('fast'),
     files: z
       .array(
         z.object({
@@ -92,13 +96,13 @@ const DISCIPLINES = [
 
 const GRADE_LEVELS = ['Fundamental I', 'Fundamental II', 'Ensino Médio'];
 
-import { GeneratedQuestion } from '@/types/questions';
-
 export function GeneratorForm({ isPro = false }: { isPro?: boolean }) {
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [generatedQuestions, setGeneratedQuestions] = useState<GeneratedQuestion[] | null>(null);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [currentJobId, setCurrentJobId] = useState<string | null>(null);
+  const supabase = createClient();
 
   const MAX_SIZE = isPro ? 10 * 1024 * 1024 : 5 * 1024 * 1024;
 
@@ -147,7 +151,8 @@ export function GeneratorForm({ isPro = false }: { isPro?: boolean }) {
   };
 
   const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    resolver: zodResolver(formSchema) as any,
     defaultValues: {
       content: '',
       quantity: 5,
@@ -156,9 +161,50 @@ export function GeneratorForm({ isPro = false }: { isPro?: boolean }) {
       discipline: '',
       subject: '',
       grade_level: '',
+      model_tier: 'fast',
       files: [],
     },
   });
+
+  // Polling for job completion
+  useEffect(() => {
+    if (!currentJobId) return;
+
+    const checkJobStatus = async () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: job, error } = (await supabase
+        .from('background_jobs')
+        .select('status, result, error_message')
+        .eq('id', currentJobId)
+        .single()) as any;
+
+      if (error) {
+        console.error('Error checking job status:', error);
+        return;
+      }
+
+      if (job.status === 'completed') {
+        setCurrentJobId(null);
+        setIsLoading(false);
+
+        const result = job.result as { questions: GeneratedQuestion[] } | null;
+
+        if (result?.questions) {
+          setGeneratedQuestions(result.questions);
+          toast.success('Questões geradas com sucesso!');
+        } else {
+          toast.error('Tarefa concluída, mas sem resultado.');
+        }
+      } else if (job.status === 'failed') {
+        setCurrentJobId(null);
+        setIsLoading(false);
+        toast.error(`Erro na geração: ${job.error_message || 'Erro desconhecido'}`);
+      }
+    };
+
+    const interval = setInterval(checkJobStatus, 2000);
+    return () => clearInterval(interval);
+  }, [currentJobId, supabase]);
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
@@ -180,18 +226,12 @@ export function GeneratorForm({ isPro = false }: { isPro?: boolean }) {
 
       const result = await generateQuestionsV2Action(payload);
 
-      if (!result.success) {
-        throw new Error(result.error || 'Erro ao gerar questões.');
+      if (!result.success || !result.jobId) {
+        throw new Error(result.error || 'Erro ao iniciar geração.');
       }
 
-      if (result.questions) {
-        setGeneratedQuestions(result.questions);
-        toast.success('Questões geradas com sucesso!');
-      } else {
-        toast.error('Nenhuma questão foi gerada.');
-      }
-
-      setIsLoading(false);
+      setCurrentJobId(result.jobId);
+      toast.info('Geração iniciada. Aguarde...');
     } catch (error: unknown) {
       setIsLoading(false);
       if (error instanceof Error) {
@@ -233,6 +273,19 @@ export function GeneratorForm({ isPro = false }: { isPro?: boolean }) {
             <CardContent>
               <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                  <FormField
+                    control={form.control}
+                    name="model_tier"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormControl>
+                          <ModelSelector value={field.value} onValueChange={field.onChange} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
                   {/* Metadata Fields */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <FormField
