@@ -6,7 +6,6 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Loader2, Wand2, Save, Upload, X, FileText } from 'lucide-react';
 import { toast } from 'sonner';
-import { createClient } from '@/lib/supabase/client';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -33,24 +32,37 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { generateQuestionsV2Action } from '@/server/actions/questions';
 
-const formSchema = z.object({
-  content: z.string().min(50, 'O texto base deve ter pelo menos 50 caracteres.'),
-  quantity: z.number().min(1).max(10),
-  types: z.array(z.string()).min(1, 'Selecione pelo menos um tipo de questão.'),
-  style: z.string().min(1, 'Selecione um estilo.'),
-  discipline: z.string().min(1, 'Selecione uma matéria.'),
-  subject: z.string().min(1, 'Informe o assunto.'),
-  grade_level: z.string().min(1, 'Selecione o ano/série.'),
-  files: z
-    .array(
-      z.object({
-        name: z.string(),
-        type: z.string(),
-        content: z.string(),
-      })
-    )
-    .optional(),
-});
+const formSchema = z
+  .object({
+    content: z.string().optional(),
+    quantity: z.number().min(1).max(10),
+    types: z.array(z.string()).min(1, 'Selecione pelo menos um tipo de questão.'),
+    style: z.string().min(1, 'Selecione um estilo.'),
+    discipline: z.string().min(1, 'Selecione uma matéria.'),
+    subject: z.string().min(1, 'Informe o assunto.'),
+    grade_level: z.string().min(1, 'Selecione o ano/série.'),
+    files: z
+      .array(
+        z.object({
+          name: z.string(),
+          type: z.string(),
+          content: z.string(),
+        })
+      )
+      .optional(),
+  })
+  .superRefine((data, ctx) => {
+    const hasContent = data.content && data.content.length >= 50;
+    const hasFiles = data.files && data.files.length > 0;
+
+    if (!hasContent && !hasFiles) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Você deve fornecer um texto base (mín. 50 caracteres) ou adicionar arquivos.',
+        path: ['content'],
+      });
+    }
+  });
 
 const QUESTION_TYPES = [
   { id: 'multiple_choice', label: 'Múltipla Escolha' },
@@ -82,14 +94,10 @@ const GRADE_LEVELS = ['Fundamental I', 'Fundamental II', 'Ensino Médio'];
 
 import { GeneratedQuestion } from '@/types/questions';
 
-import { SupabaseClient } from '@supabase/supabase-js';
-import { Database } from '@/types/database';
-
 export function GeneratorForm({ isPro = false }: { isPro?: boolean }) {
   const [isLoading, setIsLoading] = useState(false);
   const [generatedQuestions, setGeneratedQuestions] = useState<GeneratedQuestion[] | null>(null);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
-  const supabase = createClient() as unknown as SupabaseClient<Database, 'public'>;
 
   const MAX_SIZE = isPro ? 10 * 1024 * 1024 : 5 * 1024 * 1024;
 
@@ -104,12 +112,28 @@ export function GeneratorForm({ isPro = false }: { isPro?: boolean }) {
         return;
       }
 
-      setSelectedFiles((prev) => [...prev, ...newFiles]);
+      const updatedFiles = [...selectedFiles, ...newFiles];
+      setSelectedFiles(updatedFiles);
+
+      // Sync with form for validation
+      form.setValue(
+        'files',
+        updatedFiles.map((f) => ({ name: f.name, type: f.type, content: '' })),
+        { shouldValidate: true }
+      );
     }
   };
 
   const removeFile = (index: number) => {
-    setSelectedFiles((prev) => prev.filter((_, i) => i !== index));
+    const updatedFiles = selectedFiles.filter((_, i) => i !== index);
+    setSelectedFiles(updatedFiles);
+
+    // Sync with form for validation
+    form.setValue(
+      'files',
+      updatedFiles.map((f) => ({ name: f.name, type: f.type, content: '' })),
+      { shouldValidate: true }
+    );
   };
 
   const convertFileToBase64 = (file: File): Promise<string> => {
@@ -131,6 +155,7 @@ export function GeneratorForm({ isPro = false }: { isPro?: boolean }) {
       discipline: '',
       subject: '',
       grade_level: '',
+      files: [],
     },
   });
 
@@ -154,43 +179,18 @@ export function GeneratorForm({ isPro = false }: { isPro?: boolean }) {
 
       const result = await generateQuestionsV2Action(payload);
 
-      if (!result.success || !result.jobId) {
-        throw new Error(result.error || 'Erro ao iniciar geração.');
+      if (!result.success) {
+        throw new Error(result.error || 'Erro ao gerar questões.');
       }
 
-      // Poll for job completion
-      const pollInterval = setInterval(async () => {
-        const { data: job, error } = await supabase
-          .from('background_jobs')
-          .select('*')
-          .eq('id', result.jobId)
-          .single();
+      if (result.questions) {
+        setGeneratedQuestions(result.questions);
+        toast.success('Questões geradas com sucesso!');
+      } else {
+        toast.error('Nenhuma questão foi gerada.');
+      }
 
-        if (error) {
-          clearInterval(pollInterval);
-          setIsLoading(false);
-          toast.error('Erro ao verificar status da geração.');
-          return;
-        }
-
-        if (job.status === 'completed') {
-          clearInterval(pollInterval);
-          setIsLoading(false);
-          // Cast the result to the expected structure since it's JSON in DB
-          const jobResult = job.result as { questions: GeneratedQuestion[] } | null;
-
-          if (jobResult && jobResult.questions) {
-            setGeneratedQuestions(jobResult.questions);
-            toast.success('Questões geradas com sucesso!');
-          } else {
-            toast.error('Geração concluída, mas sem resultados.');
-          }
-        } else if (job.status === 'failed') {
-          clearInterval(pollInterval);
-          setIsLoading(false);
-          toast.error('Falha na geração das questões.');
-        }
-      }, 2000);
+      setIsLoading(false);
     } catch (error: unknown) {
       setIsLoading(false);
       if (error instanceof Error) {

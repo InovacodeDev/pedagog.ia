@@ -12,6 +12,9 @@ const withSerwist = withSerwistInit({
 const nextConfig = {
   experimental: {
     reactCompiler: true,
+    serverActions: {
+      bodySizeLimit: '10mb',
+    },
   },
   images: {
     remotePatterns: [

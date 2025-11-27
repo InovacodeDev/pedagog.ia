@@ -1,3 +1,4 @@
+// @ts-nocheck
 // =====================================================
 // PEDAGOGI.AI EDGE FUNCTION: Process Job
 // Runtime: Deno
@@ -234,7 +235,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
     // Handle generate_questions_v2 as a separate block since it updates the job and returns early
     if (job.job_type === 'generate_questions_v2') {
       const { content, quantity, types, style, discipline, subject } = job.payload as {
-        content: string;
+        content?: string;
         quantity: number;
         types: string[];
         style: string;
@@ -244,11 +245,20 @@ Deno.serve(async (req: Request): Promise<Response> => {
 
       // Mock AI Generation for V2
       console.log(
-        `Generating ${quantity} questions (v2) for topic: ${content.substring(0, 50)}...`
+        `Generating ${quantity} questions (v2) for topic: ${content ? content.substring(0, 50) : 'Files provided'}...`
       );
       console.log(
         `Types: ${types.join(', ')}, Style: ${style}, Discipline: ${discipline}, Subject: ${subject}`
       );
+
+      // SIMULATED PROMPT CONSTRUCTION (for reference)
+      // const prompt = `
+      //   Generate ${quantity} questions about the provided content.
+      //   ...
+      //   Return ONLY a valid JSON array of objects. No markdown, no whitespace between keys/values.
+      //   Example: [{"stem":"...","options":["..."],"correct_answer":"...","type":"...","bncc":"...","explanation":"...","discipline":"...","subject":"..."}]
+      //   User Input: ${content}
+      // `;
 
       await new Promise((resolve) => setTimeout(resolve, 3000)); // Simulate delay
 
@@ -257,7 +267,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
         const isMultipleChoice = type === 'multiple_choice';
 
         return {
-          stem: `(Questão ${i + 1} - ${style.toUpperCase()}) Baseado no texto: "${content.substring(0, 20)}..." - Gere uma questão sobre este tópico.`,
+          stem: `(Questão ${i + 1} - ${style.toUpperCase()}) Baseado no conteúdo fornecido - Gere uma questão sobre este tópico.`,
           options: isMultipleChoice
             ? ['Alternativa A', 'Alternativa B', 'Alternativa C', 'Alternativa D']
             : undefined,
