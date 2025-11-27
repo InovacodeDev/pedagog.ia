@@ -19,6 +19,7 @@ export async function buyCreditsAction(amount: number) {
   const session = await stripe.checkout.sessions.create({
     mode: 'payment',
     payment_method_types: ['card'],
+    customer: user.user_metadata?.stripe_customer_id,
     line_items: [
       {
         price_data: {
