@@ -82,7 +82,7 @@ export async function generateQuestionsV2Action(
 
   try {
     // Create background job
-    const { data: job, error } = await supabase
+    const { data: jobData, error } = await supabase
       .from('background_jobs')
       .insert({
         user_id: user.id,
@@ -102,7 +102,9 @@ export async function generateQuestionsV2Action(
       .select('id')
       .single();
 
-    if (error) {
+    const job = jobData as { id: string } | null;
+
+    if (error || !job) {
       console.error('Job Creation Error:', error);
       return { success: false, error: 'Erro ao criar tarefa de geração.' };
     }
