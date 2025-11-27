@@ -10,7 +10,7 @@ interface DashboardMetrics {
   questionsCount: number;
   correctionsCount: number;
   timeSavedHours: number;
-  recentExams: any[];
+  recentExams: unknown[];
 }
 
 interface DashboardRealtimeMetricsProps {

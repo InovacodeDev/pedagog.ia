@@ -36,3 +36,7 @@ Your goal is to produce clean, maintainable, and performant code following stric
 
 - Use JSDoc/TSDoc for exported functions explaining _why_, not _what_.
 - Do not leave commented-out code.
+
+## Checks
+
+- Run `pnpm lint && pnpm type-check` after every batch of changes and make sure no errors will be returned in this command before finish changes.

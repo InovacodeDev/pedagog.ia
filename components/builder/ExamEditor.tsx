@@ -186,20 +186,7 @@ export function ExamEditor({ examId, initialTitle }: { examId?: string; initialT
     saveAs(blob, 'prova-pedagog-ia.pdf');
   };
 
-  // Keyboard shortcut for saving
-  React.useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === 's') {
-        e.preventDefault();
-        handleSave();
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [blocks, examId, initialTitle]); // Added dependencies needed for handleSave closure
-
-  const handleSave = () => {
+  const handleSave = React.useCallback(() => {
     if (!examId) {
       toast.error('Erro: ID da prova não encontrado.');
       return;
@@ -218,7 +205,20 @@ export function ExamEditor({ examId, initialTitle }: { examId?: string; initialT
         toast.success('Prova salva com sucesso!');
       }
     });
-  };
+  }, [examId, blocks, initialTitle]);
+
+  // Keyboard shortcut for saving
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 's') {
+        e.preventDefault();
+        handleSave();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [handleSave]);
 
   return (
     <div className="flex h-[calc(100vh-6rem)] gap-6">

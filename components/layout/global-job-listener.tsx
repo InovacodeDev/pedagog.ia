@@ -26,7 +26,11 @@ export function GlobalJobListener() {
           filter: 'status=eq.completed',
         },
         (payload) => {
-          const newJob = payload.new as { id: string; job_type: string; result?: any };
+          const newJob = payload.new as {
+            id: string;
+            job_type: string;
+            result?: Record<string, unknown>;
+          };
           // We can check payload.old to see if it wasn't completed before,
           // but usually the filter 'status=eq.completed' ensures we only get it when it IS completed.
           // If it was already completed and updated again, we might get a duplicate toast.

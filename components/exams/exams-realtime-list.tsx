@@ -97,7 +97,7 @@ export function ExamsRealtimeList({ initialExams }: ExamsRealtimeListProps) {
             exams.map((exam) => (
               <TableRow key={exam.id}>
                 <TableCell className="font-medium">{exam.title}</TableCell>
-                <TableCell>{(exam.questions_list as any[])?.length || 0}</TableCell>
+                <TableCell>{(exam.questions_list as unknown[])?.length || 0}</TableCell>
                 <TableCell>
                   <div className="flex items-center gap-2">
                     {exam.correction_count > 0 ? (

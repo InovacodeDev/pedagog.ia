@@ -152,16 +152,18 @@ export function QuestionCard({ question, usageCount = 0, onDelete }: QuestionCar
             {question.content &&
               typeof question.content === 'object' &&
               'support_texts' in question.content &&
-              Array.isArray((question.content as any).support_texts) && (
+              Array.isArray((question.content as { support_texts: string[] }).support_texts) && (
                 <div className="w-full mb-4 space-y-2">
-                  {(question.content as any).support_texts.map((text: string, idx: number) => (
-                    <div
-                      key={idx}
-                      className="bg-muted/50 p-3 rounded-md text-xs italic text-muted-foreground border border-border/50"
-                    >
-                      &quot;{text}&quot;
-                    </div>
-                  ))}
+                  {(question.content as { support_texts: string[] }).support_texts.map(
+                    (text: string, idx: number) => (
+                      <div
+                        key={idx}
+                        className="bg-muted/50 p-3 rounded-md text-xs italic text-muted-foreground border border-border/50"
+                      >
+                        &quot;{text}&quot;
+                      </div>
+                    )
+                  )}
                 </div>
               )}
 
@@ -198,12 +200,13 @@ export function QuestionCard({ question, usageCount = 0, onDelete }: QuestionCar
             {question.type === 'sum' ? (
               <div className="space-y-2">
                 {Array.isArray(question.options) &&
-                  question.options.map((option: any, index: number) => {
+                  question.options.map((option: unknown, index: number) => {
                     // Safety check for Summation object structure
-                    if (typeof option !== 'object' || !option.value) return null;
+                    if (typeof option !== 'object' || option === null || !('value' in option))
+                      return null;
+                    const opt = option as { value: number; text: string };
 
-                    const isCorrect =
-                      (Number(question.correct_answer) & option.value) === option.value;
+                    const isCorrect = (Number(question.correct_answer) & opt.value) === opt.value;
 
                     return (
                       <div
@@ -223,9 +226,9 @@ export function QuestionCard({ question, usageCount = 0, onDelete }: QuestionCar
                               : 'bg-muted text-muted-foreground border-muted-foreground/30'
                           )}
                         >
-                          {String(option.value).padStart(2, '0')}
+                          {String(opt.value).padStart(2, '0')}
                         </div>
-                        <span className="flex-grow">{option.text}</span>
+                        <span className="flex-grow">{opt.text}</span>
                         {isCorrect && (
                           <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
                         )}
@@ -244,9 +247,11 @@ export function QuestionCard({ question, usageCount = 0, onDelete }: QuestionCar
             ) : question.type === 'true_false' ? (
               <div className="space-y-2">
                 {Array.isArray(question.options) &&
-                  question.options.map((option: any, index: number) => {
+                  question.options.map((option: unknown, index: number) => {
                     const optionText =
-                      typeof option === 'string' ? option : option.text || JSON.stringify(option);
+                      typeof option === 'string'
+                        ? option
+                        : (option as { text: string }).text || JSON.stringify(option);
 
                     // Parse V-F-V sequence
                     const correctSequence = question.correct_answer.split('-');
@@ -312,10 +317,12 @@ export function QuestionCard({ question, usageCount = 0, onDelete }: QuestionCar
             ) : question.type === 'multiple_choice' ? (
               <div className="space-y-2">
                 {Array.isArray(question.options) &&
-                  question.options.map((option: any, index: number) => {
+                  question.options.map((option: unknown, index: number) => {
                     // Handle both string[] and object[] (fallback)
                     const optionText =
-                      typeof option === 'string' ? option : option.text || JSON.stringify(option);
+                      typeof option === 'string'
+                        ? option
+                        : (option as { text: string }).text || JSON.stringify(option);
 
                     // Highlight Logic
                     const isCorrectIndex = String(question.correct_answer) === String(index);
@@ -369,23 +376,26 @@ export function QuestionCard({ question, usageCount = 0, onDelete }: QuestionCar
                 {question.structured_data &&
                   typeof question.structured_data === 'object' &&
                   'correction_criteria' in question.structured_data &&
-                  Array.isArray((question.structured_data as any).correction_criteria) && (
+                  Array.isArray(
+                    (question.structured_data as { correction_criteria: string[] })
+                      .correction_criteria
+                  ) && (
                     <div className="space-y-1.5">
                       <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
                         Critérios de Avaliação (IA)
                       </span>
                       <ul className="space-y-2">
-                        {(question.structured_data as any).correction_criteria.map(
-                          (criteria: string, idx: number) => (
-                            <li
-                              key={idx}
-                              className="flex items-start gap-2 text-sm text-foreground/80"
-                            >
-                              <CheckCircle2 className="h-4 w-4 text-green-600 mt-0.5 shrink-0" />
-                              <span>{criteria}</span>
-                            </li>
-                          )
-                        )}
+                        {(
+                          question.structured_data as { correction_criteria: string[] }
+                        ).correction_criteria.map((criteria: string, idx: number) => (
+                          <li
+                            key={idx}
+                            className="flex items-start gap-2 text-sm text-foreground/80"
+                          >
+                            <CheckCircle2 className="h-4 w-4 text-green-600 mt-0.5 shrink-0" />
+                            <span>{criteria}</span>
+                          </li>
+                        ))}
                       </ul>
                     </div>
                   )}
