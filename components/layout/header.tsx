@@ -11,6 +11,7 @@ import { TopUpModal } from '@/components/credits/top-up-modal';
 import { createClient } from '@/lib/supabase/client';
 import { useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
+import { Tables } from '@/types/database';
 
 export function Header() {
   const [credits, setCredits] = useState<number | null>(null);
@@ -31,7 +32,7 @@ export function Header() {
         .single();
 
       if (data) {
-        setCredits(data.credits_balance);
+        setCredits((data as Tables<'subscriptions'>).credits_balance);
       }
     };
 
@@ -47,7 +48,7 @@ export function Header() {
           table: 'subscriptions',
         },
         (payload) => {
-          setCredits((payload.new as any).credits_balance);
+          setCredits((payload.new as Tables<'subscriptions'>).credits_balance);
         }
       )
       .subscribe();

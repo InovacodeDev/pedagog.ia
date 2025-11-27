@@ -1,5 +1,7 @@
 'use client';
 
+import { Tables } from '@/types/database';
+
 import * as React from 'react';
 import { UploadCloud, Loader2, FileImage, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -54,17 +56,20 @@ export function ExamUpload() {
     if (!currentJobId) return;
 
     const checkJobStatus = async () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: job, error } = (await supabase
+      const { data, error } = await supabase
         .from('background_jobs')
         .select('status, result, error_message')
         .eq('id', currentJobId)
-        .single()) as any;
+        .single();
+
+      const job = data as Tables<'background_jobs'> | null;
 
       if (error) {
         console.error('Error checking job status:', error);
         return;
       }
+
+      if (!job) return;
 
       if (job.status === 'completed') {
         setCurrentJobId(null);

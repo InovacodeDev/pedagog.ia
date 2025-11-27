@@ -1,5 +1,7 @@
 'use client';
 
+import { Tables } from '@/types/database';
+
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -171,17 +173,20 @@ export function GeneratorForm({ isPro = false }: { isPro?: boolean }) {
     if (!currentJobId) return;
 
     const checkJobStatus = async () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: job, error } = (await supabase
+      const { data, error } = await supabase
         .from('background_jobs')
         .select('status, result, error_message')
         .eq('id', currentJobId)
-        .single()) as any;
+        .single();
+
+      const job = data as Tables<'background_jobs'> | null;
 
       if (error) {
         console.error('Error checking job status:', error);
         return;
       }
+
+      if (!job) return;
 
       if (job.status === 'completed') {
         setCurrentJobId(null);
