@@ -70,6 +70,15 @@ export function QuestionDetailsDialog({
 }: QuestionDetailsDialogProps) {
   const typeConfig = TYPE_MAP[question.type as keyof typeof TYPE_MAP] || TYPE_MAP.default;
 
+  const associationData =
+    question.type === 'association'
+      ? {
+          sequence: question.correct_answer.split('-').map((s) => s.trim()),
+          colA: (question.options as string[]) || [],
+          colB: (question.content as { column_b?: string[] })?.column_b || [],
+        }
+      : null;
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col p-0 gap-0">
@@ -226,7 +235,7 @@ export function QuestionDetailsDialog({
                       );
                     })}
                 </div>
-              ) : question.type === 'association' ? (
+              ) : question.type === 'association' && associationData ? (
                 <div className="space-y-6">
                   <div className="space-y-3">
                     <h4 className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-2">
@@ -235,42 +244,33 @@ export function QuestionDetailsDialog({
                       </span>
                       (Associação Semântica)
                     </h4>
-                    {(() => {
-                      const sequence = question.correct_answer.split('-').map((s) => s.trim());
-                      const colA = (question.options as string[]) || [];
-                      const colB =
-                        (
-                          question.content as {
-                            column_b?: string[];
-                          }
-                        )?.column_b || [];
+                    {associationData.colA.map((itemA, idx) => {
+                      const letter = associationData.sequence[idx]; // e.g., "C"
+                      // Convert letter to index: A=0, B=1, C=2...
+                      const targetIndex = letter ? letter.charCodeAt(0) - 65 : -1;
+                      const itemB =
+                        targetIndex >= 0 && targetIndex < associationData.colB.length
+                          ? associationData.colB[targetIndex]
+                          : '???';
 
-                      return colA.map((itemA, idx) => {
-                        const letter = sequence[idx]; // e.g., "C"
-                        // Convert letter to index: A=0, B=1, C=2...
-                        const targetIndex = letter ? letter.charCodeAt(0) - 65 : -1;
-                        const itemB =
-                          targetIndex >= 0 && targetIndex < colB.length ? colB[targetIndex] : '???';
-
-                        return (
-                          <div
-                            key={idx}
-                            className="p-3 border rounded-md bg-muted/20 flex flex-col sm:flex-row sm:items-center gap-3"
-                          >
-                            <div className="flex-1 text-sm font-medium text-foreground/80">
-                              {itemA}
-                            </div>
-                            <div className="hidden sm:flex shrink-0 text-muted-foreground">→</div>
-                            <div className="flex-1 flex items-center gap-2">
-                              <Badge variant="outline" className="font-mono">
-                                {letter}
-                              </Badge>
-                              <span className="text-sm text-foreground">{itemB}</span>
-                            </div>
+                      return (
+                        <div
+                          key={idx}
+                          className="p-3 border rounded-md bg-muted/20 flex flex-col sm:flex-row sm:items-center gap-3"
+                        >
+                          <div className="flex-1 text-sm font-medium text-foreground/80">
+                            {itemA}
                           </div>
-                        );
-                      });
-                    })()}
+                          <div className="hidden sm:flex shrink-0 text-muted-foreground">→</div>
+                          <div className="flex-1 flex items-center gap-2">
+                            <Badge variant="outline" className="font-mono">
+                              {letter}
+                            </Badge>
+                            <span className="text-sm text-foreground">{itemB}</span>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                   <div className="p-4 bg-green-50 border border-green-200 rounded-md flex items-center justify-between">
                     <span className="text-sm font-bold text-green-800 uppercase">Sequência</span>
@@ -323,6 +323,53 @@ export function QuestionDetailsDialog({
                 </div>
               ) : question.type === 'open_ended' || question.type === 'essay' ? (
                 <div className="space-y-6">
+                  {/* Essay Specifics: Genre & Support Texts */}
+                  {question.type === 'essay' && (
+                    <div className="space-y-4">
+                      {/* Genre Badge */}
+                      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                      {(question.content as any)?.genre && (
+                        <div className="flex items-center gap-2">
+                          <Badge
+                            variant="outline"
+                            className="bg-pink-50 text-pink-700 border-pink-200 font-medium"
+                          >
+                            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                            Gênero: {(question.content as any).genre}
+                          </Badge>
+                        </div>
+                      )}
+
+                      {/* Support Texts - Defensive Rendering */}
+                      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                      {Array.isArray((question.content as any)?.support_texts) &&
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                        (question.content as any).support_texts.length > 0 && (
+                          <div className="space-y-3 p-4 bg-muted/30 rounded-md border border-muted">
+                            <h4 className="text-sm font-semibold text-muted-foreground flex items-center gap-2">
+                              <span className="bg-primary/10 text-primary px-1.5 py-0.5 rounded text-xs">
+                                Contexto
+                              </span>
+                              Textos de Apoio
+                            </h4>
+                            <div className="space-y-3">
+                              {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                              {(question.content as any).support_texts?.map(
+                                (text: string, idx: number) => (
+                                  <div
+                                    key={idx}
+                                    className="text-sm text-foreground/80 italic border-l-2 border-primary/20 pl-3 py-1"
+                                  >
+                                    &quot;{text}&quot;
+                                  </div>
+                                )
+                              )}
+                            </div>
+                          </div>
+                        )}
+                    </div>
+                  )}
+
                   {/* Section A: Model Answer */}
                   <div className="bg-green-50/50 dark:bg-green-900/10 border border-green-200 dark:border-green-900/30 rounded-lg p-5">
                     <div className="flex items-center gap-2 mb-3">

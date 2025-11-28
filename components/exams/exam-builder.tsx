@@ -61,7 +61,19 @@ export function ExamBuilder() {
       if ((job as any)?.status === 'completed') {
         clearInterval(interval);
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const questions = (job as any).result as Question[];
+        const result = (job as any).result;
+        // Handle both direct array (v1) and wrapped object (v2)
+        const rawQuestions = Array.isArray(result) ? result : result?.questions || [];
+
+        // Normalize questions to match ExamBuilder expectations
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const questions = rawQuestions.map((q: any) => ({
+          stem: q.stem || '',
+          options: Array.isArray(q.options) ? q.options : ['', '', '', ''],
+          correct_answer: String(q.correct_answer || '0'),
+          difficulty: q.difficulty || 'medium',
+        }));
+
         setValue('questions', questions);
         setStep('review');
         toast.success('Questões geradas com sucesso!');
@@ -79,12 +91,14 @@ export function ExamBuilder() {
   const onGenerate = async (data: { topic: string; quantity: number; difficulty: string }) => {
     setStep('generating');
     try {
+      console.log({ data });
       const formData = new FormData();
       formData.append('topic', data.topic);
       formData.append('quantity', data.quantity.toString());
       formData.append('difficulty', data.difficulty);
 
       const result = await generateQuestionsAction(formData);
+      console.log({ result });
       setJobId(result.jobId);
     } catch (error) {
       console.error(error);

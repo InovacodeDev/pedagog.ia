@@ -1,8 +1,6 @@
 'use client';
 
-import { Tables } from '@/types/database';
-
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -34,7 +32,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { generateQuestionsV2Action, saveQuestionsAction } from '@/server/actions/questions';
 import { ModelSelector } from '@/components/ui/model-selector';
-import { createClient } from '@/lib/supabase/client';
 import { GeneratedQuestion } from '@/types/questions';
 
 const formSchema = z
@@ -103,8 +100,8 @@ export function GeneratorForm({ isPro = false }: { isPro?: boolean }) {
   const [isSaving, setIsSaving] = useState(false);
   const [generatedQuestions, setGeneratedQuestions] = useState<GeneratedQuestion[] | null>(null);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
-  const [currentJobId, setCurrentJobId] = useState<string | null>(null);
-  const supabase = createClient();
+  // const [currentJobId, setCurrentJobId] = useState<string | null>(null); // Removed
+  // const supabase = createClient(); // Removed usage for polling
 
   const MAX_SIZE = isPro ? 10 * 1024 * 1024 : 5 * 1024 * 1024;
 
@@ -168,48 +165,7 @@ export function GeneratorForm({ isPro = false }: { isPro?: boolean }) {
     },
   });
 
-  // Polling for job completion
-  useEffect(() => {
-    if (!currentJobId) return;
-
-    const checkJobStatus = async () => {
-      const { data, error } = await supabase
-        .from('background_jobs')
-        .select('status, result, error_message')
-        .eq('id', currentJobId)
-        .single();
-
-      const job = data as Tables<'background_jobs'> | null;
-
-      if (error) {
-        console.error('Error checking job status:', error);
-        return;
-      }
-
-      if (!job) return;
-
-      if (job.status === 'completed') {
-        setCurrentJobId(null);
-        setIsLoading(false);
-
-        const result = job.result as { questions: GeneratedQuestion[] } | null;
-
-        if (result?.questions) {
-          setGeneratedQuestions(result.questions);
-          toast.success('Questões geradas com sucesso!');
-        } else {
-          toast.error('Tarefa concluída, mas sem resultado.');
-        }
-      } else if (job.status === 'failed') {
-        setCurrentJobId(null);
-        setIsLoading(false);
-        toast.error(`Erro na geração: ${job.error_message || 'Erro desconhecido'}`);
-      }
-    };
-
-    const interval = setInterval(checkJobStatus, 2000);
-    return () => clearInterval(interval);
-  }, [currentJobId, supabase]);
+  // Polling effect removed
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
@@ -231,19 +187,22 @@ export function GeneratorForm({ isPro = false }: { isPro?: boolean }) {
 
       const result = await generateQuestionsV2Action(payload);
 
-      if (!result.success || !result.jobId) {
-        throw new Error(result.error || 'Erro ao iniciar geração.');
+      console.log({ result });
+      if (!result.success || !result.questions) {
+        throw new Error(result.error || 'Erro ao gerar questões.');
       }
 
-      setCurrentJobId(result.jobId);
-      toast.info('Geração iniciada. Aguarde...');
+      console.log({ questions: result.questions });
+      setGeneratedQuestions(result.questions);
+      toast.success('Questões geradas com sucesso!');
     } catch (error: unknown) {
-      setIsLoading(false);
       if (error instanceof Error) {
         toast.error(error.message);
       } else {
         toast.error('Ocorreu um erro desconhecido.');
       }
+    } finally {
+      setIsLoading(false);
     }
   }
 

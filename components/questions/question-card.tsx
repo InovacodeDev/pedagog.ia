@@ -65,8 +65,28 @@ export function QuestionCard({ question, onDelete }: QuestionCardProps) {
   const typeConfig = TYPE_MAP[question.type as keyof typeof TYPE_MAP] || TYPE_MAP.default;
   const stem = getStem(question);
 
-  const renderOptionsPreview = () => {
-    if (['open_ended', 'essay', 'association'].includes(question.type || '')) {
+  const optionsPreview = (() => {
+    if (question.type === 'essay') {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const genre = (question.content as any)?.genre;
+      return (
+        <div className="mt-2 flex flex-col items-start gap-2">
+          {genre && (
+            <Badge
+              variant="outline"
+              className="text-[10px] bg-pink-50 text-pink-700 border-pink-200"
+            >
+              {genre}
+            </Badge>
+          )}
+          <p className="text-xs text-muted-foreground italic">
+            [Ver detalhes para textos de apoio]
+          </p>
+        </div>
+      );
+    }
+
+    if (['open_ended', 'association'].includes(question.type || '')) {
       return (
         <p className="text-xs text-muted-foreground italic mt-2">
           [Ver detalhes para conteúdo completo]
@@ -99,7 +119,7 @@ export function QuestionCard({ question, onDelete }: QuestionCardProps) {
       );
     }
     return null;
-  };
+  })();
 
   return (
     <>
@@ -145,7 +165,7 @@ export function QuestionCard({ question, onDelete }: QuestionCardProps) {
         {/* Middle: Content */}
         <div className="flex-grow mb-4">
           <p className="text-sm font-medium text-foreground line-clamp-4 leading-relaxed">{stem}</p>
-          {renderOptionsPreview()}
+          {optionsPreview}
         </div>
 
         {/* Bottom: Footer */}

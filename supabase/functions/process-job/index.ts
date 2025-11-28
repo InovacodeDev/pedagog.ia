@@ -56,6 +56,16 @@ interface Question {
 }
 
 // =====================================================
+// HELPERS
+// =====================================================
+
+function cleanJson(text: string) {
+  // Remove markdown code blocks like ```json ... ```
+  let clean = text.replace(/```json/g, '').replace(/```/g, '');
+  return clean.trim();
+}
+
+// =====================================================
 // PRICING LOGIC
 // =====================================================
 
@@ -422,6 +432,10 @@ Deno.serve(async (req: Request): Promise<Response> => {
         Retorne APENAS o JSON válido, sem markdown ou explicações extras.
       `;
 
+      // 2.5. Determine Max Tokens (Boost for Redaction/Essay)
+      const hasRedaction = types.includes('essay') || types.includes('redaction');
+      const maxOutputTokens = hasRedaction ? 8192 : 2048; // 8k for essays, 2k for others
+
       // 3. Call Gemini API
       const geminiApiKey = Deno.env.get('GEMINI_API_KEY');
       if (!geminiApiKey) {
@@ -439,6 +453,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
             contents: [{ parts: [{ text: prompt }] }],
             generationConfig: {
               responseMimeType: 'application/json',
+              maxOutputTokens: maxOutputTokens,
             },
           }),
         }
@@ -454,7 +469,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
 
       let generatedQuestions;
       try {
-        generatedQuestions = JSON.parse(generatedText);
+        generatedQuestions = JSON.parse(cleanJson(generatedText));
       } catch (e) {
         console.error('Failed to parse Gemini response:', generatedText);
         throw new Error('Invalid JSON response from AI');
