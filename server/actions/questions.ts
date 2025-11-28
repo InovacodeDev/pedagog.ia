@@ -308,14 +308,24 @@ export async function saveQuestionsAction(questions: GeneratedQuestion[]) {
 
       // Handle Essay specific fields
       if (q.type === 'essay') {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const rawGenre = (q.content as any)?.genre || (q as any).genre;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const rawSupportTexts =
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (q.content as any)?.support_texts || q.support_texts || (q as any).support_texts;
+
+        const genre = typeof rawGenre === 'string' ? rawGenre : 'Gênero não especificado';
+
+        const support_texts = Array.isArray(rawSupportTexts)
+          ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            rawSupportTexts.map((t: any) => (typeof t === 'string' ? t : JSON.stringify(t)))
+          : [];
+
         dbContent = {
           ...dbContent,
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          genre: (q.content as any)?.genre || (q as any).genre,
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          support_texts:
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            (q.content as any)?.support_texts || q.support_texts || (q as any).support_texts,
+          genre,
+          support_texts,
         };
       }
 

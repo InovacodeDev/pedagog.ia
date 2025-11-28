@@ -47,12 +47,10 @@ const TYPE_MAP = {
 // Helper to extract stem from content
 const getStem = (question: Question): string => {
   if (typeof question.content === 'object' && question.content !== null) {
-    if ('stem' in question.content) {
-      return (question.content as { stem: string }).stem;
-    }
-    if ('text' in question.content) {
-      return (question.content as { text: string }).text;
-    }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const content = question.content as any;
+    if (typeof content.stem === 'string') return content.stem;
+    if (typeof content.text === 'string') return content.text;
   }
   return 'Sem enunciado disponível';
 };
@@ -334,8 +332,13 @@ export function QuestionDetailsDialog({
                             variant="outline"
                             className="bg-pink-50 text-pink-700 border-pink-200 font-medium"
                           >
+                            Gênero:{' '}
                             {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                            Gênero: {(question.content as any).genre}
+                            {typeof (question.content as any).genre === 'string'
+                              ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                                (question.content as any).genre
+                              : // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                                JSON.stringify((question.content as any).genre)}
                           </Badge>
                         </div>
                       )}
@@ -355,14 +358,19 @@ export function QuestionDetailsDialog({
                             <div className="space-y-3">
                               {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                               {(question.content as any).support_texts?.map(
-                                (text: string, idx: number) => (
-                                  <div
-                                    key={idx}
-                                    className="text-sm text-foreground/80 italic border-l-2 border-primary/20 pl-3 py-1"
-                                  >
-                                    &quot;{text}&quot;
-                                  </div>
-                                )
+                                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                                (text: any, idx: number) => {
+                                  const safeText =
+                                    typeof text === 'string' ? text : JSON.stringify(text);
+                                  return (
+                                    <div
+                                      key={idx}
+                                      className="text-sm text-foreground/80 italic border-l-2 border-primary/20 pl-3 py-1"
+                                    >
+                                      &quot;{safeText}&quot;
+                                    </div>
+                                  );
+                                }
                               )}
                             </div>
                           </div>

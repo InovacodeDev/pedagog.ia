@@ -43,12 +43,10 @@ const TYPE_MAP = {
 // Helper to extract stem from content
 const getStem = (question: Question): string => {
   if (typeof question.content === 'object' && question.content !== null) {
-    if ('stem' in question.content) {
-      return (question.content as { stem: string }).stem;
-    }
-    if ('text' in question.content) {
-      return (question.content as { text: string }).text;
-    }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const content = question.content as any;
+    if (typeof content.stem === 'string') return content.stem;
+    if (typeof content.text === 'string') return content.text;
   }
   return 'Sem enunciado disponível';
 };
@@ -76,7 +74,7 @@ export function QuestionCard({ question, onDelete }: QuestionCardProps) {
               variant="outline"
               className="text-[10px] bg-pink-50 text-pink-700 border-pink-200"
             >
-              {genre}
+              {typeof genre === 'string' ? genre : 'Gênero'}
             </Badge>
           )}
           <p className="text-xs text-muted-foreground italic">
