@@ -25,7 +25,7 @@ import { ClassItem } from '@/server/actions/classes';
 interface Student {
   id: string;
   name: string;
-  grade_level: string;
+  grade_level: string | null;
   created_at: string;
   class_id: string | null;
 }
