@@ -26,9 +26,9 @@ const routes = [
     color: 'text-violet-500',
   },
   {
-    label: 'Turmas',
+    label: 'Minhas Turmas',
     icon: Users,
-    href: '/students',
+    href: '/classes',
     color: 'text-pink-700',
   },
   {
@@ -63,28 +63,28 @@ export function Sidebar({ isPro = false }: SidebarProps) {
           <h1 className="text-2xl font-bold">Pedagogi.ai</h1>
         </Link>
         <div className="space-y-1">
-          {routes.map((route) => (
-            <Link
-              key={route.href}
-              href={route.href}
-              className={cn(
-                'text-sm group flex p-3 w-full justify-start font-medium cursor-pointer rounded-lg transition-all duration-200 hover:translate-x-1',
-                pathname === route.href
-                  ? 'bg-[hsl(var(--sidebar-accent))] text-primary'
-                  : 'text-[hsl(var(--sidebar-fg))]/70 hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-fg))]'
-              )}
-            >
-              <div className="flex items-center flex-1">
-                <route.icon
-                  className={cn(
-                    'h-5 w-5 mr-3',
-                    pathname === route.href ? 'text-primary' : 'text-current'
-                  )}
-                />
-                {route.label}
-              </div>
-            </Link>
-          ))}
+          {routes.map((route) => {
+            const isActive = pathname === route.href || pathname.startsWith(`${route.href}/`);
+            return (
+              <Link
+                key={route.href}
+                href={route.href}
+                className={cn(
+                  'text-sm group flex p-3 w-full justify-start font-medium cursor-pointer rounded-lg transition-all duration-200 hover:translate-x-1',
+                  isActive
+                    ? 'bg-[hsl(var(--sidebar-accent))] text-primary'
+                    : 'text-[hsl(var(--sidebar-fg))]/70 hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-fg))]'
+                )}
+              >
+                <div className="flex items-center flex-1">
+                  <route.icon
+                    className={cn('h-5 w-5 mr-3', isActive ? 'text-primary' : 'text-current')}
+                  />
+                  {route.label}
+                </div>
+              </Link>
+            );
+          })}
         </div>
       </div>
       <SidebarFooter isPro={isPro} />

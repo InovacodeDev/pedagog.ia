@@ -6,7 +6,7 @@
 -- for immediate testing of the ValidationDeck and StudentList features.
 
 -- Set the encryption key for this session
-set app.settings.encryption_key = 'dev-secret-key-2024';
+set app.settings.encryption_key = 'kSgUyWN3HDHgYEr5JRvSR2oky9Eogo0SXR5gkA1JgpA=';
 
 -- 1. CREATE TEST USER IN AUTH SCHEMA
 -- =====================================================

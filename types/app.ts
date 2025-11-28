@@ -10,7 +10,8 @@ export type ProfileRow = Database['public']['Tables']['profiles']['Row'];
 
 export interface CreateSecureStudentParams {
   name_text: string;
-  grade: string;
+  class_id_arg: string;
+  secret_key: string;
 }
 
 export interface GetStudentsDecryptedParams {

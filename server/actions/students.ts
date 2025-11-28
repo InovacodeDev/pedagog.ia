@@ -3,7 +3,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
-import { CreateSecureStudentParams, GetStudentsDecryptedParams, ProfileRow } from '@/types/app';
+import { CreateSecureStudentParams } from '@/types/app';
 
 // =====================================================
 // VALIDATION SCHEMAS
@@ -11,7 +11,7 @@ import { CreateSecureStudentParams, GetStudentsDecryptedParams, ProfileRow } fro
 
 const CreateStudentSchema = z.object({
   name: z.string().min(1, 'Name is required'),
-  grade: z.string().min(1, 'Grade is required'),
+  class_id: z.string().uuid('Turma inválida'),
 });
 
 // =====================================================
@@ -28,9 +28,10 @@ interface GetStudentsResult {
   success: boolean;
   students?: Array<{
     id: string;
-    name: string;
-    grade_level: string;
+    name: string | null;
+    grade_level: string | null;
     created_at: string;
+    class_id: string | null;
   }>;
   error?: string;
 }
@@ -39,19 +40,9 @@ interface GetStudentsResult {
 // ACTIONS
 // =====================================================
 
-/**
- * Create a new student with encrypted name.
- *
- * SECURITY: This action calls the RPC `create_secure_student` which:
- * 1. Encrypts the student name using pgp_sym_encrypt
- * 2. Stores only the encrypted bytea in the database
- * 3. Ensures the user belongs to an institution
- *
- * The encryption key is stored in the database settings, NOT in the client.
- */
 export async function createStudentAction(data: {
   name: string;
-  grade: string;
+  class_id: string;
 }): Promise<CreateStudentResult> {
   try {
     // 1. Validate input
@@ -75,43 +66,57 @@ export async function createStudentAction(data: {
       return { success: false, error: 'Usuário não autenticado' };
     }
 
-    // 3. Call the secure RPC function
-    // This function handles encryption server-side
+    // 3. Call the secure RPC function to create the initial record
+    const encryptionKey = process.env.APP_ENCRYPTION_KEY;
+    if (!encryptionKey) {
+      console.error('SERVER CONFIG ERROR: APP_ENCRYPTION_KEY is missing');
+      return { success: false, error: 'Erro de configuração do servidor' };
+    }
+
     const rpcParams: CreateSecureStudentParams = {
       name_text: validation.data.name,
-      grade: validation.data.grade,
+      class_id_arg: validation.data.class_id,
+      secret_key: encryptionKey,
     };
 
+    /* eslint-disable @typescript-eslint/no-explicit-any */
     const { data: studentId, error: rpcError } = await supabase.rpc(
       'create_secure_student',
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       rpcParams as any
     );
 
     if (rpcError) {
       console.error('[Create Student] RPC error:', rpcError);
-
-      // Handle specific errors
       if (rpcError.message.includes('institution')) {
-        return {
-          success: false,
-          error: 'Usuário não possui instituição associada',
-        };
+        return { success: false, error: 'Usuário não possui instituição associada' };
       }
-
-      if (rpcError.message.includes('encryption_key')) {
-        return {
-          success: false,
-          error: 'Erro de configuração do sistema. Contate o administrador.',
-        };
-      }
-
-      return { success: false, error: 'Erro ao criar aluno' };
+      return { success: false, error: 'Erro ao criar aluno (Encryption)' };
     }
 
-    // 4. Revalidate the students page
-    revalidatePath('/dashboard/students');
+    // 4. Update the record with plaintext name (user_id and class_id are already set by RPC)
+    // This is where we enforce the unique constraint (user_id, name)
+    const { error: updateError } = await (supabase as any)
+      .from('students')
+      .update({
+        name: validation.data.name,
+      })
+      .eq('id', studentId);
 
+    if (updateError) {
+      console.error('[Create Student] Update error:', updateError);
+
+      // Rollback: Delete the created student if update fails
+      await supabase.from('students').delete().eq('id', studentId);
+
+      if (updateError.code === '23505') {
+        return { success: false, error: 'Já existe um aluno com este nome.' };
+      }
+
+      return { success: false, error: 'Erro ao vincular aluno à turma.' };
+    }
+
+    revalidatePath('/students');
+    revalidatePath(`/classes/${validation.data.class_id}`);
     return {
       success: true,
       studentId: studentId as string,
@@ -125,78 +130,56 @@ export async function createStudentAction(data: {
   }
 }
 
-/**
- * Get all students for the current user's institution (with decrypted names).
- *
- * SECURITY: This action calls the RPC `get_students_decrypted` which:
- * 1. Verifies the user belongs to the requested institution
- * 2. Decrypts student names server-side using pgp_sym_decrypt
- * 3. Returns only students from the user's institution
- */
-export async function getStudentsAction(): Promise<GetStudentsResult> {
+export async function updateStudentAction(id: string, data: { class_id: string }) {
+  const supabase = await createClient();
+  /* eslint-disable @typescript-eslint/no-explicit-any */
+  const { error } = await (supabase as any)
+    .from('students')
+    .update({ class_id: data.class_id })
+    .eq('id', id);
+
+  if (error) {
+    console.error('Error updating student:', error);
+    return { success: false, message: 'Failed to update student' };
+  }
+
+  revalidatePath('/students');
+  return { success: true, message: 'Aluno atualizado com sucesso!' };
+}
+
+export async function getStudentsAction(classId?: string): Promise<GetStudentsResult> {
   try {
-    // 1. Get authenticated user
     const supabase = await createClient();
     const {
       data: { user },
-      error: authError,
     } = await supabase.auth.getUser();
 
-    if (authError || !user) {
+    if (!user) {
       return { success: false, error: 'Usuário não autenticado' };
     }
 
-    // 2. Get user's institution ID
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('institution_id')
-      .eq('id', user.id)
-      .single();
+    // Fetch students directly now that we have plaintext name and user_id/class_id
+    // We prioritize the plaintext 'name' column.
+    let query = supabase
+      .from('students')
+      .select('id, name, grade_level, created_at, class_id')
+      .eq('user_id', user.id) // Only fetch students for this teacher
+      .order('created_at', { ascending: false });
 
-    const userProfile = profile as unknown as ProfileRow;
-
-    if (profileError || !userProfile?.institution_id) {
-      console.error('[Get Students] Profile error:', profileError);
-      return {
-        success: false,
-        error: 'No institution found',
-      };
+    if (classId) {
+      query = query.eq('class_id', classId);
     }
 
-    // 3. Call the secure RPC function to get decrypted students
-    const rpcParams: GetStudentsDecryptedParams = {
-      p_institution_id: userProfile.institution_id,
-    };
+    const { data, error } = await query;
 
-    const { data: students, error: rpcError } = await supabase.rpc(
-      'get_students_decrypted',
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      rpcParams as any
-    );
-
-    if (rpcError) {
-      console.error('[Get Students] RPC error:', rpcError);
-
-      if (rpcError.message.includes('Access denied')) {
-        return {
-          success: false,
-          error: 'Acesso negado',
-        };
-      }
-
-      if (rpcError.message.includes('encryption_key')) {
-        return {
-          success: false,
-          error: 'Erro de configuração do sistema. Contate o administrador.',
-        };
-      }
-
+    if (error) {
+      console.error('[Get Students] Error:', error);
       return { success: false, error: 'Erro ao buscar alunos' };
     }
 
     return {
       success: true,
-      students: students || [],
+      students: (data as any[]) || [],
     };
   } catch (error) {
     console.error('[Get Students] Unexpected error:', error);
@@ -205,4 +188,30 @@ export async function getStudentsAction(): Promise<GetStudentsResult> {
       error: 'Erro inesperado ao buscar alunos',
     };
   }
+}
+
+export async function deleteStudentAction(id: string) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { success: false, message: 'Unauthorized' };
+  }
+
+  /* eslint-disable @typescript-eslint/no-explicit-any */
+  const { error } = await (supabase as any)
+    .from('students')
+    .delete()
+    .eq('id', id)
+    .eq('user_id', user.id);
+
+  if (error) {
+    console.error('Error deleting student:', error);
+    return { success: false, message: 'Failed to delete student' };
+  }
+
+  revalidatePath('/students');
+  return { success: true, message: 'Aluno removido com sucesso!' };
 }

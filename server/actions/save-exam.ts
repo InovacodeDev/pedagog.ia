@@ -10,6 +10,7 @@ const saveExamSchema = z.object({
   // is handled by the frontend and stored as JSONB
   blocks: z.array(z.any()),
   title: z.string().optional(),
+  class_ids: z.array(z.string().uuid()).optional(),
 });
 
 export async function saveExamAction(input: z.infer<typeof saveExamSchema>) {
@@ -19,7 +20,7 @@ export async function saveExamAction(input: z.infer<typeof saveExamSchema>) {
     return { error: 'Dados inválidos para salvar a prova.' };
   }
 
-  const { examId, blocks, title } = result.data;
+  const { examId, blocks, title, class_ids } = result.data;
   const supabase = await createClient();
 
   // Check authentication
@@ -31,26 +32,57 @@ export async function saveExamAction(input: z.infer<typeof saveExamSchema>) {
     return { error: 'Usuário não autenticado.' };
   }
 
-  // Update the exam
-  const updateData: { questions_list: any[]; title?: string; updated_at: string } = {
+  // Prepare data for Upsert
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const examData: any = {
+    id: examId,
+    user_id: user.id,
     questions_list: blocks,
     updated_at: new Date().toISOString(),
+    // Default status for new exams
+    status: 'draft',
+    title: title || 'Nova Prova',
   };
 
-  if (title) {
-    updateData.title = title;
+  /* eslint-disable @typescript-eslint/no-explicit-any */
+  const { error: upsertError } = await (supabase as any)
+    .from('exams')
+    .upsert(examData)
+    .select()
+    .single();
+
+  if (upsertError) {
+    console.error('Error saving exam:', upsertError);
+    return { error: 'Erro ao salvar a prova no banco de dados.' };
   }
 
-  const { error } = await supabase
-    .from('exams')
-    // @ts-ignore
-    .update(updateData)
-    .eq('id', examId)
-    .eq('user_id', user.id); // Ensure user owns the exam
+  // Handle Class Links (Sync)
+  if (class_ids !== undefined) {
+    // 1. Delete existing links
+    const { error: deleteError } = await (supabase as any)
+      .from('exam_classes')
+      .delete()
+      .eq('exam_id', examId);
 
-  if (error) {
-    console.error('Error saving exam:', error);
-    return { error: 'Erro ao salvar a prova no banco de dados.' };
+    if (deleteError) {
+      console.error('Error deleting exam classes:', deleteError);
+      return { error: 'Erro ao atualizar vínculos de turmas.' };
+    }
+
+    // 2. Insert new links
+    if (class_ids.length > 0) {
+      const { error: insertError } = await (supabase as any).from('exam_classes').insert(
+        class_ids.map((classId) => ({
+          exam_id: examId,
+          class_id: classId,
+        }))
+      );
+
+      if (insertError) {
+        console.error('Error inserting exam classes:', insertError);
+        return { error: 'Erro ao vincular turmas.' };
+      }
+    }
   }
 
   revalidatePath(`/exams/${examId}`);

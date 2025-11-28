@@ -21,7 +21,16 @@ import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { FileDown, Trash2, Type, List, AlignLeft, Image as ImageIcon } from 'lucide-react';
+import {
+  FileDown,
+  Trash2,
+  Type,
+  List,
+  AlignLeft,
+  Image as ImageIcon,
+  Save,
+  Loader2,
+} from 'lucide-react';
 import { saveAs } from 'file-saver';
 import { pdf } from '@react-pdf/renderer';
 import { BuilderPDFDocument } from './BuilderPDF';
@@ -30,19 +39,30 @@ import { generateDocx } from '@/lib/docx-generator';
 import { toast } from 'sonner';
 
 import { SortableBlock, ExamBlock, BlockType } from './exam-block';
+import { saveExamAction } from '@/server/actions/save-exam';
+import { useTransition } from 'react';
+import { ClassItem } from '@/server/actions/classes';
+import { ClassMultiSelect } from './class-multi-select';
 
 // Mock Hook
 const useSubscription = () => ({ isPro: false });
 
-import { saveExamAction } from '@/server/actions/save-exam';
-import { useTransition } from 'react';
-import { Loader2, Save } from 'lucide-react';
+interface ExamEditorProps {
+  examId?: string;
+  initialTitle?: string;
+  classes?: ClassItem[];
+  initialClassIds?: string[];
+}
 
-// ...
-
-export function ExamEditor({ examId, initialTitle }: { examId?: string; initialTitle?: string }) {
+export function ExamEditor({
+  examId: initialExamId,
+  initialTitle,
+  classes = [],
+  initialClassIds = [],
+}: ExamEditorProps) {
   const { isPro } = useSubscription();
   const [isPending, startTransition] = useTransition();
+  const [examId, setExamId] = useState<string | undefined>(initialExamId);
   const [blocks, setBlocks] = useState<ExamBlock[]>([
     {
       id: 'header-1',
@@ -57,7 +77,14 @@ export function ExamEditor({ examId, initialTitle }: { examId?: string; initialT
       },
     },
   ]);
+
+  React.useEffect(() => {
+    if (!examId) {
+      setExamId(crypto.randomUUID());
+    }
+  }, [examId]);
   const [selectedBlock, setSelectedBlock] = useState<ExamBlock | null>(null);
+  const [selectedClassIds, setSelectedClassIds] = useState<string[]>(initialClassIds);
 
   // Ensure watermark exists if not pro
   React.useEffect(() => {
@@ -197,6 +224,7 @@ export function ExamEditor({ examId, initialTitle }: { examId?: string; initialT
         examId,
         blocks,
         title: initialTitle, // Or current title state if editable
+        class_ids: selectedClassIds,
       });
 
       if (result.error) {
@@ -205,7 +233,7 @@ export function ExamEditor({ examId, initialTitle }: { examId?: string; initialT
         toast.success('Prova salva com sucesso!');
       }
     });
-  }, [examId, blocks, initialTitle]);
+  }, [examId, blocks, initialTitle, selectedClassIds]);
 
   // Keyboard shortcut for saving
   React.useEffect(() => {
@@ -263,6 +291,18 @@ export function ExamEditor({ examId, initialTitle }: { examId?: string; initialT
         </Card>
 
         <Card className="p-4">
+          <h3 className="mb-4 font-semibold">Configurações</h3>
+          <div className="space-y-2">
+            <Label>Vincular Turmas</Label>
+            <ClassMultiSelect
+              classes={classes}
+              selectedClassIds={selectedClassIds}
+              onChange={setSelectedClassIds}
+            />
+          </div>
+        </Card>
+
+        <Card className="p-4">
           <h3 className="mb-4 font-semibold">Ações</h3>
           <div className="space-y-2">
             <Button className="w-full" onClick={handleSave} disabled={isPending}>
@@ -282,7 +322,6 @@ export function ExamEditor({ examId, initialTitle }: { examId?: string; initialT
           </div>
         </Card>
       </div>
-      {/* ... rest of component ... */}
 
       {/* Center - Canvas */}
       <div
