@@ -33,6 +33,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { generateQuestionsV2Action, saveQuestionsAction } from '@/server/actions/questions';
 import { ModelSelector } from '@/components/ui/model-selector';
 import { GeneratedQuestion } from '@/types/questions';
+import { GeneratedQuestionCard } from './generated-question-card';
 
 const formSchema = z
   .object({
@@ -99,6 +100,7 @@ export function GeneratorForm({ isPro = false }: { isPro?: boolean }) {
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [generatedQuestions, setGeneratedQuestions] = useState<GeneratedQuestion[] | null>(null);
+  const [selectedIndices, setSelectedIndices] = useState<number[]>([]);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   // const [currentJobId, setCurrentJobId] = useState<string | null>(null); // Removed
   // const supabase = createClient(); // Removed usage for polling
@@ -194,6 +196,7 @@ export function GeneratorForm({ isPro = false }: { isPro?: boolean }) {
 
       console.log({ questions: result.questions });
       setGeneratedQuestions(result.questions);
+      setSelectedIndices(result.questions.map((_, i) => i));
       toast.success('Questões geradas com sucesso!');
     } catch (error: unknown) {
       if (error instanceof Error) {
@@ -209,9 +212,16 @@ export function GeneratorForm({ isPro = false }: { isPro?: boolean }) {
   const handleSave = async () => {
     if (!generatedQuestions) return;
 
+    const questionsToSave = generatedQuestions.filter((_, i) => selectedIndices.includes(i));
+
+    if (questionsToSave.length === 0) {
+      toast.error('Selecione pelo menos uma questão para salvar.');
+      return;
+    }
+
     setIsSaving(true);
     try {
-      const result = await saveQuestionsAction(generatedQuestions);
+      const result = await saveQuestionsAction(questionsToSave);
       if (result.success) {
         toast.success('Questões salvas no Banco de Questões!');
         setGeneratedQuestions(null);
@@ -520,42 +530,21 @@ export function GeneratorForm({ isPro = false }: { isPro?: boolean }) {
               </div>
               <div className="space-y-4">
                 {generatedQuestions.map((q, i) => (
-                  <Card key={i}>
-                    <CardHeader>
-                      <CardTitle className="text-base font-medium">
-                        {i + 1}. {q.stem}
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      {q.options && (
-                        <ul className="space-y-2 mb-4">
-                          {q.options.map((opt: string, idx: number) => (
-                            <li key={idx} className="text-sm text-muted-foreground">
-                              {String.fromCharCode(65 + idx)}) {opt}
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-                      <div className="flex gap-2 text-xs">
-                        <span className="px-2 py-1 bg-secondary/20 rounded text-secondary-foreground font-medium">
-                          {QUESTION_TYPES.find((t) => t.id === q.type)?.label || q.type}
-                        </span>
-                        <span className="px-2 py-1 bg-muted rounded text-muted-foreground">
-                          BNCC: {q.bncc}
-                        </span>
-                        {q.discipline && (
-                          <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded">
-                            {q.discipline}
-                          </span>
-                        )}
-                        {q.subject && (
-                          <span className="px-2 py-1 bg-green-100 text-green-800 rounded">
-                            {q.subject}
-                          </span>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
+                  <GeneratedQuestionCard
+                    key={i}
+                    question={q}
+                    isSelected={selectedIndices.includes(i)}
+                    onToggleSelection={(checked) => {
+                      setSelectedIndices((prev) =>
+                        checked ? [...prev, i] : prev.filter((index) => index !== i)
+                      );
+                    }}
+                    onUpdate={(updatedQuestion) => {
+                      setGeneratedQuestions((prev) =>
+                        prev ? prev.map((item, idx) => (idx === i ? updatedQuestion : item)) : null
+                      );
+                    }}
+                  />
                 ))}
               </div>
             </>

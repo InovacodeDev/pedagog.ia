@@ -132,7 +132,7 @@ export async function generateQuestionsV2Action(
                "support_texts": ["Texto motivador 1...", "Texto motivador 2..."]
              }
            - "options": null
-           - "correct_answer": null
+           - "correct_answer": Uma redação modelo nota 10, escrita em português perfeito, seguindo os critérios de correção.
            - "correction_criteria": Array de strings com competências avaliativas.
 
         6. TIPO: "open_ended" (Discursiva)
@@ -160,7 +160,8 @@ export async function generateQuestionsV2Action(
 
         PARÂMETROS:
         - Quantidade: ${quantity} questões
-        - Tipos Solicitados: ${types.join(', ')} (Distribua equitativamente)
+        - Tipos Solicitados: ${types.join(', ')}
+        - REGRA DE DISTRIBUIÇÃO: Se apenas um tipo foi solicitado, gere todas as questões desse tipo. Se múltiplos tipos foram solicitados, você DEVE gerar pelo menos UMA questão de CADA tipo solicitado.
         - Estilo: ${style}
         - Disciplina/Assunto: ${discipline || 'Geral'} / ${subject || 'Geral'}
         - Nível: ${grade_level || 'Geral'}

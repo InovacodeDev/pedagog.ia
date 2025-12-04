@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 
 import { Question } from '@/types/questions';
 import { useRealtimeSubscription } from '@/hooks/use-realtime-subscription';
@@ -32,6 +33,7 @@ export function QuestionsRealtimeGrid({ initialQuestions }: QuestionsRealtimeGri
   const [showUnusedOnly, setShowUnusedOnly] = useState(false);
   const [filterType, setFilterType] = useState<string>('all');
   const [filterStyle, setFilterStyle] = useState<string>('all');
+  const [deleteId, setDeleteId] = useState<string | null>(null);
 
   const filteredQuestions = questions.filter((q) => {
     if (showUnusedOnly && (q.usage_count || 0) > 0) return false;
@@ -40,12 +42,18 @@ export function QuestionsRealtimeGrid({ initialQuestions }: QuestionsRealtimeGri
     return true;
   });
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Tem certeza que deseja excluir esta questão?')) return;
+  const handleDelete = (id: string) => {
+    setDeleteId(id);
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteId) return;
+
     // Call server action here - TODO: Implement server action
     // Note: The realtime subscription will automatically update the list when the deletion happens on the server
-    console.log('Deleting question:', id);
+    console.log('Deleting question:', deleteId);
     toast.info('Solicitação de exclusão enviada...');
+    setDeleteId(null);
   };
 
   return (
@@ -115,6 +123,15 @@ export function QuestionsRealtimeGrid({ initialQuestions }: QuestionsRealtimeGri
           ))}
         </div>
       )}
+      <ConfirmDialog
+        open={!!deleteId}
+        onOpenChange={(open) => !open && setDeleteId(null)}
+        title="Excluir Questão"
+        description="Tem certeza que deseja excluir esta questão? Esta ação não pode ser desfeita."
+        onConfirm={confirmDelete}
+        variant="destructive"
+        confirmText="Excluir"
+      />
     </div>
   );
 }
