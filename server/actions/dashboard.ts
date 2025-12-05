@@ -32,11 +32,7 @@ export async function getDashboardMetrics(): Promise<{
     // Parallelize queries for performance
     const [examsResult, questionsResult, correctionsResult, recentExamsResult] = await Promise.all([
       // 1. Count Exams
-      supabase
-        .from('exams')
-        .select('*', { count: 'exact', head: true })
-        .neq('status', 'deleted')
-        .eq('user_id', user.id),
+      supabase.from('exams').select('*', { count: 'exact', head: true }).eq('user_id', user.id),
 
       // 2. Count Questions
       supabase.from('questions').select('*', { count: 'exact', head: true }).eq('user_id', user.id),

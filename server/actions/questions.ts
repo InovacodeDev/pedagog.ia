@@ -457,24 +457,8 @@ export async function generateExamFromDatabaseAction(
   }
 
   const { discipline, subject, quantity, excludeTypes } = validation.data;
-  const COST = 0.2;
 
-  // 1. Check and Deduct Credits first
-  const { data: deductionSuccess, error: deductionError } = await supabase.rpc(
-    'deduct_user_credits',
-    {
-      p_user_id: user.id,
-      p_amount: COST,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } as any
-  );
-
-  if (deductionError || !deductionSuccess) {
-    console.error('Credit deduction failed:', deductionError);
-    return { success: false, error: 'Créditos insuficientes para gerar a prova.' };
-  }
-
-  // 2. Fetch Questions
+  // 1. Fetch Questions
   let queryBuilder = supabase
     .from('questions')
     .select('*')
@@ -504,18 +488,18 @@ export async function generateExamFromDatabaseAction(
     return { success: false, error: 'Nenhuma questão encontrada para os critérios selecionados.' };
   }
 
-  // 3. Random Selection
+  // 2. Random Selection (No cost for DB generation now)
   const shuffled = questions.sort(() => 0.5 - Math.random());
   const selectedQuestions = shuffled.slice(0, quantity);
 
-  // 4. Log Usage
+  // 2. Log Usage (Zero Cost)
   await supabase.from('ia_cost_log').insert({
     user_id: user.id,
     feature: 'generate_exam_db',
     model_used: 'db_selection',
     input_tokens: 0,
     output_tokens: 0,
-    cost_credits: COST,
+    cost_credits: 0,
     provider_cost_brl: 0,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } as any);

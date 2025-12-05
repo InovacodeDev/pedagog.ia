@@ -42,6 +42,7 @@ import {
   Loader2,
   Wand2,
   AlertCircle,
+  CheckCircle,
 } from 'lucide-react';
 import { saveAs } from 'file-saver';
 import { pdf } from '@react-pdf/renderer';
@@ -57,6 +58,7 @@ import { useTransition } from 'react';
 import { ClassItem } from '@/server/actions/classes';
 import { ClassMultiSelect } from './class-multi-select';
 import { generateExamFromDatabaseAction } from '@/server/actions/questions';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 const useSubscription = () => ({ isPro: false });
 
 interface UserProfile {
@@ -72,6 +74,7 @@ interface ExamEditorProps {
   initialClassIds?: string[];
   initialBlocks?: ExamBlock[];
   userProfile?: UserProfile;
+  initialStatus?: 'draft' | 'published';
 }
 
 export function ExamEditor({
@@ -81,12 +84,15 @@ export function ExamEditor({
   initialClassIds = [],
   initialBlocks,
   userProfile,
+  initialStatus = 'draft',
 }: ExamEditorProps) {
   const { isPro } = useSubscription();
   const [isPending, startTransition] = useTransition();
   const [isGenerating, setIsGenerating] = useState(false);
   const [examId, setExamId] = useState<string | undefined>(initialExamId);
   const [title, setTitle] = useState(initialTitle || 'Nova Prova');
+  const [status, setStatus] = useState<'draft' | 'published'>(initialStatus);
+  const [isPublishDialogOpen, setIsPublishDialogOpen] = useState(false);
 
   // Validation Checks
   const hasSchoolConfig = !!userProfile?.school_name;
@@ -102,8 +108,8 @@ export function ExamEditor({
         content: {
           schoolName: userProfile?.school_name || 'Escola Modelo',
           teacherName: userProfile?.name || '',
-          discipline: userProfile?.disciplines?.[0] || '',
-          gradeLevel: classes?.[0]?.name || '',
+          discipline: userProfile?.disciplines?.length === 1 ? userProfile.disciplines[0] : '',
+          gradeLevel: classes?.length === 1 ? classes[0].name : '',
           date: new Date().toISOString().split('T')[0],
           studentNameLabel: true,
         },
@@ -194,8 +200,8 @@ export function ExamEditor({
           ? {
               schoolName: userProfile?.school_name || '',
               teacherName: userProfile?.name || '',
-              discipline: userProfile?.disciplines?.[0] || '',
-              gradeLevel: classes?.[0]?.name || '',
+              discipline: userProfile?.disciplines?.length === 1 ? userProfile.disciplines[0] : '',
+              gradeLevel: classes?.length === 1 ? classes[0].name : '',
               date: new Date().toISOString().split('T')[0],
               studentNameLabel: true,
             }
@@ -358,24 +364,48 @@ export function ExamEditor({
     saveAs(blob, `${title}.pdf`);
   };
 
-  const handleSave = React.useCallback(() => {
-    if (!examId) {
-      toast.error('Erro: ID da prova não encontrado.');
-      return;
-    }
+  const handleSave = React.useCallback(async () => {
+    if (!examId) return;
 
     startTransition(async () => {
       const result = await saveExamAction({
-        examId,
+        examId: examId,
         blocks,
-        title: title,
+        title,
         class_ids: selectedClassIds,
+        status: 'draft',
       });
 
       if (result.error) {
         toast.error(result.error);
       } else {
         toast.success('Prova salva com sucesso!');
+      }
+    });
+  }, [examId, blocks, title, selectedClassIds]);
+
+  const handlePublish = () => {
+    setIsPublishDialogOpen(true);
+  };
+
+  const confirmPublish = React.useCallback(async () => {
+    if (!examId) return;
+
+    startTransition(async () => {
+      const result = await saveExamAction({
+        examId: examId,
+        blocks,
+        title,
+        class_ids: selectedClassIds,
+        status: 'published',
+      });
+
+      if (result.error) {
+        toast.error(result.error);
+      } else {
+        setStatus('published');
+        toast.success('Prova publicada com sucesso!');
+        setSelectedBlock(null); // Deselect any block
       }
     });
   }, [examId, blocks, title, selectedClassIds]);
@@ -440,6 +470,31 @@ export function ExamEditor({
     <div className="flex h-[calc(100vh-6rem)] gap-6">
       {/* Left Panel - Toolbox */}
       <div className="w-64 flex-shrink-0 space-y-4">
+        {status === 'published' && (
+          <Alert className="bg-green-50 border-green-200 text-green-800">
+            <CheckCircle className="h-4 w-4 text-green-600" />
+            <AlertTitle>Prova Publicada</AlertTitle>
+            <AlertDescription>
+              Esta prova foi publicada e não pode mais ser editada.
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {status === 'draft' && (
+          <Button
+            className="w-full bg-green-600 hover:bg-green-700 text-white shadow-sm"
+            onClick={handlePublish}
+            disabled={isPending}
+          >
+            {isPending ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <CheckCircle className="mr-2 h-4 w-4" />
+            )}
+            Publicar Prova
+          </Button>
+        )}
+
         <Card className="p-4">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-semibold">Ferramentas</h3>
@@ -456,7 +511,7 @@ export function ExamEditor({
                       variant="outline"
                       className="w-full justify-start"
                       onClick={() => addBlock('header')}
-                      disabled={hasHeader}
+                      disabled={hasHeader || status === 'published'}
                     >
                       <ImageIcon className="mr-2 h-4 w-4" /> Cabeçalho
                     </Button>
@@ -474,7 +529,7 @@ export function ExamEditor({
                       variant="outline"
                       className="w-full justify-start"
                       onClick={() => addBlock('multiple_choice')}
-                      disabled={isLocked}
+                      disabled={isLocked || status === 'published'}
                     >
                       <List className="mr-2 h-4 w-4" /> Múltipla Escolha
                     </Button>
@@ -492,7 +547,7 @@ export function ExamEditor({
                       variant="outline"
                       className="w-full justify-start"
                       onClick={() => addBlock('essay')}
-                      disabled={isLocked}
+                      disabled={isLocked || status === 'published'}
                     >
                       <AlignLeft className="mr-2 h-4 w-4" /> Dissertativa
                     </Button>
@@ -507,6 +562,7 @@ export function ExamEditor({
                 variant="outline"
                 className="w-full justify-start"
                 onClick={() => addBlock('text')}
+                disabled={status === 'published'}
               >
                 <Type className="mr-2 h-4 w-4" /> Texto / Instrução
               </Button>
@@ -519,7 +575,7 @@ export function ExamEditor({
                         variant="default"
                         className="w-full justify-start bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:from-purple-700 hover:to-blue-700"
                         onClick={handleAutoGenerate}
-                        disabled={isGenerating || isLocked}
+                        disabled={isGenerating || isLocked || status === 'published'}
                       >
                         {isGenerating ? (
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -538,7 +594,10 @@ export function ExamEditor({
                     </p>
                   </TooltipContent>
                 </Tooltip>
-                <QuestionBankDrawer onAddQuestion={handleAddFromBank} disabled={isLocked} />
+                <QuestionBankDrawer
+                  onAddQuestion={handleAddFromBank}
+                  disabled={isLocked || status === 'published'}
+                />
               </div>
             </TooltipProvider>
           </div>
@@ -553,6 +612,7 @@ export function ExamEditor({
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="Ex: Prova de Matemática - 1º Bimestre"
+                disabled={status === 'published'}
               />
             </div>
             <div className="space-y-2">
@@ -561,6 +621,7 @@ export function ExamEditor({
                 classes={classes}
                 selectedClassIds={selectedClassIds}
                 onChange={setSelectedClassIds}
+                disabled={status === 'published'}
               />
             </div>
           </div>
@@ -569,14 +630,16 @@ export function ExamEditor({
         <Card className="p-4">
           <h3 className="mb-4 font-semibold">Ações</h3>
           <div className="space-y-2">
-            <Button className="w-full" onClick={handleSave} disabled={isPending}>
-              {isPending ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <Save className="mr-2 h-4 w-4" />
-              )}
-              {isPending ? 'Salvando...' : 'Salvar Prova'}
-            </Button>
+            {status === 'draft' && (
+              <Button className="w-full" onClick={handleSave} disabled={isPending}>
+                {isPending ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Save className="mr-2 h-4 w-4" />
+                )}
+                {isPending ? 'Salvando...' : 'Salvar Rascunho'}
+              </Button>
+            )}
             <Button className="w-full" variant="secondary" disabled title="Em construção">
               <FileDown className="mr-2 h-4 w-4" /> Word (.docx)
             </Button>
@@ -586,6 +649,16 @@ export function ExamEditor({
           </div>
         </Card>
       </div>
+
+      <ConfirmDialog
+        open={isPublishDialogOpen}
+        onOpenChange={setIsPublishDialogOpen}
+        title="Publicar Prova"
+        description="Tem certeza que deseja publicar esta prova? Ela ficará disponível para correção e não poderá mais ser editada."
+        onConfirm={confirmPublish}
+        confirmText="Publicar"
+        variant="default"
+      />
 
       {/* Center - Canvas */}
       <div

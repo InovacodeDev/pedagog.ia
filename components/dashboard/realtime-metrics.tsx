@@ -5,6 +5,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { FileText, Database, CheckCircle, Clock } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 
+import { getDashboardMetrics } from '@/server/actions/dashboard';
+import { useRouter } from 'next/navigation';
+
 interface DashboardMetrics {
   examsCount: number;
   questionsCount: number;
@@ -20,36 +23,26 @@ interface DashboardRealtimeMetricsProps {
 export function DashboardRealtimeMetrics({ initialMetrics }: DashboardRealtimeMetricsProps) {
   const [metrics, setMetrics] = useState<DashboardMetrics>(initialMetrics);
   const supabase = createClient();
+  const router = useRouter();
+
+  const refreshMetrics = async () => {
+    const { data } = await getDashboardMetrics();
+    if (data) {
+      setMetrics(data);
+      router.refresh(); // Also refresh server components if needed
+    }
+  };
 
   useEffect(() => {
     // Channel for Exams
-    const examsChannel = supabase
-      .channel('dashboard-exams')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'exams' }, (payload) => {
-        if (payload.eventType === 'INSERT') {
-          setMetrics((prev) => ({ ...prev, examsCount: prev.examsCount + 1 }));
-        } else if (payload.eventType === 'DELETE') {
-          setMetrics((prev) => ({ ...prev, examsCount: Math.max(0, prev.examsCount - 1) }));
-        }
+    const channel = supabase
+      .channel('dashboard-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'exams' }, () => {
+        refreshMetrics();
       })
-      .subscribe();
-
-    // Channel for Questions
-    const questionsChannel = supabase
-      .channel('dashboard-questions')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'questions' }, (payload) => {
-        if (payload.eventType === 'INSERT') {
-          setMetrics((prev) => ({ ...prev, questionsCount: prev.questionsCount + 1 }));
-        } else if (payload.eventType === 'DELETE') {
-          setMetrics((prev) => ({ ...prev, questionsCount: Math.max(0, prev.questionsCount - 1) }));
-        }
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'questions' }, () => {
+        refreshMetrics();
       })
-      .subscribe();
-
-    // Channel for Background Jobs (Corrections)
-    // Assuming 'ocr_correction' jobs count as corrections when completed
-    const jobsChannel = supabase
-      .channel('dashboard-jobs')
       .on(
         'postgres_changes',
         {
@@ -58,30 +51,16 @@ export function DashboardRealtimeMetrics({ initialMetrics }: DashboardRealtimeMe
           table: 'background_jobs',
           filter: 'status=eq.completed',
         },
-        (payload) => {
-          // We only want to increment if it wasn't completed before, but UPDATE trigger only fires on change.
-          // However, to be safe, we might just increment if we see a completion.
-          // Ideally we check payload.old.status !== 'completed' but payload.old is sometimes empty depending on replica identity.
-          // For a simple counter, we'll assume any update to completed is a new completion event we care about,
-          // or we could refine if we had more data.
-          // Let's assume job_type is 'ocr_correction' for corrections count.
-          const newJob = payload.new as { job_type: string };
-          if (newJob.job_type === 'ocr_correction') {
-            setMetrics((prev) => ({
-              ...prev,
-              correctionsCount: prev.correctionsCount + 1,
-              timeSavedHours: prev.timeSavedHours + 0.08, // +5 mins approx
-            }));
-          }
+        () => {
+          refreshMetrics();
         }
       )
       .subscribe();
 
     return () => {
-      supabase.removeChannel(examsChannel);
-      supabase.removeChannel(questionsChannel);
-      supabase.removeChannel(jobsChannel);
+      supabase.removeChannel(channel);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [supabase]);
 
   return (

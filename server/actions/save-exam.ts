@@ -11,6 +11,7 @@ const saveExamSchema = z.object({
   blocks: z.array(z.any()),
   title: z.string().optional(),
   class_ids: z.array(z.string().uuid()).optional(),
+  status: z.enum(['draft', 'published']).optional(),
 });
 
 export async function saveExamAction(input: z.infer<typeof saveExamSchema>) {
@@ -39,8 +40,8 @@ export async function saveExamAction(input: z.infer<typeof saveExamSchema>) {
     user_id: user.id,
     questions_list: blocks,
     updated_at: new Date().toISOString(),
-    // Default status for new exams
-    status: 'draft',
+    // Default status for new exams if not provided
+    status: input.status || 'draft',
     title: title || 'Nova Prova',
   };
 

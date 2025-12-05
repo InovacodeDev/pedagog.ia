@@ -32,6 +32,9 @@
 - [x] Background jobs queue for async processing
 - [x] Exam grades table for validated scores
 - [x] Stored procedures for secure encryption/decryption
+- [x] Criar aba de "extrato de crédito" nas configurações para mostrar o log de consumo do usuário
+- [x] Remover custo de crédito para geração de prova via banco de dados
+- [x] Adicionar log de compra de créditos e renovação mensal no extrato
 - [x] Database triggers for Edge Function webhooks
 - [x] Seed data for immediate testing
 

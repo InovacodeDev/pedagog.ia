@@ -5,10 +5,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { SettingsProfileForm } from '@/components/settings/settings-profile-form';
 import { SettingsAppearance } from '@/components/settings/settings-appearance';
 import { SettingsBilling } from '@/components/settings/settings-billing';
-import { User, Palette, CreditCard, Receipt } from 'lucide-react';
+import { User, Palette, CreditCard, Receipt, Coins } from 'lucide-react';
 import { SubscriptionDetails } from '@/types/app';
 import { getUserInvoices } from '@/server/queries/get-invoices';
 import { InvoicesList } from '@/components/settings/invoices-list';
+import { getCreditUsage, getCreditBalance } from '@/server/queries/get-credit-usage';
+import { CreditUsageList } from '@/components/settings/credit-usage-list';
 
 export default async function SettingsPage({
   searchParams,
@@ -73,6 +75,10 @@ export default async function SettingsPage({
   // Fetch invoices
   const invoices = await getUserInvoices(user.id);
 
+  // Fetch credit usage
+  const creditLogs = await getCreditUsage();
+  const creditBalance = await getCreditBalance();
+
   return (
     <div className="container mx-auto py-8 space-y-8">
       <div>
@@ -91,6 +97,9 @@ export default async function SettingsPage({
           <TabsTrigger value="billing" className="gap-2">
             <CreditCard className="h-4 w-4" /> Assinatura
           </TabsTrigger>
+          <TabsTrigger value="credits" className="gap-2">
+            <Coins className="h-4 w-4" /> Extrato de Crédito
+          </TabsTrigger>
           <TabsTrigger value="invoices" className="gap-2">
             <Receipt className="h-4 w-4" /> Faturas
           </TabsTrigger>
@@ -106,6 +115,10 @@ export default async function SettingsPage({
 
         <TabsContent value="billing">
           <SettingsBilling isPro={isPro} subscription={subscriptionData} />
+        </TabsContent>
+
+        <TabsContent value="credits">
+          <CreditUsageList logs={creditLogs} balance={creditBalance} />
         </TabsContent>
 
         <TabsContent value="invoices">

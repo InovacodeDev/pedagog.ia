@@ -72,6 +72,18 @@ export async function POST(req: Request) {
             console.error('Error adding credits:', error);
             return new NextResponse('Database Error', { status: 500 });
           }
+
+          // Log Credit Purchase
+          await supabaseAdmin.from('ia_cost_log').insert({
+            user_id: userId,
+            feature: 'credit_purchase',
+            model_used: 'stripe_topup',
+            input_tokens: 0,
+            output_tokens: 0,
+            cost_credits: -creditAmount,
+            provider_cost_brl: 0, // We could track real BRL cost here if we had it from metadata
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          } as any);
         }
         return new NextResponse(null, { status: 200 });
       }
@@ -125,6 +137,7 @@ export async function POST(req: Request) {
         const currentPeriodEnd = toISOString(subscription.current_period_end);
 
         if (currentPeriodEnd) {
+          // 1. Update Subscription
           const { error } = await supabaseAdmin
             .from('subscriptions')
             .update({
@@ -138,6 +151,40 @@ export async function POST(req: Request) {
           if (error) {
             console.error('Error updating subscription (invoice):', error);
             return new NextResponse('Database Error', { status: 500 });
+          }
+
+          // 2. Add Monthly Credits (if active)
+          // We assume any successful invoice payment for a subscription implies a renewal/start of a period
+          // For now, we give 300 credits for Pro.
+          if (subscription.status === 'active') {
+            // Find user_id from subscription table first
+            const { data: subData } = await supabaseAdmin
+              .from('subscriptions')
+              .select('user_id')
+              .eq('stripe_subscription_id', subscriptionId)
+              .single();
+
+            if (subData?.user_id) {
+              const MONTHLY_CREDITS = 300;
+
+              // Add credits
+              await supabaseAdmin.rpc('deduct_user_credits', {
+                p_user_id: subData.user_id,
+                p_amount: -MONTHLY_CREDITS,
+              });
+
+              // Log Renewal
+              await supabaseAdmin.from('ia_cost_log').insert({
+                user_id: subData.user_id,
+                feature: 'monthly_renewal',
+                model_used: 'plan_pro',
+                input_tokens: 0,
+                output_tokens: 0,
+                cost_credits: -MONTHLY_CREDITS,
+                provider_cost_brl: 0,
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              } as any);
+            }
           }
         }
       }

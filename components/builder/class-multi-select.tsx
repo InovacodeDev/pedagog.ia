@@ -17,9 +17,15 @@ interface ClassMultiSelectProps {
   classes: ClassItem[];
   selectedClassIds: string[];
   onChange: (ids: string[]) => void;
+  disabled?: boolean;
 }
 
-export function ClassMultiSelect({ classes, selectedClassIds, onChange }: ClassMultiSelectProps) {
+export function ClassMultiSelect({
+  classes,
+  selectedClassIds,
+  onChange,
+  disabled,
+}: ClassMultiSelectProps) {
   const handleSelect = (classId: string) => {
     if (selectedClassIds.includes(classId)) {
       onChange(selectedClassIds.filter((id) => id !== classId));
@@ -33,7 +39,7 @@ export function ClassMultiSelect({ classes, selectedClassIds, onChange }: ClassM
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" className="w-full justify-between">
+        <Button variant="outline" className="w-full justify-between" disabled={disabled}>
           <span className="truncate">
             {selectedLabels.length > 0
               ? `${selectedLabels.length} turma(s) selecionada(s)`
