@@ -28,6 +28,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import Link from 'next/link';
 import {
@@ -447,58 +448,99 @@ export function ExamEditor({
             </span>
           </div>
           <div className="space-y-2">
-            <Button
-              variant="outline"
-              className="w-full justify-start"
-              onClick={() => addBlock('header')}
-              disabled={hasHeader}
-              title={hasHeader ? 'A prova já possui um cabeçalho' : 'Adicionar cabeçalho'}
-            >
-              <ImageIcon className="mr-2 h-4 w-4" /> Cabeçalho
-            </Button>
-            <Button
-              variant="outline"
-              className="w-full justify-start"
-              onClick={() => addBlock('multiple_choice')}
-              disabled={isLocked}
-              title={isLocked ? lockReason : 'Adicionar questão de múltipla escolha'}
-            >
-              <List className="mr-2 h-4 w-4" /> Múltipla Escolha
-            </Button>
-            <Button
-              variant="outline"
-              className="w-full justify-start"
-              onClick={() => addBlock('essay')}
-              disabled={isLocked}
-              title={isLocked ? lockReason : 'Adicionar questão dissertativa'}
-            >
-              <AlignLeft className="mr-2 h-4 w-4" /> Dissertativa
-            </Button>
-            <Button
-              variant="outline"
-              className="w-full justify-start"
-              onClick={() => addBlock('text')}
-            >
-              <Type className="mr-2 h-4 w-4" /> Texto / Instrução
-            </Button>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="w-full">
+                    <Button
+                      variant="outline"
+                      className="w-full justify-start"
+                      onClick={() => addBlock('header')}
+                      disabled={hasHeader}
+                    >
+                      <ImageIcon className="mr-2 h-4 w-4" /> Cabeçalho
+                    </Button>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{hasHeader ? 'A prova já possui um cabeçalho' : 'Adicionar cabeçalho'}</p>
+                </TooltipContent>
+              </Tooltip>
 
-            <div className="pt-2 border-t space-y-2">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="w-full">
+                    <Button
+                      variant="outline"
+                      className="w-full justify-start"
+                      onClick={() => addBlock('multiple_choice')}
+                      disabled={isLocked}
+                    >
+                      <List className="mr-2 h-4 w-4" /> Múltipla Escolha
+                    </Button>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{isLocked ? lockReason : 'Adicionar questão de múltipla escolha'}</p>
+                </TooltipContent>
+              </Tooltip>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="w-full">
+                    <Button
+                      variant="outline"
+                      className="w-full justify-start"
+                      onClick={() => addBlock('essay')}
+                      disabled={isLocked}
+                    >
+                      <AlignLeft className="mr-2 h-4 w-4" /> Dissertativa
+                    </Button>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{isLocked ? lockReason : 'Adicionar questão dissertativa'}</p>
+                </TooltipContent>
+              </Tooltip>
+
               <Button
-                variant="default"
-                className="w-full justify-start bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:from-purple-700 hover:to-blue-700"
-                onClick={handleAutoGenerate}
-                disabled={isGenerating || isLocked}
-                title={isLocked ? lockReason : 'Gerar questões automaticamente'}
+                variant="outline"
+                className="w-full justify-start"
+                onClick={() => addBlock('text')}
               >
-                {isGenerating ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <Wand2 className="mr-2 h-4 w-4" />
-                )}
-                Gerar Prova Automática
+                <Type className="mr-2 h-4 w-4" /> Texto / Instrução
               </Button>
-              <QuestionBankDrawer onAddQuestion={handleAddFromBank} disabled={isLocked} />
-            </div>
+
+              <div className="pt-2 border-t space-y-2">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="w-full">
+                      <Button
+                        variant="default"
+                        className="w-full justify-start bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:from-purple-700 hover:to-blue-700"
+                        onClick={handleAutoGenerate}
+                        disabled={isGenerating || isLocked}
+                      >
+                        {isGenerating ? (
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        ) : (
+                          <Wand2 className="mr-2 h-4 w-4" />
+                        )}
+                        Gerar Prova Automática
+                      </Button>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>
+                      {isLocked
+                        ? lockReason
+                        : 'Gerar questões automaticamente (Consome 0.2 créditos)'}
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
+                <QuestionBankDrawer onAddQuestion={handleAddFromBank} disabled={isLocked} />
+              </div>
+            </TooltipProvider>
           </div>
         </Card>
 
