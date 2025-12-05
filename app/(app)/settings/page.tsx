@@ -66,6 +66,8 @@ export default async function SettingsPage({
     name: user.user_metadata?.full_name || user.email?.split('@')[0] || '',
     email: user.email || '',
     avatar_url: user.user_metadata?.avatar_url || '',
+    school_name: user.user_metadata?.school_name || '',
+    disciplines: user.user_metadata?.disciplines || [],
   };
 
   // Fetch invoices

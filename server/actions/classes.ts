@@ -153,3 +153,28 @@ export async function deleteClassAction(id: string) {
   revalidatePath('/classes');
   return { success: true, message: 'Turma excluída com sucesso!' };
 }
+
+export async function getExamsByClassAction(classId: string) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    throw new Error('Unauthorized');
+  }
+
+  /* eslint-disable @typescript-eslint/no-explicit-any */
+  const { data, error } = await (supabase as any)
+    .from('exam_classes')
+    .select('exam:exams(*)')
+    .eq('class_id', classId);
+
+  if (error) {
+    console.error('Error fetching class exams:', error);
+    return [];
+  }
+
+  // Flatten the result to return just the exam objects
+  return data.map((item: any) => item.exam).filter(Boolean);
+}

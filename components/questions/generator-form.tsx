@@ -30,10 +30,15 @@ import {
 } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { generateQuestionsV2Action, saveQuestionsAction } from '@/server/actions/questions';
+import {
+  generateQuestionsV2Action,
+  saveQuestionsAction,
+  generateExamFromDatabaseAction,
+} from '@/server/actions/questions';
 import { ModelSelector } from '@/components/ui/model-selector';
 import { GeneratedQuestion } from '@/types/questions';
 import { GeneratedQuestionCard } from './generated-question-card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const formSchema = z
   .object({
@@ -96,14 +101,19 @@ const DISCIPLINES = [
 
 const GRADE_LEVELS = ['Fundamental I', 'Fundamental II', 'Ensino Médio'];
 
-export function GeneratorForm({ isPro = false }: { isPro?: boolean }) {
+export function GeneratorForm({
+  isPro = false,
+  onImport,
+}: {
+  isPro?: boolean;
+  onImport?: (questions: GeneratedQuestion[]) => void;
+}) {
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [generatedQuestions, setGeneratedQuestions] = useState<GeneratedQuestion[] | null>(null);
   const [selectedIndices, setSelectedIndices] = useState<number[]>([]);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
-  // const [currentJobId, setCurrentJobId] = useState<string | null>(null); // Removed
-  // const supabase = createClient(); // Removed usage for polling
+  const [generationMode, setGenerationMode] = useState<'ai' | 'database'>('ai');
 
   const MAX_SIZE = isPro ? 10 * 1024 * 1024 : 5 * 1024 * 1024;
 
@@ -167,7 +177,10 @@ export function GeneratorForm({ isPro = false }: { isPro?: boolean }) {
     },
   });
 
-  // Polling effect removed
+  // DB Form State
+  const [dbDiscipline, setDbDiscipline] = useState('');
+  const [dbSubject, setDbSubject] = useState('');
+  const [dbQuantity, setDbQuantity] = useState(5);
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
@@ -209,6 +222,56 @@ export function GeneratorForm({ isPro = false }: { isPro?: boolean }) {
     }
   }
 
+  async function onDbSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!dbDiscipline) {
+      toast.error('Selecione uma matéria.');
+      return;
+    }
+
+    setIsLoading(true);
+    setGeneratedQuestions(null);
+
+    try {
+      const result = await generateExamFromDatabaseAction({
+        discipline: dbDiscipline,
+        subject: dbSubject,
+        quantity: dbQuantity,
+      });
+
+      if (!result.success || !result.questions) {
+        throw new Error(result.error || 'Erro ao buscar questões.');
+      }
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const mappedQuestions: GeneratedQuestion[] = result.questions.map((q: any) => ({
+        stem: q.content.stem || q.content,
+        type: q.type,
+        options: q.options,
+        correct_answer: q.correct_answer,
+        explanation: q.explanation,
+        discipline: q.discipline,
+        subject: q.subject,
+        difficulty: q.difficulty,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        content: q.content as any,
+        support_texts: q.content.support_texts,
+      }));
+
+      setGeneratedQuestions(mappedQuestions);
+      setSelectedIndices(mappedQuestions.map((_, i) => i));
+      toast.success('Questões recuperadas do banco!');
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        toast.error(error.message);
+      } else {
+        toast.error('Ocorreu um erro desconhecido.');
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
   const handleSave = async () => {
     if (!generatedQuestions) return;
 
@@ -219,12 +282,16 @@ export function GeneratorForm({ isPro = false }: { isPro?: boolean }) {
       return;
     }
 
+    if (onImport) {
+      onImport(questionsToSave);
+      return;
+    }
+
     setIsSaving(true);
     try {
       const result = await saveQuestionsAction(questionsToSave);
       if (result.success) {
         toast.success('Questões salvas no Banco de Questões!');
-        setGeneratedQuestions(null);
       } else {
         toast.error(`Erro ao salvar: ${result.error}`);
       }
@@ -245,259 +312,324 @@ export function GeneratorForm({ isPro = false }: { isPro?: boolean }) {
               <CardTitle>Configuração da Geração</CardTitle>
             </CardHeader>
             <CardContent>
-              <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                  <FormField
-                    control={form.control}
-                    name="model_tier"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormControl>
-                          <ModelSelector value={field.value} onValueChange={field.onChange} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+              <Tabs
+                defaultValue="ai"
+                onValueChange={(v) => setGenerationMode(v as 'ai' | 'database')}
+              >
+                <TabsList className="grid w-full grid-cols-2 mb-6">
+                  <TabsTrigger value="ai">IA Generativa</TabsTrigger>
+                  <TabsTrigger value="database">Banco de Questões</TabsTrigger>
+                </TabsList>
 
-                  {/* Metadata Fields */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <FormField
-                      control={form.control}
-                      name="discipline"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Matéria</FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <TabsContent value="ai">
+                  <Form {...form}>
+                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                      <FormField
+                        control={form.control}
+                        name="model_tier"
+                        render={({ field }) => (
+                          <FormItem>
                             <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Selecione..." />
-                              </SelectTrigger>
+                              <ModelSelector value={field.value} onValueChange={field.onChange} />
                             </FormControl>
-                            <SelectContent>
-                              {DISCIPLINES.map((d) => (
-                                <SelectItem key={d} value={d}>
-                                  {d}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="grade_level"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Ano/Série</FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Selecione..." />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {GRADE_LEVELS.map((l) => (
-                                <SelectItem key={l} value={l}>
-                                  {l}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-
-                  <FormField
-                    control={form.control}
-                    name="subject"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Assunto</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Ex: Equação de 2º Grau" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="content"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Contexto</FormLabel>
-                        <FormControl>
-                          <Textarea
-                            placeholder="Cole aqui o texto base, link ou tópico..."
-                            className="min-h-[150px]"
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormDescription>Mínimo de 50 caracteres.</FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <div className="space-y-4">
-                    <FormLabel>Arquivos de Contexto (PDF, Imagens, Texto)</FormLabel>
-                    <div className="flex items-center gap-4">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => document.getElementById('file-upload')?.click()}
-                      >
-                        <Upload className="mr-2 h-4 w-4" />
-                        Adicionar Arquivos
-                      </Button>
-                      <input
-                        id="file-upload"
-                        type="file"
-                        className="hidden"
-                        multiple
-                        accept=".pdf,.txt,.doc,.docx,.png,.jpg,.jpeg"
-                        onChange={handleFileChange}
+                            <FormMessage />
+                          </FormItem>
+                        )}
                       />
-                      <span className="text-xs text-muted-foreground">
-                        Máx: {isPro ? '10MB' : '5MB'}
-                      </span>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <FormField
+                          control={form.control}
+                          name="discipline"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Matéria</FormLabel>
+                              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Selecione..." />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  {DISCIPLINES.map((d) => (
+                                    <SelectItem key={d} value={d}>
+                                      {d}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="grade_level"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Ano/Série</FormLabel>
+                              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Selecione..." />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  {GRADE_LEVELS.map((l) => (
+                                    <SelectItem key={l} value={l}>
+                                      {l}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+
+                      <FormField
+                        control={form.control}
+                        name="subject"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Assunto</FormLabel>
+                            <FormControl>
+                              <Input placeholder="Ex: Equação de 2º Grau" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="content"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Contexto</FormLabel>
+                            <FormControl>
+                              <Textarea
+                                placeholder="Cole aqui o texto base, link ou tópico..."
+                                className="min-h-[150px]"
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormDescription>Mínimo de 50 caracteres.</FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <div className="space-y-4">
+                        <FormLabel>Arquivos de Contexto (PDF, Imagens, Texto)</FormLabel>
+                        <div className="flex items-center gap-4">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => document.getElementById('file-upload')?.click()}
+                          >
+                            <Upload className="mr-2 h-4 w-4" />
+                            Adicionar Arquivos
+                          </Button>
+                          <input
+                            id="file-upload"
+                            type="file"
+                            className="hidden"
+                            multiple
+                            accept=".pdf,.txt,.doc,.docx,.png,.jpg,.jpeg"
+                            onChange={handleFileChange}
+                          />
+                          <span className="text-xs text-muted-foreground">
+                            Máx: {isPro ? '10MB' : '5MB'}
+                          </span>
+                        </div>
+
+                        {selectedFiles.length > 0 && (
+                          <div className="space-y-2">
+                            {selectedFiles.map((file, index) => (
+                              <div
+                                key={index}
+                                className="flex items-center justify-between p-2 border rounded-md bg-muted/50"
+                              >
+                                <div className="flex items-center gap-2 overflow-hidden">
+                                  <FileText className="h-4 w-4 flex-shrink-0" />
+                                  <span className="text-sm truncate">{file.name}</span>
+                                  <span className="text-xs text-muted-foreground">
+                                    ({(file.size / 1024).toFixed(1)} KB)
+                                  </span>
+                                </div>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-6 w-6"
+                                  onClick={() => removeFile(index)}
+                                >
+                                  <X className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      <FormField
+                        control={form.control}
+                        name="quantity"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Quantidade: {field.value}</FormLabel>
+                            <FormControl>
+                              <Slider
+                                min={1}
+                                max={10}
+                                step={1}
+                                defaultValue={[field.value]}
+                                onValueChange={(vals) => field.onChange(vals[0])}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="types"
+                        render={() => (
+                          <FormItem>
+                            <FormLabel>Tipos de Questão</FormLabel>
+                            <div className="grid grid-cols-2 gap-4">
+                              {QUESTION_TYPES.map((type) => (
+                                <FormField
+                                  key={type.id}
+                                  control={form.control}
+                                  name="types"
+                                  render={({ field }) => {
+                                    return (
+                                      <FormItem
+                                        key={type.id}
+                                        className="flex flex-row items-start space-x-3 space-y-0"
+                                      >
+                                        <FormControl>
+                                          <Checkbox
+                                            checked={field.value?.includes(type.id)}
+                                            onCheckedChange={(checked) => {
+                                              return checked
+                                                ? field.onChange([...field.value, type.id])
+                                                : field.onChange(
+                                                    field.value?.filter(
+                                                      (value) => value !== type.id
+                                                    )
+                                                  );
+                                            }}
+                                          />
+                                        </FormControl>
+                                        <FormLabel className="font-normal">{type.label}</FormLabel>
+                                      </FormItem>
+                                    );
+                                  }}
+                                />
+                              ))}
+                            </div>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="style"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Estilo</FormLabel>
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Selecione um estilo" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {STYLES.map((style) => (
+                                  <SelectItem key={style.value} value={style.value}>
+                                    {style.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <Button type="submit" className="w-full" disabled={isLoading}>
+                        {isLoading ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Gerando...
+                          </>
+                        ) : (
+                          <>
+                            <Wand2 className="mr-2 h-4 w-4" /> Gerar Questões
+                          </>
+                        )}
+                      </Button>
+                    </form>
+                  </Form>
+                </TabsContent>
+
+                <TabsContent value="database">
+                  <form onSubmit={onDbSubmit} className="space-y-6">
+                    <div className="space-y-2">
+                      <FormLabel>Matéria</FormLabel>
+                      <Select value={dbDiscipline} onValueChange={setDbDiscipline}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {DISCIPLINES.map((d) => (
+                            <SelectItem key={d} value={d}>
+                              {d}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
 
-                    {selectedFiles.length > 0 && (
-                      <div className="space-y-2">
-                        {selectedFiles.map((file, index) => (
-                          <div
-                            key={index}
-                            className="flex items-center justify-between p-2 border rounded-md bg-muted/50"
-                          >
-                            <div className="flex items-center gap-2 overflow-hidden">
-                              <FileText className="h-4 w-4 flex-shrink-0" />
-                              <span className="text-sm truncate">{file.name}</span>
-                              <span className="text-xs text-muted-foreground">
-                                ({(file.size / 1024).toFixed(1)} KB)
-                              </span>
-                            </div>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon"
-                              className="h-6 w-6"
-                              onClick={() => removeFile(index)}
-                            >
-                              <X className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
+                    <div className="space-y-2">
+                      <FormLabel>Assunto (Opcional)</FormLabel>
+                      <Input
+                        placeholder="Ex: Frações"
+                        value={dbSubject}
+                        onChange={(e) => setDbSubject(e.target.value)}
+                      />
+                    </div>
 
-                  <FormField
-                    control={form.control}
-                    name="quantity"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Quantidade: {field.value}</FormLabel>
-                        <FormControl>
-                          <Slider
-                            min={1}
-                            max={10}
-                            step={1}
-                            defaultValue={[field.value]}
-                            onValueChange={(vals) => field.onChange(vals[0])}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                    <div className="space-y-2">
+                      <FormLabel>Quantidade: {dbQuantity}</FormLabel>
+                      <Slider
+                        min={1}
+                        max={20}
+                        step={1}
+                        value={[dbQuantity]}
+                        onValueChange={(vals) => setDbQuantity(vals[0])}
+                      />
+                    </div>
 
-                  <FormField
-                    control={form.control}
-                    name="types"
-                    render={() => (
-                      <FormItem>
-                        <FormLabel>Tipos de Questão</FormLabel>
-                        <div className="grid grid-cols-2 gap-4">
-                          {QUESTION_TYPES.map((type) => (
-                            <FormField
-                              key={type.id}
-                              control={form.control}
-                              name="types"
-                              render={({ field }) => {
-                                return (
-                                  <FormItem
-                                    key={type.id}
-                                    className="flex flex-row items-start space-x-3 space-y-0"
-                                  >
-                                    <FormControl>
-                                      <Checkbox
-                                        checked={field.value?.includes(type.id)}
-                                        onCheckedChange={(checked) => {
-                                          return checked
-                                            ? field.onChange([...field.value, type.id])
-                                            : field.onChange(
-                                                field.value?.filter((value) => value !== type.id)
-                                              );
-                                        }}
-                                      />
-                                    </FormControl>
-                                    <FormLabel className="font-normal">{type.label}</FormLabel>
-                                  </FormItem>
-                                );
-                              }}
-                            />
-                          ))}
-                        </div>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="style"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Estilo</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Selecione um estilo" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {STYLES.map((style) => (
-                              <SelectItem key={style.value} value={style.value}>
-                                {style.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <Button type="submit" className="w-full" disabled={isLoading}>
-                    {isLoading ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Gerando...
-                      </>
-                    ) : (
-                      <>
-                        <Wand2 className="mr-2 h-4 w-4" /> Gerar Questões
-                      </>
-                    )}
-                  </Button>
-                </form>
-              </Form>
+                    <Button type="submit" className="w-full" disabled={isLoading}>
+                      {isLoading ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Buscando...
+                        </>
+                      ) : (
+                        <>
+                          <Wand2 className="mr-2 h-4 w-4" /> Buscar Questões (0.2 créditos)
+                        </>
+                      )}
+                    </Button>
+                  </form>
+                </TabsContent>
+              </Tabs>
             </CardContent>
           </Card>
         </div>
@@ -515,11 +647,17 @@ export function GeneratorForm({ isPro = false }: { isPro?: boolean }) {
           {!isLoading && generatedQuestions && (
             <>
               <div className="flex justify-between items-center">
-                <h3 className="text-xl font-semibold">Questões Geradas</h3>
+                <h3 className="text-xl font-semibold">
+                  {generationMode === 'ai' ? 'Questões Geradas' : 'Questões Selecionadas'}
+                </h3>
                 <Button onClick={handleSave} disabled={isSaving}>
                   {isSaving ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Salvando...
+                    </>
+                  ) : onImport ? (
+                    <>
+                      <Save className="mr-2 h-4 w-4" /> Adicionar à Prova
                     </>
                   ) : (
                     <>
@@ -553,7 +691,7 @@ export function GeneratorForm({ isPro = false }: { isPro?: boolean }) {
           {!isLoading && !generatedQuestions && (
             <div className="flex flex-col items-center justify-center h-full text-muted-foreground p-8 border-2 border-dashed rounded-xl">
               <Wand2 className="h-12 w-12 mb-4 opacity-20" />
-              <p>Preencha o formulário para gerar questões com IA.</p>
+              <p>Preencha o formulário para gerar questões.</p>
             </div>
           )}
         </div>

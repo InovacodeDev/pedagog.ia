@@ -36,6 +36,7 @@ const routes = [
     icon: Camera,
     href: '/scan',
     color: 'text-orange-700',
+    disabled: true, // Added for disabled state
   },
   {
     label: 'Configurações',
@@ -65,6 +66,24 @@ export function Sidebar({ isPro = false }: SidebarProps) {
         <div className="space-y-1">
           {routes.map((route) => {
             const isActive = pathname === route.href || pathname.startsWith(`${route.href}/`);
+
+            if (route.disabled) {
+              return (
+                <div
+                  key={route.href}
+                  className={cn(
+                    'text-sm group flex p-3 w-full justify-start font-medium cursor-not-allowed rounded-lg opacity-50',
+                    'text-[hsl(var(--sidebar-fg))]/70'
+                  )}
+                >
+                  <div className="flex items-center flex-1">
+                    <route.icon className="h-5 w-5 mr-3 text-current" />
+                    {route.label}
+                  </div>
+                </div>
+              );
+            }
+
             return (
               <Link
                 key={route.href}

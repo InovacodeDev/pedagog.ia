@@ -10,8 +10,6 @@ const styles = StyleSheet.create({
   },
   headerBlock: {
     marginBottom: 20,
-    borderBottomWidth: 2,
-    borderBottomColor: '#000',
     paddingBottom: 10,
   },
   schoolName: {
@@ -118,10 +116,17 @@ export const BuilderPDFDocument = ({ blocks }: BuilderPDFProps) => (
           );
         }
 
+        const stripHtml = (html: string) => {
+          return html.replace(/<[^>]*>?/gm, '');
+        };
+
+        console.log({ block });
         if (block.type === 'multiple_choice') {
           return (
             <View key={block.id} style={styles.questionBlock} wrap={false}>
-              <Text style={styles.questionText}>{block.content.text}</Text>
+              <Text style={styles.questionText}>
+                {stripHtml(block.questionData?.content?.stem ?? '')}
+              </Text>
               {block.content.options?.map((opt: string, idx: number) => (
                 <Text key={idx} style={styles.option}>
                   {String.fromCharCode(65 + idx)}) {opt}
@@ -131,11 +136,136 @@ export const BuilderPDFDocument = ({ blocks }: BuilderPDFProps) => (
           );
         }
 
-        if (block.type === 'essay') {
+        if (block.type === 'true_false') {
           return (
             <View key={block.id} style={styles.questionBlock} wrap={false}>
-              <Text style={styles.questionText}>{block.content.text}</Text>
-              <View style={styles.essaySpace} />
+              <Text style={styles.questionText}>
+                {stripHtml(block.questionData?.content?.stem ?? '')}
+              </Text>
+              {block.content.options?.map((opt: string, idx: number) => (
+                <Text key={idx} style={styles.option}>
+                  ( ) {opt}
+                </Text>
+              ))}
+            </View>
+          );
+        }
+
+        if (block.type === 'sum') {
+          return (
+            <View key={block.id} style={styles.questionBlock} wrap={false}>
+              <Text style={styles.questionText}>
+                {stripHtml(block.questionData?.content?.stem ?? '')}
+              </Text>
+              {block.content.options?.map((opt: string, idx: number) => {
+                const value = Math.pow(2, idx).toString().padStart(2, '0');
+                return (
+                  <Text key={idx} style={styles.option}>
+                    [{value}] {opt}
+                  </Text>
+                );
+              })}
+            </View>
+          );
+        }
+
+        if (block.type === 'association') {
+          const questionData = block.questionData || {};
+          const columnB = questionData.content?.column_b || [];
+
+          return (
+            <View key={block.id} style={styles.questionBlock} wrap={false}>
+              <Text style={styles.questionText}>
+                {stripHtml(block.questionData?.content?.stem ?? '')}
+              </Text>
+              <View style={{ flexDirection: 'row', gap: 20 }}>
+                <View style={{ flex: 1 }}>
+                  {block.content.options?.map((opt: string, idx: number) => (
+                    <Text key={`col-a-${idx}`} style={styles.option}>
+                      ( ) {opt.replace(/^\(\s*\)\s*/, '').trim()}
+                    </Text>
+                  ))}
+                </View>
+                <View style={{ flex: 1 }}>
+                  {columnB.map((text: string, idx: number) => (
+                    <Text key={`col-b-${idx}`} style={styles.option}>
+                      {String.fromCharCode(97 + idx)}) {text}
+                    </Text>
+                  ))}
+                </View>
+              </View>
+            </View>
+          );
+        }
+
+        if (block.type === 'open_ended') {
+          return (
+            <View key={block.id} style={styles.questionBlock} wrap={false}>
+              <Text style={styles.questionText}>
+                {stripHtml(block.questionData?.content?.stem ?? '')}
+              </Text>
+
+              {/* 8 Lines for Essay */}
+              <View style={{ marginTop: 10 }}>
+                {Array.from({ length: 8 }).map((_, i) => (
+                  <View
+                    key={i}
+                    style={{
+                      borderBottomWidth: 1,
+                      borderBottomColor: '#000',
+                      height: 20, // Line height
+                      marginBottom: 5,
+                    }}
+                  />
+                ))}
+              </View>
+            </View>
+          );
+        }
+
+        if (block.type === 'redaction' || block.type === 'essay') {
+          const questionData = block.questionData || {};
+          const genre = questionData.content?.genre;
+          const supportTexts = questionData.content?.support_texts || [];
+
+          return (
+            <View key={block.id} style={styles.questionBlock} wrap={false}>
+              {genre && (
+                <Text style={{ ...styles.questionText, fontStyle: 'italic' }}>
+                  Gênero Textual: {genre}
+                </Text>
+              )}
+
+              {supportTexts.map((text: string, idx: number) => (
+                <View
+                  key={idx}
+                  style={{ marginBottom: 10, padding: 5, backgroundColor: '#f9fafb' }}
+                >
+                  <Text style={{ fontWeight: 'bold', fontSize: 9 }}>
+                    Texto Motivador {idx + 1}:
+                  </Text>
+                  <Text style={{ fontSize: 9, fontStyle: 'italic' }}>{text}</Text>
+                </View>
+              ))}
+
+              <Text style={styles.questionText}>
+                {stripHtml(block.content.text || block.questionData?.content?.stem || '')}
+              </Text>
+
+              {/* 35 Lines for Redaction */}
+              <View style={{ marginTop: 10 }}>
+                {Array.from({ length: 35 }).map((_, i) => (
+                  <View
+                    key={i}
+                    style={{
+                      borderBottomWidth: 1,
+                      borderBottomColor: '#000',
+                      height: 20, // Line height
+                      marginBottom: 5,
+                    }}
+                  />
+                ))}
+              </View>
             </View>
           );
         }

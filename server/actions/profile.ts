@@ -8,6 +8,8 @@ const profileSchema = z.object({
   name: z.string().min(2, {
     message: 'Nome deve ter pelo menos 2 caracteres.',
   }),
+  school_name: z.string().optional(),
+  disciplines: z.string().optional(), // Received as comma-separated string
 });
 
 export async function updateProfileAction(formData: FormData) {
@@ -15,6 +17,8 @@ export async function updateProfileAction(formData: FormData) {
 
   const rawData = {
     name: formData.get('name'),
+    school_name: formData.get('school_name'),
+    disciplines: formData.get('disciplines'),
   };
 
   const validatedFields = profileSchema.safeParse(rawData);
@@ -27,11 +31,23 @@ export async function updateProfileAction(formData: FormData) {
     };
   }
 
-  const { name } = validatedFields.data;
+  const { name, school_name, disciplines } = validatedFields.data;
+
+  // Convert comma-separated string to array
+  const disciplinesArray = disciplines
+    ? disciplines
+        .split(',')
+        .map((d) => d.trim())
+        .filter(Boolean)
+    : [];
 
   try {
     const { error } = await supabase.auth.updateUser({
-      data: { full_name: name },
+      data: {
+        full_name: name,
+        school_name: school_name,
+        disciplines: disciplinesArray,
+      },
     });
 
     if (error) {

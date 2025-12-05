@@ -91,7 +91,8 @@ export const generateDocx = async (blocks: ExamBlock[]) => {
 
     // --- Questions ---
     const question = block.questionData;
-    const stem = question?.content?.stem || block.content.text || '';
+    const stripHtml = (html: string) => html.replace(/<[^>]*>?/gm, '');
+    const stem = stripHtml(question?.content?.stem || block.content.text || '');
     const type = question?.type || block.type;
     const options = question?.options || block.content.options || [];
 
@@ -99,7 +100,9 @@ export const generateDocx = async (blocks: ExamBlock[]) => {
     children.push(
       new Paragraph({
         children: [new TextRun({ text: stem, bold: true })],
-        spacing: { before: 200, after: 100 },
+        spacing: { before: 200, after: 400 }, // Increased spacing after stem
+        keepLines: true,
+        keepNext: true,
       })
     );
 
@@ -107,6 +110,7 @@ export const generateDocx = async (blocks: ExamBlock[]) => {
     switch (type) {
       case 'multiple_choice':
         options.forEach((opt: string, idx: number) => {
+          const isLast = idx === options.length - 1;
           children.push(
             new Paragraph({
               children: [
@@ -114,13 +118,17 @@ export const generateDocx = async (blocks: ExamBlock[]) => {
                 new TextRun(opt),
               ],
               indent: { left: 360 }, // Indent options
+              keepLines: true,
+              keepNext: !isLast,
+              spacing: isLast ? { after: 400 } : undefined, // Add spacing after last option
             })
           );
         });
         break;
 
       case 'true_false':
-        options.forEach((opt: string) => {
+        options.forEach((opt: string, idx: number) => {
+          const isLast = idx === options.length - 1;
           children.push(
             new Paragraph({
               children: [
@@ -128,13 +136,18 @@ export const generateDocx = async (blocks: ExamBlock[]) => {
                 new TextRun(opt),
               ],
               indent: { left: 360 },
+              keepLines: true,
+              keepNext: !isLast,
+              spacing: isLast ? { after: 400 } : undefined,
             })
           );
         });
         break;
 
+      case 'sum':
       case 'summation':
         options.forEach((opt: string, idx: number) => {
+          const isLast = idx === options.length - 1;
           const value = Math.pow(2, idx).toString().padStart(2, '0');
           children.push(
             new Paragraph({
@@ -145,6 +158,9 @@ export const generateDocx = async (blocks: ExamBlock[]) => {
               ],
               tabStops: [{ type: 'left', position: 720 }],
               indent: { left: 360 },
+              keepLines: true,
+              keepNext: !isLast,
+              spacing: isLast ? { after: 400 } : undefined,
             })
           );
         });
@@ -200,6 +216,8 @@ export const generateDocx = async (blocks: ExamBlock[]) => {
             },
           })
         );
+        // Add spacing paragraph after table
+        children.push(new Paragraph({ spacing: { after: 400 } }));
         break;
 
       case 'redaction':
@@ -211,6 +229,7 @@ export const generateDocx = async (blocks: ExamBlock[]) => {
             new Paragraph({
               children: [new TextRun({ text: 'Textos Motivadores:', bold: true, italics: true })],
               spacing: { before: 100 },
+              keepNext: true,
             })
           );
           supportTexts.forEach((text: string, i: number) => {
@@ -218,18 +237,22 @@ export const generateDocx = async (blocks: ExamBlock[]) => {
               new Paragraph({
                 children: [new TextRun({ text: `Texto ${i + 1}: ${text}`, italics: true })],
                 spacing: { after: 100 },
+                keepNext: true,
               })
             );
           });
         }
 
-        // Ruled Lines (30 lines)
-        for (let i = 0; i < 30; i++) {
+        // Ruled Lines (35 lines)
+        for (let i = 0; i < 35; i++) {
+          const isLast = i === 34;
           children.push(
             new Paragraph({
               text: '',
               border: { bottom: { color: '000000', space: 1, style: BorderStyle.SINGLE, size: 6 } },
               spacing: { after: 300 }, // Line height simulation
+              keepNext: !isLast,
+              ...(isLast ? { spacing: { after: 400 } } : {}),
             })
           );
         }
@@ -237,13 +260,16 @@ export const generateDocx = async (blocks: ExamBlock[]) => {
 
       case 'essay':
       case 'open_ended':
-        const lines = question?.difficulty === 'Hard' ? 10 : 5;
-        for (let i = 0; i < lines; i++) {
+        // 8 Lines
+        for (let i = 0; i < 8; i++) {
+          const isLast = i === 7;
           children.push(
             new Paragraph({
               text: '',
               border: { bottom: { color: '000000', space: 1, style: BorderStyle.SINGLE, size: 6 } },
               spacing: { after: 300 },
+              keepNext: !isLast,
+              ...(isLast ? { spacing: { after: 400 } } : {}),
             })
           );
         }

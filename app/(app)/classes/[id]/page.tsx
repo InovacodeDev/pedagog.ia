@@ -1,10 +1,13 @@
-import { getClassAction } from '@/server/actions/classes';
+import { getClassAction, getExamsByClassAction } from '@/server/actions/classes';
 import { getStudentsAction } from '@/server/actions/students';
 import { ClassStudentList } from '@/components/students/class-student-list';
 import { AddStudentDialog } from '@/components/students/add-student-dialog';
 import Link from 'next/link';
 import { ChevronRight, Users } from 'lucide-react';
 import { DataUnavailable } from '@/components/ui/data-unavailable';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ClassExamsList } from '@/components/classes/class-exams-list';
+import { ClassGradesList } from '@/components/classes/class-grades-list';
 
 interface ClassDetailsPageProps {
   params: Promise<{ id: string }>;
@@ -14,6 +17,7 @@ export default async function ClassDetailsPage({ params }: ClassDetailsPageProps
   const { id } = await params;
   const classData = await getClassAction(id);
   const { students, success, error } = await getStudentsAction(id);
+  const exams = await getExamsByClassAction(id);
 
   if (!classData) {
     return (
@@ -60,11 +64,26 @@ export default async function ClassDetailsPage({ params }: ClassDetailsPageProps
       </div>
 
       {/* Content */}
-      {!success ? (
-        <DataUnavailable message={error} />
-      ) : (
-        <ClassStudentList initialStudents={students || []} classId={classData.id} />
-      )}
+      <Tabs defaultValue="students" className="w-full">
+        <TabsList>
+          <TabsTrigger value="students">Alunos</TabsTrigger>
+          <TabsTrigger value="exams">Provas da Turma</TabsTrigger>
+          <TabsTrigger value="grades">Notas da Turma</TabsTrigger>
+        </TabsList>
+        <TabsContent value="students" className="mt-6">
+          {!success ? (
+            <DataUnavailable message={error} />
+          ) : (
+            <ClassStudentList initialStudents={students || []} classId={classData.id} />
+          )}
+        </TabsContent>
+        <TabsContent value="exams" className="mt-6">
+          <ClassExamsList exams={exams} />
+        </TabsContent>
+        <TabsContent value="grades" className="mt-6">
+          <ClassGradesList />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

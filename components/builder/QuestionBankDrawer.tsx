@@ -39,6 +39,7 @@ export interface QuestionBankItem {
 
 interface QuestionBankDrawerProps {
   onAddQuestion: (question: QuestionBankItem) => void;
+  disabled?: boolean;
 }
 
 const DISCIPLINES = [
@@ -57,7 +58,7 @@ const QUESTION_TYPES = [
   { id: 'true_false', label: 'V/F' },
 ];
 
-export function QuestionBankDrawer({ onAddQuestion }: QuestionBankDrawerProps) {
+export function QuestionBankDrawer({ onAddQuestion, disabled }: QuestionBankDrawerProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [questions, setQuestions] = useState<QuestionBankItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -111,7 +112,7 @@ export function QuestionBankDrawer({ onAddQuestion }: QuestionBankDrawerProps) {
   return (
     <Sheet open={isOpen} onOpenChange={setIsOpen}>
       <SheetTrigger asChild>
-        <Button variant="outline" className="w-full justify-start">
+        <Button variant="outline" className="w-full justify-start" disabled={disabled}>
           <Search className="mr-2 h-4 w-4" /> Adicionar do Banco
         </Button>
       </SheetTrigger>

@@ -433,3 +433,92 @@ export async function searchQuestionsAction(filters: {
 
   return { success: true, questions };
 }
+
+const GenerateExamFromDbSchema = z.object({
+  discipline: z.string().min(1, 'Selecione uma matéria.'),
+  subject: z.string().optional(),
+  quantity: z.number().min(1).max(50),
+  excludeTypes: z.array(z.string()).optional(),
+});
+
+export async function generateExamFromDatabaseAction(
+  input: z.infer<typeof GenerateExamFromDbSchema>
+) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) return { success: false, error: 'Unauthorized' };
+
+  const validation = GenerateExamFromDbSchema.safeParse(input);
+  if (!validation.success) {
+    return { success: false, error: validation.error.errors[0].message };
+  }
+
+  const { discipline, subject, quantity, excludeTypes } = validation.data;
+  const COST = 0.2;
+
+  // 1. Check and Deduct Credits first
+  const { data: deductionSuccess, error: deductionError } = await supabase.rpc(
+    'deduct_user_credits',
+    {
+      p_user_id: user.id,
+      p_amount: COST,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } as any
+  );
+
+  if (deductionError || !deductionSuccess) {
+    console.error('Credit deduction failed:', deductionError);
+    return { success: false, error: 'Créditos insuficientes para gerar a prova.' };
+  }
+
+  // 2. Fetch Questions
+  let queryBuilder = supabase
+    .from('questions')
+    .select('*')
+    .eq('user_id', user.id)
+    .eq('discipline', discipline);
+
+  if (subject) {
+    queryBuilder = queryBuilder.ilike('subject', `%${subject}%`);
+  }
+
+  if (excludeTypes && excludeTypes.length > 0) {
+    queryBuilder = queryBuilder.not(
+      'type',
+      'in',
+      `(${excludeTypes.map((t) => `"${t}"`).join(',')})`
+    );
+  }
+
+  const { data: questions, error: fetchError } = await queryBuilder;
+
+  if (fetchError) {
+    console.error('Error fetching questions:', fetchError);
+    return { success: false, error: 'Erro ao buscar questões no banco de dados.' };
+  }
+
+  if (!questions || questions.length === 0) {
+    return { success: false, error: 'Nenhuma questão encontrada para os critérios selecionados.' };
+  }
+
+  // 3. Random Selection
+  const shuffled = questions.sort(() => 0.5 - Math.random());
+  const selectedQuestions = shuffled.slice(0, quantity);
+
+  // 4. Log Usage
+  await supabase.from('ia_cost_log').insert({
+    user_id: user.id,
+    feature: 'generate_exam_db',
+    model_used: 'db_selection',
+    input_tokens: 0,
+    output_tokens: 0,
+    cost_credits: COST,
+    provider_cost_brl: 0,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  } as any);
+
+  return { success: true, questions: selectedQuestions };
+}

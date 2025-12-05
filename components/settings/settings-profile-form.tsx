@@ -28,6 +28,8 @@ const profileFormSchema = z.object({
   email: z.string().email({
     message: 'Email inválido.',
   }),
+  school_name: z.string().optional(),
+  disciplines: z.string().optional(),
 });
 
 type ProfileFormValues = z.infer<typeof profileFormSchema>;
@@ -37,6 +39,8 @@ interface SettingsProfileFormProps {
     name?: string;
     email?: string;
     avatar_url?: string;
+    school_name?: string;
+    disciplines?: string[];
   };
 }
 
@@ -47,6 +51,8 @@ export function SettingsProfileForm({ user }: SettingsProfileFormProps) {
     defaultValues: {
       name: user.name || '',
       email: user.email || '',
+      school_name: user.school_name || '',
+      disciplines: user.disciplines?.join(', ') || '',
     },
     mode: 'onChange',
   });
@@ -55,6 +61,8 @@ export function SettingsProfileForm({ user }: SettingsProfileFormProps) {
     startTransition(async () => {
       const formData = new FormData();
       formData.append('name', data.name);
+      if (data.school_name) formData.append('school_name', data.school_name);
+      if (data.disciplines) formData.append('disciplines', data.disciplines);
 
       const result = await updateProfileAction(formData);
 
@@ -70,7 +78,7 @@ export function SettingsProfileForm({ user }: SettingsProfileFormProps) {
     <Card>
       <CardHeader>
         <CardTitle>Perfil</CardTitle>
-        <CardDescription>Gerencie suas informações pessoais.</CardDescription>
+        <CardDescription>Gerencie suas informações pessoais e de ensino.</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="flex flex-col md:flex-row gap-8">
@@ -116,6 +124,44 @@ export function SettingsProfileForm({ user }: SettingsProfileFormProps) {
                       <Input placeholder="seu@email.com" {...field} disabled readOnly />
                     </FormControl>
                     <FormDescription>O email não pode ser alterado diretamente.</FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="school_name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Nome da Escola (Padrão)</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Ex: Escola Estadual..." {...field} disabled={isPending} />
+                    </FormControl>
+                    <FormDescription>
+                      Este nome será usado automaticamente no cabeçalho das provas.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="disciplines"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Matérias (Separadas por vírgula)</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="Ex: Matemática, Física, História"
+                        {...field}
+                        disabled={isPending}
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      As matérias que você leciona. Usadas para preenchimento rápido.
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}

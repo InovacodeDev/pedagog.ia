@@ -22,6 +22,15 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import Link from 'next/link';
+import {
   FileDown,
   Trash2,
   Type,
@@ -30,28 +39,38 @@ import {
   Image as ImageIcon,
   Save,
   Loader2,
+  Wand2,
+  AlertCircle,
 } from 'lucide-react';
 import { saveAs } from 'file-saver';
 import { pdf } from '@react-pdf/renderer';
 import { BuilderPDFDocument } from './BuilderPDF';
 import { QuestionBankDrawer, QuestionBankItem } from './QuestionBankDrawer';
-import { generateDocx } from '@/lib/docx-generator';
+// import { generateDocx } from '@/lib/docx-generator';
 import { toast } from 'sonner';
+// import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 import { SortableBlock, ExamBlock, BlockType } from './exam-block';
 import { saveExamAction } from '@/server/actions/save-exam';
 import { useTransition } from 'react';
 import { ClassItem } from '@/server/actions/classes';
 import { ClassMultiSelect } from './class-multi-select';
-
-// Mock Hook
+import { generateExamFromDatabaseAction } from '@/server/actions/questions';
 const useSubscription = () => ({ isPro: false });
+
+interface UserProfile {
+  name: string;
+  school_name: string;
+  disciplines: string[];
+}
 
 interface ExamEditorProps {
   examId?: string;
   initialTitle?: string;
   classes?: ClassItem[];
   initialClassIds?: string[];
+  initialBlocks?: ExamBlock[];
+  userProfile?: UserProfile;
 }
 
 export function ExamEditor({
@@ -59,24 +78,37 @@ export function ExamEditor({
   initialTitle,
   classes = [],
   initialClassIds = [],
+  initialBlocks,
+  userProfile,
 }: ExamEditorProps) {
   const { isPro } = useSubscription();
   const [isPending, startTransition] = useTransition();
+  const [isGenerating, setIsGenerating] = useState(false);
   const [examId, setExamId] = useState<string | undefined>(initialExamId);
-  const [blocks, setBlocks] = useState<ExamBlock[]>([
-    {
-      id: 'header-1',
-      type: 'header',
-      content: {
-        schoolName: 'Escola Modelo',
-        teacherName: '',
-        discipline: '',
-        gradeLevel: '',
-        date: '',
-        studentNameLabel: true,
+  const [title, setTitle] = useState(initialTitle || 'Nova Prova');
+
+  // Validation Checks
+  const hasSchoolConfig = !!userProfile?.school_name;
+  const hasDisciplinesConfig = userProfile?.disciplines && userProfile.disciplines.length > 0;
+  const hasClasses = classes && classes.length > 0;
+  const isConfigMissing = !hasSchoolConfig || !hasDisciplinesConfig || !hasClasses;
+
+  const [blocks, setBlocks] = useState<ExamBlock[]>(
+    initialBlocks || [
+      {
+        id: 'header-1',
+        type: 'header',
+        content: {
+          schoolName: userProfile?.school_name || 'Escola Modelo',
+          teacherName: userProfile?.name || '',
+          discipline: userProfile?.disciplines?.[0] || '',
+          gradeLevel: classes?.[0]?.name || '',
+          date: new Date().toISOString().split('T')[0],
+          studentNameLabel: true,
+        },
       },
-    },
-  ]);
+    ]
+  );
 
   React.useEffect(() => {
     if (!examId) {
@@ -85,6 +117,24 @@ export function ExamEditor({
   }, [examId]);
   const [selectedBlock, setSelectedBlock] = useState<ExamBlock | null>(null);
   const [selectedClassIds, setSelectedClassIds] = useState<string[]>(initialClassIds);
+
+  const questionCount = blocks.filter(
+    (b) => !['header', 'watermark', 'text'].includes(b.type)
+  ).length;
+
+  const hasRedaction = blocks.some(
+    (b) => b.type === 'redaction' || b.questionData?.type === 'redaction'
+  );
+
+  const isFull = questionCount >= 10;
+  const isLocked = isFull || hasRedaction;
+  const lockReason = hasRedaction
+    ? 'Prova de redação não permite mais questões'
+    : isFull
+      ? 'Limite de 10 questões atingido'
+      : '';
+
+  const hasHeader = blocks.some((b) => b.type === 'header');
 
   // Ensure watermark exists if not pro
   React.useEffect(() => {
@@ -138,6 +188,17 @@ export function ExamEditor({
           type === 'multiple_choice'
             ? ['Opção A', 'Opção B', 'Opção C', 'Opção D', 'Opção E']
             : undefined,
+        // Pre-fill header data if adding a header
+        ...(type === 'header'
+          ? {
+              schoolName: userProfile?.school_name || '',
+              teacherName: userProfile?.name || '',
+              discipline: userProfile?.disciplines?.[0] || '',
+              gradeLevel: classes?.[0]?.name || '',
+              date: new Date().toISOString().split('T')[0],
+              studentNameLabel: true,
+            }
+          : {}),
       },
     };
 
@@ -181,6 +242,87 @@ export function ExamEditor({
     setSelectedBlock(newBlock);
   };
 
+  const handleAutoGenerate = async () => {
+    const headerBlock = blocks.find((b) => b.type === 'header');
+    const discipline = headerBlock?.content.discipline;
+
+    if (!discipline) {
+      toast.error('Por favor, preencha a matéria no cabeçalho antes de gerar a prova.');
+      return;
+    }
+
+    if (isLocked) {
+      toast.error(lockReason);
+      return;
+    }
+
+    setIsGenerating(true);
+
+    try {
+      const maxToGenerate = 10 - questionCount;
+      // Generate between 1 and maxToGenerate, but at least 1.
+      // If maxToGenerate is large (e.g. 10), we might want a minimum of 5 like before,
+      // but we must respect the remaining slots.
+      // Logic: if we have 0 questions, generate 5-10.
+      // If we have 8 questions, generate 1-2.
+      const minQuantity = Math.min(5, maxToGenerate);
+      const quantity = Math.floor(Math.random() * (maxToGenerate - minQuantity + 1)) + minQuantity;
+
+      const result = await generateExamFromDatabaseAction({
+        discipline,
+        quantity,
+        excludeTypes: ['essay', 'redaction'], // Exclude redaction as requested
+      });
+
+      if (!result.success || !result.questions) {
+        toast.error(result.error || 'Erro ao gerar prova automática.');
+        return;
+      }
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const newBlocks: ExamBlock[] = (result.questions as any[]).map((q) => ({
+        id: `block-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        type: (q.type === 'multiple_choice'
+          ? 'multiple_choice'
+          : q.type === 'true_false'
+            ? 'true_false'
+            : q.type === 'sum'
+              ? 'sum'
+              : q.type === 'association'
+                ? 'association'
+                : q.type === 'redaction'
+                  ? 'redaction'
+                  : q.type === 'open_ended'
+                    ? 'open_ended'
+                    : 'essay') as BlockType,
+        content: {
+          text: q.stem || 'Questão sem enunciado',
+          options: q.options,
+          correctAnswer: q.correct_answer,
+        },
+        questionData: {
+          ...q,
+          content: q.content || { stem: q.stem, support_texts: q.support_texts },
+        },
+      }));
+
+      setBlocks((prev) => {
+        const watermarkIndex = prev.findIndex((b) => b.id === 'watermark');
+        if (watermarkIndex === -1) return [...prev, ...newBlocks];
+        const existingBlocks = [...prev];
+        existingBlocks.splice(watermarkIndex, 0, ...newBlocks);
+        return existingBlocks;
+      });
+
+      toast.success(`${newBlocks.length} questões geradas automaticamente!`);
+    } catch (error) {
+      console.error('Error generating exam:', error);
+      toast.error('Erro inesperado ao gerar prova.');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
   const updateBlock = (id: string, content: Partial<ExamBlock['content']>) => {
     setBlocks((prev) =>
       prev.map((b) => (b.id === id ? { ...b, content: { ...b.content, ...content } } : b))
@@ -197,6 +339,7 @@ export function ExamEditor({
     if (selectedBlock?.id === id) setSelectedBlock(null);
   };
 
+  /*
   const exportWord = async () => {
     try {
       const blob = await generateDocx(blocks);
@@ -207,10 +350,11 @@ export function ExamEditor({
       toast.error('Erro ao exportar para Word.');
     }
   };
+  */
 
   const exportPDF = async () => {
     const blob = await pdf(<BuilderPDFDocument blocks={blocks} />).toBlob();
-    saveAs(blob, 'prova-pedagog-ia.pdf');
+    saveAs(blob, `${title}.pdf`);
   };
 
   const handleSave = React.useCallback(() => {
@@ -223,7 +367,7 @@ export function ExamEditor({
       const result = await saveExamAction({
         examId,
         blocks,
-        title: initialTitle, // Or current title state if editable
+        title: title,
         class_ids: selectedClassIds,
       });
 
@@ -233,7 +377,7 @@ export function ExamEditor({
         toast.success('Prova salva com sucesso!');
       }
     });
-  }, [examId, blocks, initialTitle, selectedClassIds]);
+  }, [examId, blocks, title, selectedClassIds]);
 
   // Keyboard shortcut for saving
   React.useEffect(() => {
@@ -248,17 +392,67 @@ export function ExamEditor({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [handleSave]);
 
+  if (isConfigMissing) {
+    return (
+      <div className="flex h-[calc(100vh-6rem)] items-center justify-center p-8">
+        <Alert variant="destructive" className="max-w-2xl">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Configurações Pendentes</AlertTitle>
+          <AlertDescription className="mt-2 flex flex-col gap-4">
+            <p>
+              Para criar provas, você precisa completar seu perfil e ter turmas cadastradas. Isso
+              garante que o cabeçalho da prova seja gerado corretamente.
+            </p>
+            <div className="flex flex-col gap-2">
+              {!hasSchoolConfig && (
+                <div className="flex items-center gap-2">
+                  <span className="text-sm">• Nome da Escola não configurado.</span>
+                  <Link href="/settings" className="text-sm underline font-medium">
+                    Configurar Perfil
+                  </Link>
+                </div>
+              )}
+              {!hasDisciplinesConfig && (
+                <div className="flex items-center gap-2">
+                  <span className="text-sm">• Nenhuma matéria cadastrada.</span>
+                  <Link href="/settings" className="text-sm underline font-medium">
+                    Configurar Perfil
+                  </Link>
+                </div>
+              )}
+              {!hasClasses && (
+                <div className="flex items-center gap-2">
+                  <span className="text-sm">• Nenhuma turma cadastrada.</span>
+                  <Link href="/classes" className="text-sm underline font-medium">
+                    Criar Turma
+                  </Link>
+                </div>
+              )}
+            </div>
+          </AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
+
   return (
     <div className="flex h-[calc(100vh-6rem)] gap-6">
       {/* Left Panel - Toolbox */}
       <div className="w-64 flex-shrink-0 space-y-4">
         <Card className="p-4">
-          <h3 className="mb-4 font-semibold">Ferramentas</h3>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-semibold">Ferramentas</h3>
+            <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded-full">
+              {questionCount} questões
+            </span>
+          </div>
           <div className="space-y-2">
             <Button
               variant="outline"
               className="w-full justify-start"
               onClick={() => addBlock('header')}
+              disabled={hasHeader}
+              title={hasHeader ? 'A prova já possui um cabeçalho' : 'Adicionar cabeçalho'}
             >
               <ImageIcon className="mr-2 h-4 w-4" /> Cabeçalho
             </Button>
@@ -266,6 +460,8 @@ export function ExamEditor({
               variant="outline"
               className="w-full justify-start"
               onClick={() => addBlock('multiple_choice')}
+              disabled={isLocked}
+              title={isLocked ? lockReason : 'Adicionar questão de múltipla escolha'}
             >
               <List className="mr-2 h-4 w-4" /> Múltipla Escolha
             </Button>
@@ -273,6 +469,8 @@ export function ExamEditor({
               variant="outline"
               className="w-full justify-start"
               onClick={() => addBlock('essay')}
+              disabled={isLocked}
+              title={isLocked ? lockReason : 'Adicionar questão dissertativa'}
             >
               <AlignLeft className="mr-2 h-4 w-4" /> Dissertativa
             </Button>
@@ -284,21 +482,45 @@ export function ExamEditor({
               <Type className="mr-2 h-4 w-4" /> Texto / Instrução
             </Button>
 
-            <div className="pt-2 border-t">
-              <QuestionBankDrawer onAddQuestion={handleAddFromBank} />
+            <div className="pt-2 border-t space-y-2">
+              <Button
+                variant="default"
+                className="w-full justify-start bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:from-purple-700 hover:to-blue-700"
+                onClick={handleAutoGenerate}
+                disabled={isGenerating || isLocked}
+                title={isLocked ? lockReason : 'Gerar questões automaticamente'}
+              >
+                {isGenerating ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Wand2 className="mr-2 h-4 w-4" />
+                )}
+                Gerar Prova Automática
+              </Button>
+              <QuestionBankDrawer onAddQuestion={handleAddFromBank} disabled={isLocked} />
             </div>
           </div>
         </Card>
 
         <Card className="p-4">
           <h3 className="mb-4 font-semibold">Configurações</h3>
-          <div className="space-y-2">
-            <Label>Vincular Turmas</Label>
-            <ClassMultiSelect
-              classes={classes}
-              selectedClassIds={selectedClassIds}
-              onChange={setSelectedClassIds}
-            />
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Nome da Prova</Label>
+              <Input
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="Ex: Prova de Matemática - 1º Bimestre"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Vincular Turmas</Label>
+              <ClassMultiSelect
+                classes={classes}
+                selectedClassIds={selectedClassIds}
+                onChange={setSelectedClassIds}
+              />
+            </div>
           </div>
         </Card>
 
@@ -313,7 +535,7 @@ export function ExamEditor({
               )}
               {isPending ? 'Salvando...' : 'Salvar Prova'}
             </Button>
-            <Button className="w-full" variant="secondary" onClick={exportWord}>
+            <Button className="w-full" variant="secondary" disabled title="Em construção">
               <FileDown className="mr-2 h-4 w-4" /> Word (.docx)
             </Button>
             <Button className="w-full" variant="outline" onClick={exportPDF}>
@@ -325,9 +547,17 @@ export function ExamEditor({
 
       {/* Center - Canvas */}
       <div
-        className="flex-1 overflow-y-auto bg-gray-100 p-8 rounded-lg shadow-inner"
+        className="flex-1 overflow-y-auto bg-gray-100 p-8 rounded-lg shadow-inner relative"
         onClick={() => setSelectedBlock(null)}
       >
+        {isGenerating && (
+          <div className="absolute inset-0 bg-white/50 backdrop-blur-sm z-50 flex items-center justify-center">
+            <div className="flex flex-col items-center gap-2">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <p className="text-sm font-medium text-muted-foreground">Gerando prova...</p>
+            </div>
+          </div>
+        )}
         <div className="mx-auto min-h-[29.7cm] w-[21cm] bg-white text-black p-[2cm] shadow-lg">
           <DndContext
             sensors={sensors}
@@ -339,6 +569,13 @@ export function ExamEditor({
                 <SortableBlock
                   key={block.id}
                   block={block}
+                  index={
+                    ['header', 'watermark', 'text'].includes(block.type)
+                      ? undefined
+                      : blocks
+                          .filter((b) => !['header', 'watermark', 'text'].includes(b.type))
+                          .findIndex((b) => b.id === block.id) + 1
+                  }
                   onDelete={deleteBlock}
                   onEdit={setSelectedBlock}
                 />
@@ -359,38 +596,65 @@ export function ExamEditor({
                   <Label>Nome da Escola</Label>
                   <Input
                     value={selectedBlock.content.schoolName || ''}
-                    onChange={(e) => updateBlock(selectedBlock.id, { schoolName: e.target.value })}
+                    disabled
+                    className="bg-muted"
                   />
                   <Label>Professor(a)</Label>
                   <Input
                     value={selectedBlock.content.teacherName || ''}
-                    onChange={(e) => updateBlock(selectedBlock.id, { teacherName: e.target.value })}
+                    disabled
+                    className="bg-muted"
                   />
                   <div className="grid grid-cols-2 gap-2">
                     <div>
                       <Label>Matéria</Label>
-                      <Input
-                        value={selectedBlock.content.discipline || ''}
-                        onChange={(e) =>
-                          updateBlock(selectedBlock.id, { discipline: e.target.value })
+                      <Select
+                        value={selectedBlock.content.discipline}
+                        onValueChange={(value) =>
+                          updateBlock(selectedBlock.id, { discipline: value })
                         }
-                      />
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {userProfile?.disciplines.map((d) => (
+                            <SelectItem key={d} value={d}>
+                              {d}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                     <div>
                       <Label>Turma</Label>
-                      <Input
-                        value={selectedBlock.content.gradeLevel || ''}
-                        onChange={(e) =>
-                          updateBlock(selectedBlock.id, { gradeLevel: e.target.value })
+                      <Select
+                        value={selectedBlock.content.gradeLevel}
+                        onValueChange={(value) =>
+                          updateBlock(selectedBlock.id, { gradeLevel: value })
                         }
-                      />
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {classes.map((c) => (
+                            <SelectItem key={c.id} value={c.name}>
+                              {c.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                   </div>
                   <Label>Data</Label>
-                  <Input
-                    value={selectedBlock.content.date || ''}
-                    onChange={(e) => updateBlock(selectedBlock.id, { date: e.target.value })}
-                  />
+                  <div className="relative">
+                    <Input
+                      type="date"
+                      value={selectedBlock.content.date || ''}
+                      onChange={(e) => updateBlock(selectedBlock.id, { date: e.target.value })}
+                    />
+                  </div>
                   <div className="flex items-center space-x-2 pt-2">
                     <input
                       type="checkbox"
