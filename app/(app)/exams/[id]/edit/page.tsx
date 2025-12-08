@@ -1,4 +1,5 @@
 import { ExamEditor } from '@/components/builder/ExamEditor';
+import { ExamBlock } from '@/components/builder/exam-block';
 import { getClassesAction } from '@/server/actions/classes';
 import { getExamAction } from '@/server/actions/get-exam';
 import { notFound, redirect } from 'next/navigation';
@@ -37,7 +38,7 @@ export default async function EditExamPage({ params }: PageProps) {
       <ExamEditor
         examId={exam.id}
         initialTitle={exam.title}
-        initialBlocks={exam.questions_list}
+        initialBlocks={exam.questions_list as unknown as ExamBlock[]}
         classes={classes}
         initialClassIds={exam.class_ids}
         userProfile={userProfile}
