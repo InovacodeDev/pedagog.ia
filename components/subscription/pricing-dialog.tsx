@@ -43,7 +43,7 @@ export function PricingDialog({ trigger, isOpen, onOpenChange }: PricingDialogPr
       <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold text-center">
-            Desbloqueie todo o potencial da Pedagogi.ai
+            Desbloqueie todo o potencial da Pedagog.IA
           </DialogTitle>
           <DialogDescription className="text-center">
             Escolha o plano ideal para suas necessidades

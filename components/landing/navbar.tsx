@@ -14,7 +14,7 @@ export function Navbar() {
     >
       <div className="container mx-auto flex h-16 items-center justify-between px-4 md:px-6">
         <Link href="/" className="flex items-center gap-2">
-          <span className="text-xl font-bold tracking-tighter text-indigo-600">Pedagogi.ai</span>
+          <span className="text-xl font-bold tracking-tighter text-indigo-600">Pedagog.IA</span>
         </Link>
 
         <nav className="hidden gap-6 md:flex">

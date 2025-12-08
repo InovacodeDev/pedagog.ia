@@ -1,4 +1,4 @@
-# 🎓 Pedagogi.ai
+# 🎓 Pedagog.IA
 
 ![Status](https://img.shields.io/badge/status-beta-blue)
 ![Next.js](https://img.shields.io/badge/Next.js-15-black)
@@ -7,7 +7,7 @@
 
 **O Sistema Operacional Cognitivo para Professores**
 
-Pedagogi.ai transforma fotos de provas em notas no diário de classe, automaticamente. Correção em segundos, privacidade blindada, e planejamento baseado na BNCC.
+Pedagog.IA transforma fotos de provas em notas no diário de classe, automaticamente. Correção em segundos, privacidade blindada, e planejamento baseado na BNCC.
 
 ---
 
@@ -97,7 +97,7 @@ NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_...
 # Generate with: npx web-push generate-vapid-keys
 NEXT_PUBLIC_VAPID_PUBLIC_KEY=your_public_key
 VAPID_PRIVATE_KEY=your_private_key
-VAPID_SUBJECT=mailto:support@pedagogi.ai
+VAPID_SUBJECT=mailto:support@pedagog.ia
 
 # Auth
 NEXTAUTH_SECRET=your_generated_secret # Generate with: openssl rand -base64 32
@@ -251,7 +251,7 @@ We welcome contributions! Please read our [Contributing Guide](CONTRIBUTING.md) 
 
 ## 💬 Support
 
-- **Email**: support@pedagogi.ai
+- **Email**: support@pedagog.ia
 - **Discord**: [Join our community](https://discord.gg/pedagogi)
 - **Issues**: [GitHub Issues](https://github.com/your-org/pedagog_ai/issues)
 

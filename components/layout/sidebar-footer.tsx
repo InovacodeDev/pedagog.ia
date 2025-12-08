@@ -47,7 +47,7 @@ export function SidebarFooter({
                   size="sm"
                 >
                   <Zap className="h-3 w-3 fill-current" />
-                  Upgrade Pro
+                  Fazer Upgrade
                 </Button>
               }
             />

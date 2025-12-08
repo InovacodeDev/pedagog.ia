@@ -69,7 +69,7 @@ export function AuthForm() {
   return (
     <Card className="w-full max-w-md mx-auto">
       <CardHeader className="space-y-1">
-        <CardTitle className="text-2xl font-bold text-center">Entrar no Pedagogi.ai</CardTitle>
+        <CardTitle className="text-2xl font-bold text-center">Entrar no Pedagog.IA</CardTitle>
         <CardDescription className="text-center">
           Digite seu email para receber um link de acesso seguro
         </CardDescription>

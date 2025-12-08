@@ -8,7 +8,7 @@ import { SidebarFooter } from '@/components/layout/sidebar-footer';
 
 const routes = [
   {
-    label: 'Dashboard',
+    label: 'Painel',
     icon: LayoutDashboard,
     href: '/home',
     color: 'text-sky-500',
@@ -61,7 +61,7 @@ export function Sidebar({ isPro = false }: SidebarProps) {
               P
             </div>
           </div>
-          <h1 className="text-2xl font-bold">Pedagogi.ai</h1>
+          <h1 className="text-2xl font-bold">Pedagog.IA</h1>
         </Link>
         <div className="space-y-1">
           {routes.map((route) => {

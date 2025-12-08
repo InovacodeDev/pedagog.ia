@@ -29,12 +29,12 @@ export interface QuestionBankItem {
   id: string;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   content: any;
-  type: string;
+  type: string | null;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   options?: any;
-  correct_answer?: string;
-  discipline?: string;
-  subject?: string;
+  correct_answer?: string | null;
+  discipline?: string | null;
+  subject?: string | null;
 }
 
 interface QuestionBankDrawerProps {

@@ -27,10 +27,10 @@ import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 interface Exam {
   id: string;
   title: string;
-  created_at: string;
-  status: string;
-  questions_list: unknown[];
-  correction_count: number;
+  created_at: string | null;
+  status: string | null;
+  questions_list: unknown;
+  correction_count: number | null;
 }
 
 interface ExamsRealtimeListProps {
@@ -44,7 +44,11 @@ export function ExamsRealtimeList({ initialExams }: ExamsRealtimeListProps) {
   const exams = useRealtimeSubscription({
     table: 'exams',
     initialData: initialExams,
-    orderBy: (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+    orderBy: (a, b) => {
+       const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
+       const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
+       return dateB - dateA;
+    },
   });
 
   const handleDuplicate = async (examId: string) => {
@@ -112,7 +116,7 @@ export function ExamsRealtimeList({ initialExams }: ExamsRealtimeListProps) {
                   <TableCell>{((exam.questions_list as unknown[])?.length ?? 2) - 2}</TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
-                      {exam.correction_count > 0 ? (
+                      {(exam.correction_count || 0) > 0 ? (
                         <Badge variant="destructive" className="flex gap-1 items-center">
                           <Lock className="h-3 w-3" /> Travada
                         </Badge>
@@ -123,7 +127,7 @@ export function ExamsRealtimeList({ initialExams }: ExamsRealtimeListProps) {
                       )}
                     </div>
                   </TableCell>
-                  <TableCell>{new Date(exam.created_at).toLocaleDateString('pt-BR')}</TableCell>
+                  <TableCell>{exam.created_at ? new Date(exam.created_at).toLocaleDateString('pt-BR') : '-'}</TableCell>
                   <TableCell>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -145,13 +149,15 @@ export function ExamsRealtimeList({ initialExams }: ExamsRealtimeListProps) {
                           <Copy className="mr-2 h-4 w-4" /> Duplicar
                         </DropdownMenuItem>
                         <DropdownMenuItem
-                          disabled={exam.correction_count > 0}
+                          disabled={(exam.correction_count || 0) > 0}
                           className={
-                            exam.correction_count > 0 ? 'opacity-50 cursor-not-allowed' : ''
+                            (exam.correction_count || 0) > 0
+                              ? 'opacity-50 cursor-not-allowed'
+                              : ''
                           }
-                          asChild={exam.correction_count === 0}
+                          asChild={(exam.correction_count || 0) === 0}
                         >
-                          {exam.correction_count === 0 ? (
+                          {(exam.correction_count || 0) === 0 ? (
                             <Link href={`/exams/${exam.id}/edit`}>
                               <Edit className="mr-2 h-4 w-4" /> Editar
                             </Link>

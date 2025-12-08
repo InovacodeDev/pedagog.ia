@@ -3,7 +3,7 @@ import { Metadata } from 'next'
 
 export const metadata: Metadata = {
   title: 'Login',
-  description: 'Acesse sua conta no Pedagogi.ai',
+  description: 'Acesse sua conta no Pedagog.IA',
 }
 
 export default function LoginPage() {
@@ -24,12 +24,12 @@ export default function LoginPage() {
           >
             <path d="M15 6v12a3 3 0 1 0 3-3H6a3 3 0 1 0 3 3V6a3 3 0 1 0-3 3h12a3 3 0 1 0-3-3" />
           </svg>
-          Pedagogi.ai
+          Pedagog.IA
         </div>
         <div className="relative z-20 mt-auto">
           <blockquote className="space-y-2">
             <p className="text-lg">
-              &ldquo;O Pedagogi.ai transformou a maneira como corrijo provas. Economizo horas toda
+              &ldquo;O Pedagog.IA transformou a maneira como corrijo provas. Economizo horas toda
               semana e posso focar mais nos meus alunos.&rdquo;
             </p>
             <footer className="text-sm">Sofia Martins</footer>

@@ -72,7 +72,7 @@ export async function uploadExamAction(formData: FormData): Promise<UploadExamRe
     if (!validation.success) {
       return {
         success: false,
-        error: validation.error.errors[0]?.message || 'Arquivo inválido',
+        error: validation.error.issues[0]?.message || 'Arquivo inválido',
       };
     }
 

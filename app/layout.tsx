@@ -15,7 +15,7 @@ const spaceGrotesk = Space_Grotesk({
 });
 
 export const metadata: Metadata = {
-  title: 'Pedagogi.ai | Sistema Operacional Cognitivo',
+  title: 'Pedagog.IA | Sistema Operacional Cognitivo',
   description: 'Correção de provas e planejamento automatizado para professores.',
 };
 

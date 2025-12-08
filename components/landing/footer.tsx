@@ -10,7 +10,7 @@ export function Footer() {
         <div className="grid gap-8 md:grid-cols-4 mb-8">
           <div className="col-span-1 md:col-span-2">
             <Link href="/" className="flex items-center gap-2 mb-4">
-              <span className="text-xl font-bold tracking-tighter text-white">Pedagogi.ai</span>
+              <span className="text-xl font-bold tracking-tighter text-white">Pedagog.IA</span>
             </Link>
             <p className="text-sm text-slate-400 max-w-xs">
               Transformando a educação através da tecnologia. Menos burocracia, mais ensino.
@@ -57,7 +57,7 @@ export function Footer() {
 
         <div className="pt-8 border-t border-slate-800 flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-sm text-slate-500">
-            © {new Date().getFullYear()} Pedagogi.ai. Todos os direitos reservados.
+            © {new Date().getFullYear()} Pedagog.IA. Todos os direitos reservados.
           </p>
           <div className="flex items-center gap-4">
             <Link href="#" className="text-slate-400 hover:text-white transition-colors">

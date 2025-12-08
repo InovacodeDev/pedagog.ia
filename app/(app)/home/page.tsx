@@ -28,9 +28,9 @@ export default async function DashboardPage() {
   };
 
   return (
-    <div className="space-y-8">
+    <div className="container mx-auto py-8 space-y-8">
       <div>
-        <h1 className="text-3xl font-display font-bold">Dashboard</h1>
+        <h1 className="text-3xl font-display font-bold">Painel</h1>
         <p className="text-muted-foreground">Visão geral da sua atividade e produtividade.</p>
       </div>
 
@@ -74,7 +74,7 @@ export default async function DashboardPage() {
                       </TableCell>
                       <TableCell>{exam.correction_count}</TableCell>
                       <TableCell className="text-right text-muted-foreground">
-                        {new Date(exam.created_at).toLocaleDateString('pt-BR')}
+                        {exam.created_at ? new Date(exam.created_at).toLocaleDateString('pt-BR') : '-'}
                       </TableCell>
                     </TableRow>
                   ))}

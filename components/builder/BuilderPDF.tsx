@@ -1,4 +1,3 @@
-import React from 'react';
 import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
 import { ExamBlock } from './exam-block';
 
@@ -276,7 +275,7 @@ export const BuilderPDFDocument = ({ blocks }: BuilderPDFProps) => (
       {/* Watermark / Footer */}
       {blocks.find((b) => b.id === 'watermark') && (
         <Text style={styles.watermark} fixed>
-          Prova criada com Pedagogi.ai - Otimize seu tempo.
+          Prova criada com Pedagog.IA - Otimize seu tempo.
         </Text>
       )}
     </Page>

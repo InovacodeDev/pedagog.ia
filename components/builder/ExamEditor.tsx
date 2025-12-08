@@ -153,7 +153,7 @@ export function ExamEditor({
           {
             id: 'watermark',
             type: 'text',
-            content: { text: 'Prova criada com Pedagogi.ai - Otimize seu tempo.' },
+            content: { text: 'Prova criada com Pedagog.IA - Otimize seu tempo.' },
           },
         ];
       });
@@ -233,7 +233,7 @@ export function ExamEditor({
       content: {
         text: stem || 'Questão sem enunciado',
         options: question.options,
-        correctAnswer: question.correct_answer,
+        correctAnswer: question.correct_answer || undefined,
       },
       questionData: question,
     };

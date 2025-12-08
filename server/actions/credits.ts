@@ -25,7 +25,7 @@ export async function buyCreditsAction(amount: number) {
         price_data: {
           currency: 'brl',
           product_data: {
-            name: 'Créditos Pedagogi.ai',
+            name: 'Créditos Pedagog.IA',
             description: 'Créditos para uso de IA',
           },
           unit_amount: 100, // 100 cents = R$ 1.00

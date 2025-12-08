@@ -1,4 +1,4 @@
-import React from 'react';
+
 import { Document, Page, Text, View, StyleSheet, Image } from '@react-pdf/renderer';
 import QRCode from 'qrcode';
 
@@ -294,11 +294,11 @@ export const ExamDocument = ({ exam, qrCodeUrl, isPro = false }: ExamPDFProps) =
       {/* Footer / Watermark */}
       {!isPro ? (
         <Text style={styles.watermark} fixed>
-          Prova criada com Pedagogi.ai
+          Prova criada com Pedagog.IA
         </Text>
       ) : (
         <Text style={styles.footer} fixed>
-          Gerado por Pedagogi.ai - Página{' '}
+          Gerado por Pedagog.IA - Página{' '}
           <Text render={({ pageNumber, totalPages }) => `${pageNumber} de ${totalPages}`} />
         </Text>
       )}

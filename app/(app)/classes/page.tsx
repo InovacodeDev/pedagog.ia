@@ -2,7 +2,7 @@ import { getClassesAction } from '@/server/actions/classes';
 import { ClassesList } from './classes-list';
 
 export const metadata = {
-  title: 'Minhas Turmas | Pedagogi.ai',
+  title: 'Minhas Turmas | Pedagog.IA',
   description: 'Gerencie suas turmas e alunos.',
 };
 

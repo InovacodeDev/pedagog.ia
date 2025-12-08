@@ -51,7 +51,7 @@ export async function createStudentAction(data: {
     if (!validation.success) {
       return {
         success: false,
-        error: validation.error.errors[0]?.message || 'Dados inválidos',
+        error: validation.error.issues[0]?.message || 'Dados inválidos',
       };
     }
 
@@ -81,7 +81,7 @@ export async function createStudentAction(data: {
 
     /* eslint-disable @typescript-eslint/no-explicit-any */
     const { data: studentId, error: rpcError } = await supabase.rpc(
-      'create_secure_student',
+      'create_secure_student' as any,
       rpcParams as any
     );
 

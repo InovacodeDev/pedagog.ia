@@ -284,7 +284,7 @@ export const generateDocx = async (blocks: ExamBlock[]) => {
         alignment: AlignmentType.CENTER,
         children: [
           new TextRun({
-            text: 'Prova criada com Pedagogi.ai - Otimize seu tempo.',
+            text: 'Prova criada com Pedagog.IA - Otimize seu tempo.',
             color: '808080',
             italics: true,
             size: 18, // 9pt

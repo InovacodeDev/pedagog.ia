@@ -10,9 +10,9 @@ export interface DashboardMetrics {
   recentExams: {
     id: string;
     title: string;
-    status: string;
-    created_at: string;
-    correction_count: number;
+    status: string | null;
+    created_at: string | null;
+    correction_count: number | null;
   }[];
 }
 
@@ -50,7 +50,7 @@ export async function getDashboardMetrics(): Promise<{
         .from('exams')
         .select('id, title, status, created_at, correction_count')
         .eq('user_id', user.id)
-        .neq('status', 'deleted')
+        .neq('status', 'deleted' as unknown as 'draft')
         .order('created_at', { ascending: false })
         .limit(5),
     ]);

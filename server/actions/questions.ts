@@ -58,7 +58,7 @@ export async function generateQuestionsV2Action(
 
   const validation = GenerateQuestionsSchema.safeParse(data);
   if (!validation.success) {
-    return { success: false, error: validation.error.errors[0].message };
+    return { success: false, error: validation.error.issues[0].message };
   }
 
   const { content, quantity, types, style, discipline, subject, grade_level, files } =
@@ -195,7 +195,7 @@ export async function generateQuestionsV2Action(
     const multiplier = tier === 'quality' ? 2 : 1;
     const quantityNum = quantity || 0;
     // Ensure floating point precision is handled (round to 2 decimals)
-    const estimatedCost = Math.round(0.1 * quantityNum * multiplier * 100) / 100;
+    const estimatedCost = Math.round(0.5 * quantityNum * multiplier * 100) / 100;
 
     // Deduct Credits
     if (estimatedCost > 0) {
@@ -453,7 +453,7 @@ export async function generateExamFromDatabaseAction(
 
   const validation = GenerateExamFromDbSchema.safeParse(input);
   if (!validation.success) {
-    return { success: false, error: validation.error.errors[0].message };
+    return { success: false, error: validation.error.issues[0].message };
   }
 
   const { discipline, subject, quantity, excludeTypes } = validation.data;
