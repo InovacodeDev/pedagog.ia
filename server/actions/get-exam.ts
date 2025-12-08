@@ -21,18 +21,14 @@ export async function getExamAction(examId: string) {
     return { success: false, error: 'Erro ao buscar a prova.' };
   }
 
-  // Transform exam_classes to array of IDs
-  // Transform exam_classes to array of IDs
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const classIds = (exam as any).exam_classes
-    ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      ((exam as any).exam_classes as any[]).map((ec: any) => ec.class_id)
+  const classIds = exam.exam_classes
+    ? exam.exam_classes.map((ec) => ec.class_id)
     : [];
 
   return {
     success: true,
     exam: {
-      ...(exam as any),
+      ...exam,
       class_ids: classIds,
     },
   };
