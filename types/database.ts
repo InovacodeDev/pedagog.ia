@@ -44,6 +44,136 @@ export type Database = {
         };
         Relationships: [];
       };
+      classes: {
+        Row: {
+          created_at: string;
+          id: string;
+          name: string;
+          user_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          id?: string;
+          name: string;
+          user_id: string;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          name?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'classes_user_id_fkey';
+            columns: ['user_id'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      class_histories: {
+        Row: {
+          created_at: string;
+          description: string | null;
+          id: string;
+          snapshot_data: Json;
+          user_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          description?: string | null;
+          id?: string;
+          snapshot_data: Json;
+          user_id: string;
+        };
+        Update: {
+          created_at?: string;
+          description?: string | null;
+          id?: string;
+          snapshot_data?: Json;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'class_histories_user_id_fkey';
+            columns: ['user_id'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      exam_classes: {
+        Row: {
+          class_id: string;
+          exam_id: string;
+        };
+        Insert: {
+          class_id: string;
+          exam_id: string;
+        };
+        Update: {
+          class_id?: string;
+          exam_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'exam_classes_class_id_fkey';
+            columns: ['class_id'];
+            isOneToOne: false;
+            referencedRelation: 'classes';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'exam_classes_exam_id_fkey';
+            columns: ['exam_id'];
+            isOneToOne: false;
+            referencedRelation: 'exams';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      exam_results: {
+        Row: {
+          created_at: string;
+          exam_id: string | null;
+          id: string;
+          score: number | null;
+          student_id: string | null;
+        };
+        Insert: {
+          created_at?: string;
+          exam_id?: string | null;
+          id?: string;
+          score?: number | null;
+          student_id?: string | null;
+        };
+        Update: {
+          created_at?: string;
+          exam_id?: string | null;
+          id?: string;
+          score?: number | null;
+          student_id?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'exam_results_exam_id_fkey';
+            columns: ['exam_id'];
+            isOneToOne: false;
+            referencedRelation: 'exams';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'exam_results_student_id_fkey';
+            columns: ['student_id'];
+            isOneToOne: false;
+            referencedRelation: 'students';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       exam_grades: {
         Row: {
           answers: Json;

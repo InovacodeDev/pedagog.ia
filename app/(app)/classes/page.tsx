@@ -1,4 +1,4 @@
-import { getClassesAction } from '@/server/actions/classes';
+import { getClassesWithGradesAction } from '@/server/actions/classes';
 import { ClassesList } from './classes-list';
 
 export const metadata = {
@@ -6,12 +6,19 @@ export const metadata = {
   description: 'Gerencie suas turmas e alunos.',
 };
 
-export default async function ClassesPage() {
-  const classes = await getClassesAction();
+interface ClassesPageProps {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}
+
+export default async function ClassesPage({ searchParams }: ClassesPageProps) {
+  const resolvedSearchParams = await searchParams;
+  const term = typeof resolvedSearchParams.term === 'string' ? resolvedSearchParams.term : '1_bimestre';
+  
+  const classes = await getClassesWithGradesAction(term);
 
   return (
     <div className="container py-8">
-      <ClassesList initialClasses={classes} />
+      <ClassesList initialClasses={classes} currentTerm={term} />
     </div>
   );
 }

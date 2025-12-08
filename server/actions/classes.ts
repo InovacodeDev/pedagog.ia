@@ -154,6 +154,106 @@ export async function deleteClassAction(id: string) {
   return { success: true, message: 'Turma excluída com sucesso!' };
 }
 
+// ... (previous code)
+
+export interface StudentGradeInfo {
+  id: string;
+  name: string;
+  average: number | null;
+}
+
+export interface ClassWithGrades extends ClassItem {
+  students_with_grades: StudentGradeInfo[];
+}
+
+export async function getClassesWithGradesAction(term: string = '1_bimestre') {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    throw new Error('Unauthorized');
+  }
+
+  // 1. Fetch Classes
+  const { data: classes, error: classesError } = await (supabase as any)
+    .from('classes')
+    .select('*, students(count)')
+    .eq('user_id', user.id)
+    .order('created_at', { ascending: false });
+
+  if (classesError) throw new Error('Failed to fetch classes');
+
+  // 2. Fetch Students
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: students, error: studentsError } = await (supabase as any)
+    .from('students')
+    .select('id, name, class_id')
+    .eq('user_id', user.id);
+
+  if (studentsError) throw new Error('Failed to fetch students');
+
+  // 3. Fetch Exams for the Term
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: exams, error: examsError } = await (supabase as any)
+    .from('exams')
+    .select('id, term')
+    .eq('user_id', user.id)
+    .eq('term', term);
+
+  if (examsError) throw new Error('Failed to fetch exams');
+
+  const examIds = exams.map((e: any) => e.id);
+
+  // 4. Fetch Results if there are exams
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let results: any[] = [];
+  if (examIds.length > 0) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: examResults, error: resultsError } = await (supabase as any)
+      .from('exam_results')
+      .select('exam_id, student_id, score')
+      .in('exam_id', examIds);
+    
+    if (resultsError) throw new Error('Failed to fetch results');
+    results = examResults;
+  }
+
+  // 5. Calculate Averages
+  const classesWithGrades = classes.map((cls: any) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const classStudents = students.filter((s: any) => s.class_id === cls.id);
+    
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const studentsWithGrades = classStudents.map((student: any) => {
+      // Find all results for this student in the fetched exams (which are already filtered by term)
+      const studentResults = results.filter((r) => r.student_id === student.id);
+      
+      let average = null;
+      if (studentResults.length > 0) {
+        const sum = studentResults.reduce((acc, curr) => acc + (Number(curr.score) || 0), 0);
+        average = parseFloat((sum / studentResults.length).toFixed(1));
+      }
+
+      return {
+        id: student.id,
+        name: student.name,
+        average,
+      };
+    });
+
+    return {
+      ...cls,
+      students_with_grades: studentsWithGrades,
+    };
+  });
+
+  return classesWithGrades as ClassWithGrades[];
+}
+
+// ... (previous code above is fine, just fixing the end)
+
 export async function getExamsByClassAction(classId: string) {
   const supabase = await createClient();
   const {
