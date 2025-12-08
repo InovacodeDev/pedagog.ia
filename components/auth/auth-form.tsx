@@ -99,7 +99,7 @@ export function AuthForm() {
             <span className="w-full border-t" />
           </div>
           <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-background px-2 text-muted-foreground">Ou continue com</span>
+            <span className="bg-card px-2 text-muted-foreground">Ou continue com</span>
           </div>
         </div>
 
