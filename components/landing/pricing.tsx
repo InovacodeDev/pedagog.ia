@@ -39,22 +39,6 @@ const PLANS = [
     variant: 'default',
     popular: true,
   },
-  {
-    name: 'Para Escolas',
-    price: 'Sob Consulta',
-    description: 'Gestão unificada para sua instituição.',
-    features: [
-      'Tudo do plano Professor',
-      'Painel de gestão escolar',
-      'Múltiplos professores',
-      'Treinamento dedicado',
-      'API de integração',
-    ],
-    notIncluded: [],
-    cta: 'Falar com Consultor',
-    href: '/contact',
-    variant: 'outline',
-  },
 ];
 
 export function Pricing() {
@@ -69,7 +53,7 @@ export function Pricing() {
           <p className="mt-4 text-slate-600">Quanto vale o seu tempo livre?</p>
         </div>
 
-        <div className="grid gap-8 md:grid-cols-3 max-w-6xl mx-auto items-start">
+        <div className="grid gap-8 md:grid-cols-2 max-w-4xl mx-auto items-start">
           {PLANS.map((plan, index) => (
             <motion.div
               key={plan.name}

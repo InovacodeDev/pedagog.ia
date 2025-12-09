@@ -3,7 +3,7 @@
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { ArrowRight, ScanLine } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 
 export function Hero() {
   return (
@@ -18,14 +18,13 @@ export function Hero() {
           >
             <div className="space-y-4">
               <h1 className="text-4xl font-bold tracking-tighter sm:text-5xl xl:text-6xl/none font-display text-slate-900">
-                Cansado de corrigir provas no{' '}
+                Gere e Corrija provas em{' '}
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-teal-500">
-                  fim de semana?
+                  poucos minutos
                 </span>
               </h1>
               <p className="max-w-[600px] text-slate-600 md:text-xl leading-relaxed">
-                A Inteligência Artificial que transforma pilhas de papel em notas no diário. Foque
-                em ensinar, nós cuidamos da burocracia.
+                A Inteligência Artificial que cria avaliações alinhadas à BNCC e corrige automaticamente. Foque em ensinar, nós cuidamos da burocracia.
               </p>
             </div>
             <div className="flex flex-col gap-3 min-[400px]:flex-row">
@@ -57,47 +56,48 @@ export function Hero() {
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5, delay: 0.2 }}
-            className="relative mx-auto w-full max-w-[400px] lg:max-w-none"
+            className="relative mx-auto w-full max-w-[500px] lg:max-w-none"
           >
-            <div className="relative aspect-[9/16] max-w-[300px] mx-auto bg-slate-900 rounded-[3rem] border-8 border-slate-900 shadow-2xl overflow-hidden">
-              {/* Screen Content */}
-              <div className="absolute inset-0 bg-slate-50 flex flex-col">
-                <div className="h-8 bg-slate-100 w-full flex items-center justify-center">
-                  <div className="h-4 w-24 bg-slate-900 rounded-full opacity-10" />
-                </div>
-                <div className="flex-1 p-4 flex flex-col items-center justify-center relative">
-                  <motion.div
-                    animate={{
-                      y: [-100, 100],
-                      opacity: [0, 1, 0],
-                    }}
-                    transition={{
-                      repeat: Infinity,
-                      duration: 2,
-                      ease: 'linear',
-                    }}
-                    className="absolute w-full h-1 bg-teal-500/50 shadow-[0_0_15px_rgba(20,184,166,0.5)] z-10"
-                  />
-                  <div className="w-full h-64 bg-white rounded-lg shadow-sm border border-slate-200 p-4 mb-4 relative overflow-hidden">
-                    <div className="space-y-2 opacity-30">
-                      <div className="h-2 w-3/4 bg-slate-900 rounded" />
-                      <div className="h-2 w-1/2 bg-slate-900 rounded" />
-                      <div className="h-2 w-full bg-slate-900 rounded" />
-                      <div className="h-2 w-5/6 bg-slate-900 rounded" />
-                    </div>
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <ScanLine className="h-12 w-12 text-teal-500" />
-                    </div>
+             <div className="relative rounded-2xl bg-white shadow-2xl border border-slate-200 overflow-hidden">
+                <div className="bg-slate-50 border-b border-slate-100 p-4 flex items-center gap-2">
+                  <div className="flex gap-1.5">
+                    <div className="w-3 h-3 rounded-full bg-red-400" />
+                    <div className="w-3 h-3 rounded-full bg-amber-400" />
+                    <div className="w-3 h-3 rounded-full bg-green-400" />
                   </div>
-                  <div className="w-full space-y-2">
-                    <div className="h-12 bg-indigo-600 rounded-xl w-full flex items-center justify-center text-white font-medium">
-                      Corrigir Prova
-                    </div>
-                  </div>
+                  <div className="mx-auto text-xs font-medium text-slate-500">pedagog.ai/dashboard</div>
                 </div>
-              </div>
-            </div>
+                <div className="p-6 space-y-6">
+                  {/* Generated Exam Card */}
+                  <div className="space-y-4">
+                     <div className="flex items-center justify-between">
+                        <h3 className="font-semibold text-slate-900">Prova de História - 2º Bimestre</h3>
+                        <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">Pronta para impressão</span>
+                     </div>
+                     <div className="space-y-3">
+                        <div className="p-3 bg-slate-50 rounded-lg border border-slate-100">
+                           <p className="text-sm text-slate-700 font-medium">1. (BNCC EF09HI01) Descreva os principais impactos...</p>
+                        </div>
+                        <div className="p-3 bg-slate-50 rounded-lg border border-slate-100">
+                           <p className="text-sm text-slate-700 font-medium">2. Analise o mapa abaixo e identifique as rotas...</p>
+                        </div>
+                     </div>
+                  </div>
 
+                  {/* Correction Stats */}
+                  <div className="grid grid-cols-2 gap-4">
+                     <div className="p-4 bg-indigo-50 rounded-xl border border-indigo-100">
+                        <div className="text-sm text-indigo-600 font-medium mb-1">Média da Turma</div>
+                        <div className="text-2xl font-bold text-indigo-900">7.8</div>
+                     </div>
+                     <div className="p-4 bg-teal-50 rounded-xl border border-teal-100">
+                        <div className="text-sm text-teal-600 font-medium mb-1">Correções Hoje</div>
+                        <div className="text-2xl font-bold text-teal-900">32</div>
+                     </div>
+                  </div>
+                </div>
+             </div>
+             
             {/* Decorative Elements */}
             <div className="absolute -z-10 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] bg-gradient-to-tr from-indigo-500/20 to-teal-500/20 blur-3xl rounded-full" />
           </motion.div>
