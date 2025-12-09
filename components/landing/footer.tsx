@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Github, Twitter, Linkedin } from 'lucide-react';
+import { SiX, SiXHex, SiGithub, SiGithubHex } from '@icons-pack/react-simple-icons';
 
 export function Footer() {
   return (
@@ -66,13 +66,10 @@ export function Footer() {
           </p>
           <div className="flex items-center gap-4">
             <Link href="#" className="text-slate-400 hover:text-indigo-600 transition-colors">
-              <Twitter className="h-5 w-5" />
+              <SiX size={20} color={SiXHex} />
             </Link>
             <Link href="#" className="text-slate-400 hover:text-indigo-600 transition-colors">
-              <Github className="h-5 w-5" />
-            </Link>
-            <Link href="#" className="text-slate-400 hover:text-indigo-600 transition-colors">
-              <Linkedin className="h-5 w-5" />
+              <SiGithub size={20} color={SiGithubHex} />
             </Link>
           </div>
           <p className="text-sm text-slate-500 flex items-center gap-1">

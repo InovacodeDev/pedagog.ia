@@ -6,7 +6,7 @@ import { FeaturesGrid } from '@/components/landing/features-grid';
 import { HowItWorks } from '@/components/landing/how-it-works';
 import { Pricing } from '@/components/landing/pricing';
 import { Footer } from '@/components/landing/footer';
-import { getLandingStats } from '@/server/actions/landing';
+import { getLandingStats } from '@/server/queries/get-landing-stats';
 
 export default async function LandingPage() {
   const stats = await getLandingStats();

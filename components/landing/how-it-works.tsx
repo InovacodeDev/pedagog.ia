@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Camera, BrainCircuit, CheckCircle2 } from 'lucide-react';
+import { Camera, BrainCircuit, CheckCircle2, FileJson, FileSpreadsheet } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const STEPS = [
@@ -12,8 +12,14 @@ const STEPS = [
     description: 'Use seu celular para tirar uma foto das provas dos alunos.',
     icon: Camera,
     color: 'bg-indigo-500',
-    image:
-      'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&q=80&w=800',
+    illustration: (
+      <div className="flex flex-col items-center justify-center h-full w-full bg-indigo-50/50">
+        <Camera className="w-24 h-24 text-indigo-400 opacity-20 mb-4" />
+        <p className="text-indigo-900/60 font-semibold px-8 text-center">
+          Ilustração Isométrica: Professor fotografando prova com app mobile
+        </p>
+      </div>
+    ),
   },
   {
     id: 'step-2',
@@ -21,8 +27,14 @@ const STEPS = [
     description: 'Nossa inteligência artificial analisa as respostas e atribui notas.',
     icon: BrainCircuit,
     color: 'bg-teal-500',
-    image:
-      'https://images.unsplash.com/photo-1620712943543-bcc4688e7485?auto=format&fit=crop&q=80&w=800',
+    illustration: (
+      <div className="flex flex-col items-center justify-center h-full w-full bg-teal-50/50">
+        <BrainCircuit className="w-24 h-24 text-teal-400 opacity-20 mb-4" />
+        <p className="text-teal-900/60 font-semibold px-8 text-center">
+          Ilustração Isométrica: Robô/IA digitalizando e corrigindo papel
+        </p>
+      </div>
+    ),
   },
   {
     id: 'step-3',
@@ -30,8 +42,17 @@ const STEPS = [
     description: 'Revise se necessário e exporte as notas direto para o diário.',
     icon: CheckCircle2,
     color: 'bg-slate-900',
-    image:
-      'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?auto=format&fit=crop&q=80&w=800',
+    illustration: (
+      <div className="flex flex-col items-center justify-center h-full w-full bg-slate-50/50">
+        <div className="flex gap-4 opacity-20 mb-4">
+          <FileSpreadsheet className="w-16 h-16 text-slate-700" />
+          <FileJson className="w-16 h-16 text-slate-700" />
+        </div>
+        <p className="text-slate-900/60 font-semibold px-8 text-center">
+          Ilustração Isométrica: Exportação de dados para nuvem
+        </p>
+      </div>
+    ),
   },
 ];
 
@@ -39,7 +60,7 @@ export function HowItWorks() {
   const [activeStep, setActiveStep] = useState(0);
 
   return (
-    <section className="py-24 bg-white">
+    <section className="py-24 bg-white" id="como-funciona">
       <div className="container mx-auto px-4 md:px-6">
         <div className="text-center mb-16">
           <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl font-display text-slate-900">
@@ -50,15 +71,22 @@ export function HowItWorks() {
           </p>
         </div>
 
-        <div className="grid gap-12 lg:grid-cols-2 items-center">
+        <div className="grid gap-12 lg:grid-cols-2 items-stretch">
           {/* Steps List */}
-          <div className="space-y-6">
+          <div className="relative space-y-8 py-4">
+            {/* Connecting Line */}
+            <div className="absolute left-[30px] top-12 bottom-12 w-0.5 bg-slate-100 hidden md:block" />
+
             {STEPS.map((step, index) => (
-              <div
+              <motion.div
                 key={step.id}
+                initial={{ opacity: 0, x: -20 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.5, delay: index * 0.2 }}
+                viewport={{ once: true }}
                 onClick={() => setActiveStep(index)}
                 className={cn(
-                  'cursor-pointer rounded-2xl p-6 transition-all duration-300 border-2',
+                  'group cursor-pointer rounded-2xl p-6 transition-all duration-300 border-2 relative z-10',
                   activeStep === index
                     ? 'bg-slate-50 border-indigo-600 shadow-md'
                     : 'bg-white border-transparent hover:bg-slate-50'
@@ -67,8 +95,10 @@ export function HowItWorks() {
                 <div className="flex items-start gap-4">
                   <div
                     className={cn(
-                      'flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-white transition-colors',
-                      activeStep === index ? step.color : 'bg-slate-200 text-slate-500'
+                      'flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-white transition-all duration-300 z-10 relative',
+                      activeStep === index
+                        ? `${step.color} scale-110 shadow-lg`
+                        : 'bg-slate-200 text-slate-500 group-hover:bg-slate-300'
                     )}
                   >
                     <step.icon className="h-6 w-6" />
@@ -85,32 +115,31 @@ export function HowItWorks() {
                     <p className="text-slate-600 leading-relaxed">{step.description}</p>
                   </div>
                 </div>
-              </div>
+              </motion.div>
             ))}
           </div>
 
           {/* Image Display */}
-          <div className="relative aspect-square lg:aspect-[4/3] rounded-3xl overflow-hidden bg-slate-100 shadow-2xl">
+          <div className="relative aspect-square lg:aspect-[4/3] rounded-3xl overflow-hidden bg-slate-50 shadow-2xl border border-slate-100 sticky top-24">
             <AnimatePresence mode="wait">
-              <motion.img
+              <motion.div
                 key={activeStep}
-                src={STEPS[activeStep].image}
-                alt={STEPS[activeStep].title}
                 initial={{ opacity: 0, scale: 1.05 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.4 }}
-                className="absolute inset-0 h-full w-full object-cover"
-              />
-            </AnimatePresence>
+                className="absolute inset-0 h-full w-full"
+              >
+                {STEPS[activeStep].illustration}
 
-            {/* Overlay Gradient */}
-            <div className="absolute inset-0 bg-gradient-to-t from-slate-900/60 to-transparent flex items-end p-8">
-              <div className="text-white">
-                <p className="font-bold text-lg">Passo {activeStep + 1}</p>
-                <p className="text-slate-200">{STEPS[activeStep].title}</p>
-              </div>
-            </div>
+                {/* Overlay Text */}
+                <div className="absolute bottom-0 w-full bg-gradient-to-t from-slate-900/10 to-transparent p-6 md:p-8">
+                  <div className="inline-block bg-white/90 backdrop-blur-sm px-4 py-2 rounded-lg shadow-sm">
+                    <p className="font-bold text-slate-900 text-sm">{STEPS[activeStep].title}</p>
+                  </div>
+                </div>
+              </motion.div>
+            </AnimatePresence>
           </div>
         </div>
       </div>
