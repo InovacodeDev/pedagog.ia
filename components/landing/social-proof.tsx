@@ -3,6 +3,10 @@
 
 
 export function SocialProof({ stats }: { stats: { exams: number; questions: number; corrections: number } }) {
+  if (stats.exams === 0 && stats.questions === 0 && stats.corrections === 0) {
+    return null;
+  }
+
   return (
     <section className="py-12 border-y border-slate-100 bg-white">
       <div className="container mx-auto px-4 md:px-6">

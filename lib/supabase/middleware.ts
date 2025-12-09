@@ -44,11 +44,14 @@ export async function updateSession(request: NextRequest): Promise<NextResponse>
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Protected routes (anything except /, /api, /login, and /auth)
+  // Protected routes (anything except public paths)
   const isProtectedRoute =
     !request.nextUrl.pathname.startsWith('/api') &&
     !request.nextUrl.pathname.startsWith('/auth') &&
     !request.nextUrl.pathname.startsWith('/login') &&
+    !request.nextUrl.pathname.startsWith('/privacy') &&
+    !request.nextUrl.pathname.startsWith('/terms') &&
+    !request.nextUrl.pathname.startsWith('/ai-usage') &&
     request.nextUrl.pathname !== '/';
 
   // If user is not logged in and trying to access protected route, redirect to landing
