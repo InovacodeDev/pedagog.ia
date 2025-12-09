@@ -3,10 +3,9 @@ import { redirect } from 'next/navigation';
 import { stripe } from '@/lib/stripe';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { SettingsProfileForm } from '@/components/settings/settings-profile-form';
-import { SettingsAppearance } from '@/components/settings/settings-appearance';
 import { SettingsBilling } from '@/components/settings/settings-billing';
 import { SettingsClasses } from '@/components/settings/settings-classes';
-import { User, Palette, CreditCard, Receipt, Coins, GraduationCap } from 'lucide-react';
+import { User, CreditCard, Receipt, Coins, GraduationCap } from 'lucide-react';
 import { SubscriptionDetails } from '@/types/app';
 import { getUserInvoices } from '@/server/queries/get-invoices';
 import { InvoicesList } from '@/components/settings/invoices-list';
@@ -93,9 +92,7 @@ export default async function SettingsPage({
           <TabsTrigger value="general" className="gap-2">
             <User className="h-4 w-4" /> Geral
           </TabsTrigger>
-          <TabsTrigger value="appearance" className="gap-2">
-            <Palette className="h-4 w-4" /> Aparência
-          </TabsTrigger>
+
           <TabsTrigger value="classes" className="gap-2">
             <GraduationCap className="h-4 w-4" /> Turmas
           </TabsTrigger>
@@ -112,10 +109,6 @@ export default async function SettingsPage({
 
         <TabsContent value="general">
           <SettingsProfileForm user={userData} />
-        </TabsContent>
-
-        <TabsContent value="appearance">
-          <SettingsAppearance />
         </TabsContent>
 
         <TabsContent value="classes">
