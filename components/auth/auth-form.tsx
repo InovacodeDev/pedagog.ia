@@ -13,15 +13,20 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 import { toast } from 'sonner';
-import { Loader2 } from 'lucide-react';
+import { Loader2, ArrowLeft, Mail } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
 export function AuthForm() {
   const [isLoading, setIsLoading] = React.useState(false);
+  const [step, setStep] = React.useState<'email' | 'otp'>('email');
   const [email, setEmail] = React.useState('');
+  const [otp, setOtp] = React.useState('');
   const supabase = createClient();
+  const router = useRouter();
 
-  async function onSubmit(event: React.FormEvent) {
+  async function onSendOtp(event: React.FormEvent) {
     event.preventDefault();
     setIsLoading(true);
 
@@ -29,7 +34,7 @@ export function AuthForm() {
       const { error } = await supabase.auth.signInWithOtp({
         email,
         options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
+          shouldCreateUser: true,
         },
       });
 
@@ -37,31 +42,40 @@ export function AuthForm() {
         throw error;
       }
 
-      toast.success('Link de acesso enviado!', {
-        description: 'Verifique seu email para entrar na plataforma.',
+      setStep('otp');
+      toast.success('Código enviado!', {
+        description: 'Verifique seu email para pegar o código de acesso.',
       });
-    } catch {
-      toast.error('Erro ao enviar link de login');
+    } catch (error) {
+      console.error(error);
+      toast.error('Erro ao enviar código. Tente novamente.');
     } finally {
       setIsLoading(false);
     }
   }
 
-  async function onGoogleLogin() {
+  async function onVerifyOtp(event: React.FormEvent) {
+    event.preventDefault();
     setIsLoading(true);
+
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
-        },
+      const { error } = await supabase.auth.verifyOtp({
+        email,
+        token: otp,
+        type: 'email',
       });
 
       if (error) {
         throw error;
       }
-    } catch {
-      toast.error('Erro no login com Google');
+
+      toast.success('Login realizado com sucesso!');
+      router.refresh();
+      router.push('/home');
+    } catch (error) {
+      console.error(error);
+      toast.error('Código inválido ou expirado.');
+    } finally {
       setIsLoading(false);
     }
   }
@@ -69,66 +83,78 @@ export function AuthForm() {
   return (
     <Card className="w-full max-w-md mx-auto">
       <CardHeader className="space-y-1">
-        <CardTitle className="text-2xl font-bold text-center">Entrar no Pedagog.IA</CardTitle>
+        <CardTitle className="text-2xl font-bold text-center">
+          {step === 'email' ? 'Entrar no Pedagog.IA' : 'Confirme seu email'}
+        </CardTitle>
         <CardDescription className="text-center">
-          Digite seu email para receber um link de acesso seguro
+          {step === 'email'
+            ? 'Digite seu email para receber um código de acesso'
+            : `Enviamos um código de 6 dígitos para ${email}`}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <form onSubmit={onSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              type="email"
-              placeholder="professor@escola.com"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+        {step === 'email' ? (
+          <form onSubmit={onSendOtp} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="professor@escola.com"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                disabled={isLoading}
+              />
+            </div>
+            <Button className="w-full" type="submit" disabled={isLoading}>
+              {isLoading ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Mail className="mr-2 h-4 w-4" />
+              )}
+              Enviar Código de Acesso
+            </Button>
+          </form>
+        ) : (
+          <form onSubmit={onVerifyOtp} className="space-y-4 flex flex-col items-center">
+            <div className="space-y-2 flex justify-center w-full">
+              <InputOTP
+                maxLength={6}
+                value={otp}
+                onChange={(value) => setOtp(value)}
+                disabled={isLoading}
+              >
+                <InputOTPGroup>
+                  <InputOTPSlot index={0} />
+                  <InputOTPSlot index={1} />
+                  <InputOTPSlot index={2} />
+                  <InputOTPSlot index={3} />
+                  <InputOTPSlot index={4} />
+                  <InputOTPSlot index={5} />
+                </InputOTPGroup>
+              </InputOTP>
+            </div>
+            <Button className="w-full" type="submit" disabled={isLoading || otp.length !== 6}>
+              {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Verificar e Entrar
+            </Button>
+            <Button
+              variant="link"
+              type="button"
+              className="text-sm text-muted-foreground"
+              onClick={() => setStep('email')}
               disabled={isLoading}
-            />
-          </div>
-          <Button className="w-full" type="submit" disabled={isLoading}>
-            {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Enviar Link Mágico
-          </Button>
-        </form>
-
-        <div className="relative">
-          <div className="absolute inset-0 flex items-center">
-            <span className="w-full border-t" />
-          </div>
-          <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-card px-2 text-muted-foreground">Ou continue com</span>
-          </div>
-        </div>
-
-        <Button variant="outline" className="w-full" onClick={onGoogleLogin} disabled={isLoading}>
-          {isLoading ? (
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          ) : (
-            <svg
-              className="mr-2 h-4 w-4"
-              aria-hidden="true"
-              focusable="false"
-              data-prefix="fab"
-              data-icon="google"
-              role="img"
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 488 512"
             >
-              <path
-                fill="currentColor"
-                d="M488 261.8C488 403.3 391.1 504 248 504 110.8 504 0 393.2 0 256S110.8 8 248 8c66.8 0 123 24.5 166.3 64.9l-67.5 64.9C258.5 52.6 94.3 116.6 94.3 256c0 86.5 69.1 156.6 153.7 156.6 98.2 0 135-70.4 140.8-106.9H248v-85.3h236.1c2.3 12.7 3.9 24.9 3.9 41.4z"
-              ></path>
-            </svg>
-          )}
-          Google
-        </Button>
+              <ArrowLeft className="mr-2 h-3 w-3" />
+              Voltar e corrigir email
+            </Button>
+          </form>
+        )}
       </CardContent>
       <CardFooter className="flex justify-center">
         <p className="text-xs text-muted-foreground text-center px-8">
-          Ao clicar em continuar, você concorda com nossos{' '}
+          Ao continuar, você concorda com nossos{' '}
           <a href="#" className="underline hover:text-primary">
             Termos de Serviço
           </a>{' '}
