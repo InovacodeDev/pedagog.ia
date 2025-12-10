@@ -55,7 +55,7 @@ export async function createCheckoutSessionAction() {
   }
 
   const origin =
-    (await headers()).get('origin') || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    (await headers()).get('origin') || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:9901';
 
   const session = await stripe.checkout.sessions.create({
     customer: customerId,
@@ -104,7 +104,7 @@ export async function createPortalSessionAction() {
   }
 
   const origin =
-    (await headers()).get('origin') || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    (await headers()).get('origin') || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:9901';
 
   const session = await stripe.billingPortal.sessions.create({
     customer: sub.stripe_customer_id,
