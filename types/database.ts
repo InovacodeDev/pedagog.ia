@@ -317,6 +317,7 @@ export type Database = {
           explanation: string | null;
           id: string;
           options: Json | null;
+          source_tag: string | null;
           structured_data: Json | null;
           style: string | null;
           subject: string | null;
@@ -337,6 +338,7 @@ export type Database = {
           explanation?: string | null;
           id?: string;
           options?: Json | null;
+          source_tag?: string | null;
           structured_data?: Json | null;
           style?: string | null;
           subject?: string | null;
@@ -357,6 +359,7 @@ export type Database = {
           explanation?: string | null;
           id?: string;
           options?: Json | null;
+          source_tag?: string | null;
           structured_data?: Json | null;
           style?: string | null;
           subject?: string | null;

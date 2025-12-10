@@ -17,4 +17,5 @@ export interface GeneratedQuestion {
   style?: string;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   content?: any;
+  source_tag?: string;
 }

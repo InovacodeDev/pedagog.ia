@@ -126,6 +126,11 @@ export function GeneratedQuestionCard({
               {question.subject}
             </span>
           )}
+          {question.source_tag && (
+            <span className="px-2 py-1 bg-yellow-50 text-yellow-700 border border-yellow-200 rounded font-bold">
+              {question.source_tag}
+            </span>
+          )}
         </div>
 
         {/* View Answer Toggle */}

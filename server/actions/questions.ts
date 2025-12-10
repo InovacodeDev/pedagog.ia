@@ -564,7 +564,21 @@ export async function generateQuestionsV2Action(
       return { success: false, error: 'Erro ao processar resposta da IA.' };
     }
 
-    // 7. Costs & Logs
+    // Determine Source Tag
+    let sourceTag = '';
+    if (style === 'enem') {
+      sourceTag = 'ENEM';
+    } else if (style === 'high_school') {
+      sourceTag = grade_level || '';
+    } else if (style_subtype) {
+      sourceTag = style_subtype.toUpperCase();
+    }
+
+    // Inject Source Tag into questions
+    generatedQuestions = generatedQuestions.map((q) => ({
+      ...q,
+      source_tag: sourceTag,
+    }));
     await calculateAndLogCost(supabase, user, {
       modelName,
       modelTier,
@@ -636,6 +650,7 @@ export async function saveQuestionsAction(questions: GeneratedQuestion[]) {
         topic: q.subject || '',
         difficulty: (q.difficulty as Database['public']['Enums']['difficulty_level']) || 'medium',
         style: q.style || null,
+        source_tag: q.source_tag || null,
         structured_data: q.correction_criteria
           ? { correction_criteria: q.correction_criteria }
           : null,
