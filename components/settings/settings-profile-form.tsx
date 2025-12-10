@@ -20,6 +20,7 @@ import { Pencil } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTransition } from 'react';
 import { updateProfileAction } from '@/server/actions/profile';
+import { EmailChangeDialog } from './email-change-dialog';
 
 const profileFormSchema = z.object({
   name: z.string().min(2, {
@@ -120,10 +121,21 @@ export function SettingsProfileForm({ user }: SettingsProfileFormProps) {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Email</FormLabel>
-                    <FormControl>
-                      <Input placeholder="seu@email.com" {...field} disabled readOnly />
-                    </FormControl>
-                    <FormDescription>O email não pode ser alterado diretamente.</FormDescription>
+                    <div className="flex gap-2">
+                      <FormControl>
+                        <Input
+                          placeholder="seu@email.com"
+                          {...field}
+                          disabled
+                          readOnly
+                          className="flex-1"
+                        />
+                      </FormControl>
+                      <EmailChangeDialog currentEmail={user.email || ''} />
+                    </div>
+                    <FormDescription>
+                      Para alterar seu email, é necessário confirmar sua identidade.
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
