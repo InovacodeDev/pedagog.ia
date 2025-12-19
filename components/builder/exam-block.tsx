@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Trash2, GripVertical, Pencil } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import DOMPurify from 'isomorphic-dompurify';
 
 export type BlockType =
   | 'header'
@@ -158,7 +159,7 @@ export function SortableBlock({ block, index, onDelete, onEdit }: SortableBlockP
             )}
 
             {/* Main Stem */}
-            <div dangerouslySetInnerHTML={{ __html: stem }} />
+            <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(stem) }} />
           </div>
         </div>
 
