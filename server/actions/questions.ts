@@ -812,7 +812,7 @@ export async function deleteQuestionAction(questionId: string) {
 
   if (error) {
     console.error('Error deleting question:', error);
-    return { success: false, error: 'Erro ao excluir a questão.' };
+    return { success: false, error: error.message ?? 'Erro ao excluir a questão.' };
   }
 
   return { success: true };
