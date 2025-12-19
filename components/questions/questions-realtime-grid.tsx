@@ -50,7 +50,6 @@ export function QuestionsRealtimeGrid({ initialQuestions }: QuestionsRealtimeGri
   const confirmDelete = async () => {
     if (!deleteId) return;
 
-    // Call server action here - TODO: Implement server action
     // Note: The realtime subscription will automatically update the list when the deletion happens on the server
 
     const result = await deleteQuestionAction(deleteId);
