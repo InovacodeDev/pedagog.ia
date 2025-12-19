@@ -1,6 +1,7 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
+import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { extractTextFromFile } from '@/lib/file-processing';
 import { GeneratedQuestion } from '@/types/questions';
@@ -815,5 +816,6 @@ export async function deleteQuestionAction(questionId: string) {
     return { success: false, error: error.message ?? 'Erro ao excluir a questão.' };
   }
 
+  revalidatePath('/questions');
   return { success: true };
 }
