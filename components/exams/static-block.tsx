@@ -1,6 +1,7 @@
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { ExamBlock } from '@/components/builder/exam-block';
+import DOMPurify from 'isomorphic-dompurify';
 
 interface StaticBlockProps {
   block: ExamBlock;
@@ -96,7 +97,7 @@ export function StaticBlock({ block }: StaticBlockProps) {
             </div>
           )}
 
-          <div dangerouslySetInnerHTML={{ __html: stem }} />
+          <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(stem) }} />
         </div>
 
         {(() => {
