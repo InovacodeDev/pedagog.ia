@@ -164,8 +164,11 @@ export function ExamUpload() {
     <Card className="p-8">
       {!file ? (
         <div
+          role="button"
+          tabIndex={0}
+          aria-label="Upload de prova. Arraste uma imagem ou clique para selecionar."
           className={cn(
-            'border-2 border-dashed rounded-lg p-12 text-center transition-colors cursor-pointer',
+            'border-2 border-dashed rounded-lg p-12 text-center transition-colors cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-primary',
             isDragging
               ? 'border-primary bg-primary/5'
               : 'border-muted-foreground/25 hover:border-primary/50 hover:bg-muted/50'
@@ -174,6 +177,12 @@ export function ExamUpload() {
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
           onClick={() => fileInputRef.current?.click()}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              fileInputRef.current?.click();
+            }
+          }}
         >
           <input
             type="file"
@@ -207,7 +216,13 @@ export function ExamUpload() {
                 {(file.size / 1024 / 1024).toFixed(2)} MB
               </p>
             </div>
-            <Button variant="ghost" size="icon" onClick={handleRemoveFile} disabled={isLoading}>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleRemoveFile}
+              disabled={isLoading}
+              aria-label="Remover arquivo selecionado"
+            >
               <X className="w-4 h-4" />
             </Button>
           </div>
