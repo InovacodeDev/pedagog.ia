@@ -52,7 +52,6 @@ export function QuestionsRealtimeGrid({ initialQuestions }: QuestionsRealtimeGri
 
     // Call server action here - TODO: Implement server action
     // Note: The realtime subscription will automatically update the list when the deletion happens on the server
-    toast.info('Solicitação de exclusão enviada...');
 
     const result = await deleteQuestionAction(deleteId);
 
