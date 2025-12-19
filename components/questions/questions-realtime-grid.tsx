@@ -17,6 +17,7 @@ import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 
 import { Question } from '@/types/questions';
 import { useRealtimeSubscription } from '@/hooks/use-realtime-subscription';
+import { deleteQuestionAction } from '@/server/actions/questions';
 
 interface QuestionsRealtimeGridProps {
   initialQuestions: Question[];
@@ -49,10 +50,15 @@ export function QuestionsRealtimeGrid({ initialQuestions }: QuestionsRealtimeGri
   const confirmDelete = async () => {
     if (!deleteId) return;
 
-    // Call server action here - TODO: Implement server action
     // Note: The realtime subscription will automatically update the list when the deletion happens on the server
-    console.log('Deleting question:', deleteId);
-    toast.info('Solicitação de exclusão enviada...');
+
+    const result = await deleteQuestionAction(deleteId);
+
+    if (!result.success) {
+      toast.error(result.error || 'Erro ao excluir a questão.');
+    } else {
+      toast.success('Questão excluída com sucesso.');
+    }
     setDeleteId(null);
   };
 
