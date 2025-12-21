@@ -28,7 +28,7 @@ interface Student {
   id: string;
   name: string | null;
   grade_level: string | null;
-  created_at: string;
+  created_at: string | null;
   class_id: string | null;
 }
 
@@ -41,7 +41,11 @@ export function ClassStudentList({ initialStudents, classId }: ClassStudentListP
   const students = useRealtimeSubscription({
     table: 'students',
     initialData: initialStudents,
-    orderBy: (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+    orderBy: (a, b) => {
+      const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
+      const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
+      return dateB - dateA;
+    },
   });
 
   const filteredStudents = useMemo(() => {
@@ -92,9 +96,11 @@ export function ClassStudentList({ initialStudents, classId }: ClassStudentListP
             <TableRow key={student.id}>
               <TableCell className="font-medium">{student.name}</TableCell>
               <TableCell>
-                {format(new Date(student.created_at), "d 'de' MMMM, yyyy", {
-                  locale: ptBR,
-                })}
+                {student.created_at
+                  ? format(new Date(student.created_at), "d 'de' MMMM, yyyy", {
+                      locale: ptBR,
+                    })
+                  : '-'}
               </TableCell>
               <TableCell>
                 <DropdownMenu>

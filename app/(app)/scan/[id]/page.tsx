@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import { getSubscriptionPlan } from '@/lib/subscription';
+import { Json } from '@/types/database';
 
 interface ExamPageProps {
   params: Promise<{
@@ -18,8 +19,7 @@ interface Question {
   type: string;
   options?: string[] | null;
   correct_answer?: string;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  content?: any;
+  content?: Json;
 }
 
 export default async function ExamPage({ params }: ExamPageProps) {

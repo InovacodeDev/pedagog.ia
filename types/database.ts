@@ -363,7 +363,7 @@ export type Database = {
           structured_data?: Json | null;
           style?: string | null;
           subject?: string | null;
-          topic?: string;
+          topic: string;
           type?: string | null;
           updated_at?: string | null;
           usage_count?: number | null;
@@ -378,6 +378,9 @@ export type Database = {
           grade_level: string;
           id: string;
           institution_id: string;
+          user_id: string;
+          name: string | null;
+          class_id: string | null;
         };
         Insert: {
           created_at?: string | null;
@@ -385,6 +388,9 @@ export type Database = {
           grade_level: string;
           id?: string;
           institution_id: string;
+          user_id?: string;
+          name?: string | null;
+          class_id?: string | null;
         };
         Update: {
           created_at?: string | null;
@@ -392,8 +398,26 @@ export type Database = {
           grade_level?: string;
           id?: string;
           institution_id?: string;
+          user_id?: string;
+          name?: string | null;
+          class_id?: string | null;
         };
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: 'students_user_id_fkey';
+            columns: ['user_id'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'students_class_id_fkey';
+            columns: ['class_id'];
+            isOneToOne: false;
+            referencedRelation: 'classes';
+            referencedColumns: ['id'];
+          },
+        ];
       };
       ia_cost_log: {
         Row: {
@@ -496,6 +520,14 @@ export type Database = {
           p_amount: number;
         };
         Returns: boolean;
+      };
+      create_secure_student: {
+        Args: {
+          name_text: string;
+          class_id_arg: string;
+          secret_key: string;
+        };
+        Returns: string;
       };
     };
     Enums: {

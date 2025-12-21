@@ -30,7 +30,7 @@ interface GetStudentsResult {
     id: string;
     name: string | null;
     grade_level: string | null;
-    created_at: string;
+    created_at: string | null;
     class_id: string | null;
   }>;
   error?: string;
@@ -79,10 +79,9 @@ export async function createStudentAction(data: {
       secret_key: encryptionKey,
     };
 
-    /* eslint-disable @typescript-eslint/no-explicit-any */
     const { data: studentId, error: rpcError } = await supabase.rpc(
-      'create_secure_student' as any,
-      rpcParams as any
+      'create_secure_student',
+      rpcParams
     );
 
     if (rpcError) {
@@ -95,7 +94,7 @@ export async function createStudentAction(data: {
 
     // 4. Update the record with plaintext name (user_id and class_id are already set by RPC)
     // This is where we enforce the unique constraint (user_id, name)
-    const { error: updateError } = await (supabase as any)
+    const { error: updateError } = await supabase
       .from('students')
       .update({
         name: validation.data.name,
@@ -132,8 +131,7 @@ export async function createStudentAction(data: {
 
 export async function updateStudentAction(id: string, data: { class_id: string }) {
   const supabase = await createClient();
-  /* eslint-disable @typescript-eslint/no-explicit-any */
-  const { error } = await (supabase as any)
+  const { error } = await supabase
     .from('students')
     .update({ class_id: data.class_id })
     .eq('id', id);
@@ -179,7 +177,7 @@ export async function getStudentsAction(classId?: string): Promise<GetStudentsRe
 
     return {
       success: true,
-      students: (data as any[]) || [],
+      students: data || [],
     };
   } catch (error) {
     console.error('[Get Students] Unexpected error:', error);
@@ -200,8 +198,7 @@ export async function deleteStudentAction(id: string) {
     return { success: false, message: 'Unauthorized' };
   }
 
-  /* eslint-disable @typescript-eslint/no-explicit-any */
-  const { error } = await (supabase as any)
+  const { error } = await supabase
     .from('students')
     .delete()
     .eq('id', id)
