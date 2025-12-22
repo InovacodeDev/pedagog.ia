@@ -84,7 +84,7 @@ export function ClassStudentList({ initialStudents, classId }: ClassStudentListP
           <TableRow>
             <TableHead>Nome do Aluno</TableHead>
             <TableHead>Adicionado em</TableHead>
-            <TableHead className="w-[50px]"></TableHead>
+            <TableHead className="w-12"></TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>

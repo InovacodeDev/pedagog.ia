@@ -1,5 +1,5 @@
 import { ExamEditor } from '@/components/builder/ExamEditor';
-import { ExamBlock } from '@/components/builder/exam-block';
+import { ExamBlock } from '@/components/builder/ExamBlock';
 import { getClassesAction } from '@/server/actions/classes';
 import { getExamAction } from '@/server/actions/get-exam';
 import { notFound, redirect } from 'next/navigation';

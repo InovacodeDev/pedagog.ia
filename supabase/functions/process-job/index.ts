@@ -69,7 +69,7 @@ function cleanJson(text: string) {
  * PRIVACY & SECURITY: PII Scrubbing
  * Removes sensitive data before sending to AI Providers.
  * Compliance with LGPD/GDPR.
- * 
+ *
  * - Masks Emails
  * - Masks CPF (Brazilian ID)
  * - Masks Phone Numbers
@@ -77,17 +77,20 @@ function cleanJson(text: string) {
  */
 function scrubPII(text: string): string {
   if (!text) return '';
-  
+
   // 1. Emails
-  let scrubbed = text.replace(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, '[EMAIL_REDACTED]');
-  
+  let scrubbed = text.replace(
+    /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g,
+    '[EMAIL_REDACTED]'
+  );
+
   // 2. CPFs (Brazil) - Simple pattern xxx.xxx.xxx-xx
   // Uses word boundaries to avoid breaking math expressions or versions
   scrubbed = scrubbed.replace(/\b\d{3}\.\d{3}\.\d{3}-\d{2}\b/g, '[CPF_REDACTED]');
-  
+
   // 3. Phone Numbers (Brazil) - (xx) 9xxxx-xxxx or (xx) xxxx-xxxx
   scrubbed = scrubbed.replace(/\(\d{2}\)\s?(?:9|)?\d{4}-\d{4}/g, '[PHONE_REDACTED]');
-  
+
   // 4. RG (Simple approximation) - xx.xxx.xxx-x
   scrubbed = scrubbed.replace(/\b\d{2}\.\d{3}\.\d{3}-[\d|X|x]\b/g, '[RG_REDACTED]');
 
@@ -391,9 +394,9 @@ Deno.serve(async (req: Request): Promise<Response> => {
 
       // 1.5. SCRUB PII from Content (Security Compliance)
       const safeContent = scrubPII(content || '');
-      
+
       if (content && content !== safeContent) {
-          console.log('[PII Protection] Sensitive data scrubbed from input prompt.');
+        console.log('[PII Protection] Sensitive data scrubbed from input prompt.');
       }
 
       // 2. Construct System Prompt

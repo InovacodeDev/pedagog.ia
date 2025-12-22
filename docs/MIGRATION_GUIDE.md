@@ -9,7 +9,7 @@ In Next.js 15, `params`, `searchParams`, `cookies()`, and `headers()` are now **
 ```tsx
 // app/blog/[slug]/page.tsx
 export default function Page({ params }: { params: { slug: string } }) {
-  return <div>Slug: {params.slug}</div>
+  return <div>Slug: {params.slug}</div>;
 }
 ```
 
@@ -18,8 +18,8 @@ export default function Page({ params }: { params: { slug: string } }) {
 ```tsx
 // app/blog/[slug]/page.tsx
 export default async function Page({ params }: { params: Promise<{ slug: string }> }) {
-  const { slug } = await params // MUST AWAIT
-  return <div>Slug: {slug}</div>
+  const { slug } = await params; // MUST AWAIT
+  return <div>Slug: {slug}</div>;
 }
 ```
 
@@ -34,7 +34,7 @@ const nextConfig = {
   experimental: {
     reactCompiler: true,
   },
-}
+};
 ```
 
 ### Server Actions
@@ -42,14 +42,14 @@ const nextConfig = {
 Use `useActionState` instead of `useFormState`.
 
 ```tsx
-'use client'
-import { useActionState } from 'react'
-import { createStudentAction } from '@/server/actions/students'
+'use client';
+import { useActionState } from 'react';
+import { createStudentAction } from '@/server/actions/students';
 
 export function CreateStudentForm() {
-  const [state, formAction, isPending] = useActionState(createStudentAction, null)
+  const [state, formAction, isPending] = useActionState(createStudentAction, null);
 
-  return <form action={formAction}>{/* ... */}</form>
+  return <form action={formAction}>{/* ... */}</form>;
 }
 ```
 

@@ -1,6 +1,6 @@
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import { ExamBlock } from '@/components/builder/exam-block';
+import { ExamBlock } from '@/components/builder/ExamBlock';
 import DOMPurify from 'isomorphic-dompurify';
 
 interface StaticBlockProps {
