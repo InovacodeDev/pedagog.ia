@@ -1,6 +1,6 @@
 'use client';
 
-import { ExamBlock } from '@/components/builder/exam-block';
+import { ExamBlock } from '@/components/builder/ExamBlock';
 import { StaticBlock } from './static-block';
 import { Button } from '@/components/ui/button';
 import { FileDown, Pencil } from 'lucide-react';

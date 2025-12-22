@@ -36,7 +36,7 @@ export function ClassExamsList({ exams }: ClassExamsListProps) {
             <TableHead>Questões</TableHead>
             <TableHead>Status</TableHead>
             <TableHead>Criada em</TableHead>
-            <TableHead className="w-[50px]"></TableHead>
+            <TableHead className="w-12"></TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>

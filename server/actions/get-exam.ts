@@ -21,9 +21,7 @@ export async function getExamAction(examId: string) {
     return { success: false, error: 'Erro ao buscar a prova.' };
   }
 
-  const classIds = exam.exam_classes
-    ? exam.exam_classes.map((ec) => ec.class_id)
-    : [];
+  const classIds = exam.exam_classes ? exam.exam_classes.map((ec) => ec.class_id) : [];
 
   return {
     success: true,

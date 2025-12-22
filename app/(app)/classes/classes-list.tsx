@@ -141,7 +141,7 @@ export function ClassesList({ initialClasses, currentTerm }: ClassesListProps) {
         <h1 className="text-3xl font-bold tracking-tight">Minhas Turmas</h1>
         <div className="flex items-center gap-2">
           <Select value={currentTerm} onValueChange={handleTermChange}>
-            <SelectTrigger className="w-[180px]">
+            <SelectTrigger className="w-44">
               <SelectValue placeholder="Selecione o período" />
             </SelectTrigger>
             <SelectContent>
@@ -189,7 +189,10 @@ export function ClassesList({ initialClasses, currentTerm }: ClassesListProps) {
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {initialClasses.map((cls) => (
-          <Card key={cls.id} className="relative group hover:border-primary/50 transition-colors flex flex-col">
+          <Card
+            key={cls.id}
+            className="relative group hover:border-primary/50 transition-colors flex flex-col"
+          >
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <Link href={`/classes/${cls.id}`} className="hover:underline">
                 <CardTitle className="text-lg font-medium">{cls.name}</CardTitle>
@@ -222,29 +225,36 @@ export function ClassesList({ initialClasses, currentTerm }: ClassesListProps) {
                 <span>{cls.students && cls.students.length > 0 ? cls.students[0].count : 0}</span>
                 <span className="text-sm font-normal text-muted-foreground">alunos</span>
               </div>
-              
+
               <div className="mt-auto border-t pt-4">
-                 <p className="text-xs font-semibold text-muted-foreground mb-3 uppercase tracking-wider">
-                   Média Geral ({TERM_LABELS[currentTerm] || currentTerm})
-                 </p>
-                 <ScrollArea className="h-[200px] -mr-4 pr-4">
-                   <div className="space-y-3">
-                     {cls.students_with_grades && cls.students_with_grades.length > 0 ? (
-                       cls.students_with_grades.map(student => (
-                          <div key={student.id} className="flex justify-between items-center text-sm group/student hover:bg-muted/50 p-1 rounded transition-colors">
-                              <span className="truncate font-medium text-slate-700 dark:text-slate-300">{student.name}</span>
-                              <span className={cn("font-bold tabular-nums", getGradeColor(student.average))}>
-                                  {student.average !== null ? student.average.toFixed(1) : '-'}
-                              </span>
-                          </div>
-                       ))
-                     ) : (
-                       <div className="flex flex-col items-center justify-center h-full py-8 text-center text-muted-foreground text-sm">
-                          <p>Nenhum aluno cadastrado.</p>
-                       </div>
-                     )}
-                   </div>
-                 </ScrollArea>
+                <p className="text-xs font-semibold text-muted-foreground mb-3 uppercase tracking-wider">
+                  Média Geral ({TERM_LABELS[currentTerm] || currentTerm})
+                </p>
+                <ScrollArea className="h-48 -mr-4 pr-4">
+                  <div className="space-y-3">
+                    {cls.students_with_grades && cls.students_with_grades.length > 0 ? (
+                      cls.students_with_grades.map((student) => (
+                        <div
+                          key={student.id}
+                          className="flex justify-between items-center text-sm group/student hover:bg-muted/50 p-1 rounded transition-colors"
+                        >
+                          <span className="truncate font-medium text-slate-700 dark:text-slate-300">
+                            {student.name}
+                          </span>
+                          <span
+                            className={cn('font-bold tabular-nums', getGradeColor(student.average))}
+                          >
+                            {student.average !== null ? student.average.toFixed(1) : '-'}
+                          </span>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="flex flex-col items-center justify-center h-full py-8 text-center text-muted-foreground text-sm">
+                        <p>Nenhum aluno cadastrado.</p>
+                      </div>
+                    )}
+                  </div>
+                </ScrollArea>
               </div>
             </CardContent>
           </Card>

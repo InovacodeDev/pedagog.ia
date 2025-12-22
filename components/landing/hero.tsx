@@ -27,7 +27,7 @@ export function Hero() {
                   com IA Pedagógica
                 </span>
               </h1>
-              <p className="max-w-[600px] text-slate-600 md:text-xl leading-relaxed">
+              <p className="max-w-2xl text-slate-600 md:text-xl leading-relaxed">
                 A única plataforma que gera, aplica e corrige avaliações alinhadas à BNCC em
                 segundos. Qualidade pedagógica com agilidade tecnológica.
               </p>
@@ -70,13 +70,13 @@ export function Hero() {
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.7 }}
-            className="relative mx-auto w-full max-w-[500px] lg:max-w-none flex justify-center lg:justify-end"
+            className="relative mx-auto w-full max-w-lg lg:max-w-none flex justify-center lg:justify-end"
           >
             {/* Abstract Composition / Placeholder for AI Image */}
             <motion.div
               animate={{ y: [0, -15, 0] }}
               transition={{ repeat: Infinity, duration: 6, ease: 'easeInOut' }}
-              className="relative w-[350px] h-[350px] md:w-[450px] md:h-[450px]"
+              className="relative w-96 h-96 md:w-[28rem] md:h-[28rem]"
             >
               {/* Glowing Background */}
               <div className="absolute inset-0 bg-gradient-to-tr from-indigo-500/30 to-teal-500/30 blur-[60px] rounded-full" />

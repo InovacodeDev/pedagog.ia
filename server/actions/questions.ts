@@ -58,8 +58,7 @@ function cleanJson(text: string) {
 }
 
 // Helper to format options based on question type
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function formatOptionsByType(type: string, options: string[] | undefined): any {
+function formatOptionsByType(type: string, options: string[] | undefined): unknown {
   if (!options) return null;
 
   if (type === 'sum') {
@@ -394,16 +393,13 @@ function buildSystemPrompt(params: {
  * Calculates estimated costs, deducts credits, and logs usage
  */
 async function calculateAndLogCost(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  supabase: any,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  user: any,
+  supabase: ReturnType<typeof createClient> | Awaited<ReturnType<typeof createClient>>,
+  user: { id: string },
   input: {
     modelName: string;
     modelTier: string;
     quantity: number;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    usageMetadata: any;
+    usageMetadata: { promptTokenCount?: number; candidatesTokenCount?: number } | null | undefined;
     feature: string;
   }
 ) {
@@ -422,8 +418,7 @@ async function calculateAndLogCost(
       {
         p_user_id: user.id,
         p_amount: estimatedCreditsCost,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      } as any
+      }
     );
 
     if (deductionError || !deductionSuccess) {
@@ -470,8 +465,7 @@ async function calculateAndLogCost(
     output_tokens: outputTokens,
     cost_credits: estimatedCreditsCost,
     provider_cost_brl: providerCostBrl,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } as any);
+  });
 }
 
 // ==========================================
@@ -605,38 +599,44 @@ export async function saveQuestionsAction(questions: GeneratedQuestion[]) {
 
   const questionsToInsert: Database['public']['Tables']['questions']['Insert'][] = questions.map(
     (q) => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      let dbContent: any = {
+      // Type assertion for the complex content object that eventually becomes Json
+      // We start with a base object that satisfies the minimum structure
+      const baseContent: Record<string, unknown> = {
         stem: q.stem,
         support_texts: q.support_texts || undefined,
       };
 
       // Essay handling
       if (q.type === 'essay') {
+        // Safe access to potential nested properties
+        const contentObj = typeof q.content === 'object' && q.content ? q.content : {};
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const rawGenre = (q.content as any)?.genre || (q as any).genre;
+        const rawGenre = (contentObj as any).genre || (q as any).genre;
+
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const rawSupportTexts =
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          (q.content as any)?.support_texts || q.support_texts || (q as any).support_texts;
+          (contentObj as any).support_texts || q.support_texts || (q as any).support_texts;
 
         const genre = typeof rawGenre === 'string' ? rawGenre : 'Gênero não especificado';
         const support_texts = Array.isArray(rawSupportTexts)
-          ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            rawSupportTexts.map((t: any) => (typeof t === 'string' ? t : JSON.stringify(t)))
+          ? rawSupportTexts.map((t: unknown) => (typeof t === 'string' ? t : JSON.stringify(t)))
           : [];
 
-        dbContent = { ...dbContent, genre, support_texts };
+        baseContent.genre = genre;
+        baseContent.support_texts = support_texts;
       }
 
       // Association handling
       if (q.type === 'association') {
-        dbContent = {
-          ...dbContent,
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          column_b: (q.content as any)?.column_b || (q as any).column_b,
-        };
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const contentObj = typeof q.content === 'object' && q.content ? q.content : {};
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        baseContent.column_b = (contentObj as any).column_b || (q as any).column_b;
       }
+
+      // Cast the final object to Json compatible type
+      const dbContent =
+        baseContent as unknown as Database['public']['Tables']['questions']['Insert']['content'];
 
       return {
         user_id: user.id,
@@ -659,11 +659,7 @@ export async function saveQuestionsAction(questions: GeneratedQuestion[]) {
     }
   );
 
-  const { data, error } = await supabase
-    .from('questions')
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    .insert(questionsToInsert as any)
-    .select();
+  const { data, error } = await supabase.from('questions').insert(questionsToInsert).select();
 
   if (error) {
     console.error('Error saving questions:', error);

@@ -215,7 +215,7 @@ export async function getClassesWithGradesAction(term: string = '1_bimestre') {
       .from('exam_results')
       .select('exam_id, student_id, score')
       .in('exam_id', examIds);
-    
+
     if (resultsError) throw new Error('Failed to fetch results');
     results = examResults;
   }
@@ -224,12 +224,12 @@ export async function getClassesWithGradesAction(term: string = '1_bimestre') {
   const classesWithGrades = classes.map((cls: any) => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const classStudents = students.filter((s: any) => s.class_id === cls.id);
-    
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const studentsWithGrades = classStudents.map((student: any) => {
       // Find all results for this student in the fetched exams (which are already filtered by term)
       const studentResults = results.filter((r) => r.student_id === student.id);
-      
+
       let average = null;
       if (studentResults.length > 0) {
         const sum = studentResults.reduce((acc, curr) => acc + (Number(curr.score) || 0), 0);

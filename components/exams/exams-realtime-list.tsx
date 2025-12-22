@@ -45,9 +45,9 @@ export function ExamsRealtimeList({ initialExams }: ExamsRealtimeListProps) {
     table: 'exams',
     initialData: initialExams,
     orderBy: (a, b) => {
-       const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
-       const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
-       return dateB - dateA;
+      const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
+      const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
+      return dateB - dateA;
     },
   });
 
@@ -99,7 +99,7 @@ export function ExamsRealtimeList({ initialExams }: ExamsRealtimeListProps) {
               <TableHead>Questões</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Criada em</TableHead>
-              <TableHead className="w-[50px]"></TableHead>
+              <TableHead className="w-12"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -127,7 +127,9 @@ export function ExamsRealtimeList({ initialExams }: ExamsRealtimeListProps) {
                       )}
                     </div>
                   </TableCell>
-                  <TableCell>{exam.created_at ? new Date(exam.created_at).toLocaleDateString('pt-BR') : '-'}</TableCell>
+                  <TableCell>
+                    {exam.created_at ? new Date(exam.created_at).toLocaleDateString('pt-BR') : '-'}
+                  </TableCell>
                   <TableCell>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -151,9 +153,7 @@ export function ExamsRealtimeList({ initialExams }: ExamsRealtimeListProps) {
                         <DropdownMenuItem
                           disabled={(exam.correction_count || 0) > 0}
                           className={
-                            (exam.correction_count || 0) > 0
-                              ? 'opacity-50 cursor-not-allowed'
-                              : ''
+                            (exam.correction_count || 0) > 0 ? 'opacity-50 cursor-not-allowed' : ''
                           }
                           asChild={(exam.correction_count || 0) === 0}
                         >

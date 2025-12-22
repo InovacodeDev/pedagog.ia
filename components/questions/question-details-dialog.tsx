@@ -47,8 +47,7 @@ const TYPE_MAP = {
 // Helper to extract stem from content
 const getStem = (question: Question): string => {
   if (typeof question.content === 'object' && question.content !== null) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const content = question.content as any;
+    const content = question.content as { stem?: string; text?: string };
     if (typeof content.stem === 'string') return content.stem;
     if (typeof content.text === 'string') return content.text;
   }
@@ -325,29 +324,26 @@ export function QuestionDetailsDialog({
                   {question.type === 'essay' && (
                     <div className="space-y-4">
                       {/* Genre Badge */}
-                      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                      {(question.content as any)?.genre && (
+                      {(question.content as { genre?: string })?.genre && (
                         <div className="flex items-center gap-2">
                           <Badge
                             variant="outline"
                             className="bg-pink-50 text-pink-700 border-pink-200 font-medium"
                           >
                             Gênero:{' '}
-                            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                            {typeof (question.content as any).genre === 'string'
-                              ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                                (question.content as any).genre
-                              : // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                                JSON.stringify((question.content as any).genre)}
+                            {typeof (question.content as { genre: string }).genre === 'string'
+                              ? (question.content as { genre: string }).genre
+                              : JSON.stringify((question.content as { genre: unknown }).genre)}
                           </Badge>
                         </div>
                       )}
 
                       {/* Support Texts - Defensive Rendering */}
-                      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                      {Array.isArray((question.content as any)?.support_texts) &&
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                        (question.content as any).support_texts.length > 0 && (
+                      {Array.isArray(
+                        (question.content as { support_texts?: unknown[] })?.support_texts
+                      ) &&
+                        (question.content as { support_texts: unknown[] }).support_texts.length >
+                          0 && (
                           <div className="space-y-3 p-4 bg-muted/30 rounded-md border border-muted">
                             <h4 className="text-sm font-semibold text-muted-foreground flex items-center gap-2">
                               <span className="bg-primary/10 text-primary px-1.5 py-0.5 rounded text-xs">
@@ -356,22 +352,20 @@ export function QuestionDetailsDialog({
                               Textos de Apoio
                             </h4>
                             <div className="space-y-3">
-                              {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                              {(question.content as any).support_texts?.map(
-                                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                                (text: any, idx: number) => {
-                                  const safeText =
-                                    typeof text === 'string' ? text : JSON.stringify(text);
-                                  return (
-                                    <div
-                                      key={idx}
-                                      className="text-sm text-foreground/80 italic border-l-2 border-primary/20 pl-3 py-1"
-                                    >
-                                      &quot;{safeText}&quot;
-                                    </div>
-                                  );
-                                }
-                              )}
+                              {(
+                                question.content as { support_texts: unknown[] }
+                              ).support_texts?.map((text: unknown, idx: number) => {
+                                const safeText =
+                                  typeof text === 'string' ? text : JSON.stringify(text);
+                                return (
+                                  <div
+                                    key={idx}
+                                    className="text-sm text-foreground/80 italic border-l-2 border-primary/20 pl-3 py-1"
+                                  >
+                                    &quot;{safeText}&quot;
+                                  </div>
+                                );
+                              })}
                             </div>
                           </div>
                         )}

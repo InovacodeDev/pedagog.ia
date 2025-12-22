@@ -12,8 +12,9 @@ interface ClassesPageProps {
 
 export default async function ClassesPage({ searchParams }: ClassesPageProps) {
   const resolvedSearchParams = await searchParams;
-  const term = typeof resolvedSearchParams.term === 'string' ? resolvedSearchParams.term : '1_bimestre';
-  
+  const term =
+    typeof resolvedSearchParams.term === 'string' ? resolvedSearchParams.term : '1_bimestre';
+
   const classes = await getClassesWithGradesAction(term);
 
   return (

@@ -74,7 +74,9 @@ export default async function DashboardPage() {
                       </TableCell>
                       <TableCell>{exam.correction_count}</TableCell>
                       <TableCell className="text-right text-muted-foreground">
-                        {exam.created_at ? new Date(exam.created_at).toLocaleDateString('pt-BR') : '-'}
+                        {exam.created_at
+                          ? new Date(exam.created_at).toLocaleDateString('pt-BR')
+                          : '-'}
                       </TableCell>
                     </TableRow>
                   ))}

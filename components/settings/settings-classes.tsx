@@ -51,11 +51,17 @@ export function SettingsClasses({ schoolPeriod }: SettingsClassesProps) {
         <CardHeader>
           <CardTitle>Período Letivo</CardTitle>
           <CardDescription>
-            Defina como o período letivo é dividido. Isso afeta como as notas e relatórios são organizados.
+            Defina como o período letivo é dividido. Isso afeta como as notas e relatórios são
+            organizados.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <RadioGroup value={period} onValueChange={handlePeriodChange} className="space-y-4" disabled={isUpdating}>
+          <RadioGroup
+            value={period}
+            onValueChange={handlePeriodChange}
+            className="space-y-4"
+            disabled={isUpdating}
+          >
             <div className="flex items-center space-x-2">
               <RadioGroupItem value="bimestre" id="bimestre" />
               <Label htmlFor="bimestre">Bimestre</Label>
@@ -75,16 +81,15 @@ export function SettingsClasses({ schoolPeriod }: SettingsClassesProps) {
       <Card className="border-red-200 dark:border-red-900">
         <CardHeader>
           <CardTitle className="text-red-600 dark:text-red-400">Zona de Perigo</CardTitle>
-          <CardDescription>
-            Ações irreversíveis relacionadas ao período letivo.
-          </CardDescription>
+          <CardDescription>Ações irreversíveis relacionadas ao período letivo.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
             <Label className="text-base font-semibold">Zerar Turmas</Label>
             <p className="text-sm text-muted-foreground">
-              Esta ação irá arquivar todas as turmas, avaliações e resultados atuais em um histórico e removerá as turmas ativas.
-              Os alunos serão mantidos, mas desvinculados de qualquer turma. Use isso ao final do período letivo.
+              Esta ação irá arquivar todas as turmas, avaliações e resultados atuais em um histórico
+              e removerá as turmas ativas. Os alunos serão mantidos, mas desvinculados de qualquer
+              turma. Use isso ao final do período letivo.
             </p>
           </div>
 

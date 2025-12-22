@@ -5,21 +5,23 @@ trigger: always_on
 # 🧪 Testing Guidelines
 
 ## Philosophy
+
 - **Confidence:** Tests should give confidence to deploy, not just coverage numbers.
 - **Isolation:** Unit tests must mock all external dependencies.
 - **Integration:** Integration tests should mock network calls (MSW) but use real database/components where possible.
 
 ## Structure: AAA Pattern
+
 All tests must follow the Arrange-Act-Assert pattern explicitly.
 
-```typescript
+````typescript
 it('should calculate the total price correctly', () => {
   // ARRANGE
   const items: CartItem[] = [{ price: 10, quantity: 2 }];
-  
+
   // ACT
   const total: number = calculateTotal(items);
-  
+
   // ASSERT
   expect(total).toBe(20);
 });
@@ -71,3 +73,4 @@ src/
 │   │   └── utils.ts     # Utils specific to Auth
 │   └── dashboard/
 └── types/               # Global/Shared types only
+````
