@@ -21,8 +21,7 @@ export async function getClassesAction() {
     throw new Error('Unauthorized');
   }
 
-  /* eslint-disable @typescript-eslint/no-explicit-any */
-  const { data, error } = await (supabase as any)
+  const { data, error } = await supabase
     .from('classes')
     .select('*, students(count)')
     .eq('user_id', user.id)
@@ -177,7 +176,7 @@ export async function getClassesWithGradesAction(term: string = '1_bimestre') {
   }
 
   // 1. Fetch Classes
-  const { data: classes, error: classesError } = await (supabase as any)
+  const { data: classes, error: classesError } = await supabase
     .from('classes')
     .select('*, students(count)')
     .eq('user_id', user.id)
@@ -186,8 +185,7 @@ export async function getClassesWithGradesAction(term: string = '1_bimestre') {
   if (classesError) throw new Error('Failed to fetch classes');
 
   // 2. Fetch Students
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: students, error: studentsError } = await (supabase as any)
+  const { data: students, error: studentsError } = await supabase
     .from('students')
     .select('id, name, class_id')
     .eq('user_id', user.id);
@@ -195,8 +193,7 @@ export async function getClassesWithGradesAction(term: string = '1_bimestre') {
   if (studentsError) throw new Error('Failed to fetch students');
 
   // 3. Fetch Exams for the Term
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: exams, error: examsError } = await (supabase as any)
+  const { data: exams, error: examsError } = await supabase
     .from('exams')
     .select('id, term')
     .eq('user_id', user.id)
@@ -204,14 +201,13 @@ export async function getClassesWithGradesAction(term: string = '1_bimestre') {
 
   if (examsError) throw new Error('Failed to fetch exams');
 
-  const examIds = exams.map((e: any) => e.id);
+  const examIds = exams.map((e) => e.id);
 
   // 4. Fetch Results if there are exams
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let results: any[] = [];
   if (examIds.length > 0) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: examResults, error: resultsError } = await (supabase as any)
+    const { data: examResults, error: resultsError } = await supabase
       .from('exam_results')
       .select('exam_id, student_id, score')
       .in('exam_id', examIds);
@@ -222,11 +218,9 @@ export async function getClassesWithGradesAction(term: string = '1_bimestre') {
 
   // 5. Calculate Averages
   const classesWithGrades = classes.map((cls: any) => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const classStudents = students.filter((s: any) => s.class_id === cls.id);
+    const classStudents = students.filter((s) => s.class_id === cls.id);
     
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const studentsWithGrades = classStudents.map((student: any) => {
+    const studentsWithGrades = classStudents.map((student) => {
       // Find all results for this student in the fetched exams (which are already filtered by term)
       const studentResults = results.filter((r) => r.student_id === student.id);
       
@@ -276,5 +270,6 @@ export async function getExamsByClassAction(classId: string) {
   }
 
   // Flatten the result to return just the exam objects
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return data.map((item: any) => item.exam).filter(Boolean);
 }

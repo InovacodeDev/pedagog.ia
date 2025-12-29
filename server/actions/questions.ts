@@ -623,7 +623,7 @@ export async function saveQuestionsAction(questions: GeneratedQuestion[]) {
         const genre = typeof rawGenre === 'string' ? rawGenre : 'Gênero não especificado';
         const support_texts = Array.isArray(rawSupportTexts)
           ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            rawSupportTexts.map((t: any) => (typeof t === 'string' ? t : JSON.stringify(t)))
+            rawSupportTexts.map((t: unknown) => (typeof t === 'string' ? t : JSON.stringify(t)))
           : [];
 
         dbContent = { ...dbContent, genre, support_texts };

@@ -72,7 +72,7 @@ export function QuestionCard({ question, onDelete }: QuestionCardProps) {
           {genre && (
             <Badge
               variant="outline"
-              className="text-[10px] bg-pink-50 text-pink-700 border-pink-200"
+              className="text-xs bg-pink-50 text-pink-700 border-pink-200"
             >
               {typeof genre === 'string' ? genre : 'Gênero'}
             </Badge>
