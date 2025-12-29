@@ -233,6 +233,7 @@ export type Database = {
           id: string;
           questions_list: Json;
           status: Database['public']['Enums']['exam_status'] | null;
+          term: string | null;
           title: string;
           updated_at: string | null;
           user_id: string;
@@ -247,6 +248,7 @@ export type Database = {
           id?: string;
           questions_list?: Json;
           status?: Database['public']['Enums']['exam_status'] | null;
+          term?: string | null;
           title: string;
           updated_at?: string | null;
           user_id: string;
@@ -261,6 +263,7 @@ export type Database = {
           id?: string;
           questions_list?: Json;
           status?: Database['public']['Enums']['exam_status'] | null;
+          term?: string | null;
           title?: string;
           updated_at?: string | null;
           user_id?: string;
@@ -373,25 +376,34 @@ export type Database = {
       };
       students: {
         Row: {
+          class_id: string | null;
           created_at: string | null;
           encrypted_name: string;
           grade_level: string;
           id: string;
           institution_id: string;
+          name: string | null;
+          user_id: string;
         };
         Insert: {
+          class_id?: string | null;
           created_at?: string | null;
           encrypted_name: string;
           grade_level: string;
           id?: string;
           institution_id: string;
+          name?: string | null;
+          user_id: string;
         };
         Update: {
+          class_id?: string | null;
           created_at?: string | null;
           encrypted_name?: string;
           grade_level?: string;
           id?: string;
           institution_id?: string;
+          name?: string | null;
+          user_id?: string;
         };
         Relationships: [];
       };
