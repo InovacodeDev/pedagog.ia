@@ -126,7 +126,7 @@ export interface Question {
   options?: string[] | null;
   difficulty?: string;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  content?: any;
+  content?: any; // TODO: Refactor 'any' to strict type [Jules]
 }
 
 interface ExamPDFProps {
@@ -192,7 +192,7 @@ const RenderQuestionBody = ({ question }: { question: Question }) => {
 
     case 'association':
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const colB = (question.content as any)?.column_b || [];
+      const colB = (question.content as any)?.column_b || []; // TODO: Refactor 'any' to strict type [Jules]
       return (
         <View style={styles.grid2}>
           <View style={styles.gridItem}>

@@ -19,7 +19,7 @@ interface Question {
   options?: string[] | null;
   correct_answer?: string;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  content?: any;
+  content?: any; // TODO: Refactor 'any' to strict type [Jules]
 }
 
 export default async function ExamPage({ params }: ExamPageProps) {

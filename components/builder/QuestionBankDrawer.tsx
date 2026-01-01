@@ -28,10 +28,10 @@ import { toast } from 'sonner';
 export interface QuestionBankItem {
   id: string;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  content: any;
+  content: any; // TODO: Refactor 'any' to strict type [Jules]
   type: string | null;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  options?: any;
+  options?: any; // TODO: Refactor 'any' to strict type [Jules]
   correct_answer?: string | null;
   discipline?: string | null;
   subject?: string | null;

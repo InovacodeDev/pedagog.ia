@@ -16,6 +16,6 @@ export interface GeneratedQuestion {
   difficulty?: 'easy' | 'medium' | 'hard';
   style?: string;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  content?: any;
+  content?: any; // TODO: Refactor 'any' to strict type [Jules]
   source_tag?: string;
 }

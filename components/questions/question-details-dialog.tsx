@@ -48,7 +48,7 @@ const TYPE_MAP = {
 const getStem = (question: Question): string => {
   if (typeof question.content === 'object' && question.content !== null) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const content = question.content as any;
+    const content = question.content as any; // TODO: Refactor 'any' to strict type [Jules]
     if (typeof content.stem === 'string') return content.stem;
     if (typeof content.text === 'string') return content.text;
   }
@@ -326,7 +326,7 @@ export function QuestionDetailsDialog({
                     <div className="space-y-4">
                       {/* Genre Badge */}
                       {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                      {(question.content as any)?.genre && (
+                      {(question.content as any)?.genre && ( // TODO: Refactor 'any' to strict type [Jules]
                         <div className="flex items-center gap-2">
                           <Badge
                             variant="outline"
@@ -334,9 +334,9 @@ export function QuestionDetailsDialog({
                           >
                             Gênero:{' '}
                             {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                            {typeof (question.content as any).genre === 'string'
+                            {typeof (question.content as any).genre === 'string' // TODO: Refactor 'any' to strict type [Jules]
                               ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                                (question.content as any).genre
+                                (question.content as any).genre // TODO: Refactor 'any' to strict type [Jules]
                               : // eslint-disable-next-line @typescript-eslint/no-explicit-any
                                 JSON.stringify((question.content as any).genre)}
                           </Badge>
@@ -345,9 +345,9 @@ export function QuestionDetailsDialog({
 
                       {/* Support Texts - Defensive Rendering */}
                       {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                      {Array.isArray((question.content as any)?.support_texts) &&
+                      {Array.isArray((question.content as any)?.support_texts) && // TODO: Refactor 'any' to strict type [Jules]
                         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                        (question.content as any).support_texts.length > 0 && (
+                        (question.content as any).support_texts.length > 0 && ( // TODO: Refactor 'any' to strict type [Jules]
                           <div className="space-y-3 p-4 bg-muted/30 rounded-md border border-muted">
                             <h4 className="text-sm font-semibold text-muted-foreground flex items-center gap-2">
                               <span className="bg-primary/10 text-primary px-1.5 py-0.5 rounded text-xs">
@@ -357,9 +357,9 @@ export function QuestionDetailsDialog({
                             </h4>
                             <div className="space-y-3">
                               {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                              {(question.content as any).support_texts?.map(
+                              {(question.content as any).support_texts?.map( // TODO: Refactor 'any' to strict type [Jules]
                                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                                (text: any, idx: number) => {
+                                (text: any, idx: number) => { // TODO: Refactor 'any' to strict type [Jules]
                                   const safeText =
                                     typeof text === 'string' ? text : JSON.stringify(text);
                                   return (
