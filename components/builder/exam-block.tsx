@@ -35,7 +35,7 @@ export interface ExamBlock {
     studentNameLabel?: boolean;
   };
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  questionData?: any;
+  questionData?: any; // TODO: Refactor 'any' to strict type [Jules]
 }
 
 interface SortableBlockProps {

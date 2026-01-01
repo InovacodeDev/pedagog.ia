@@ -50,7 +50,7 @@ export default async function SettingsPage({
     if (sub.stripe_subscription_id) {
       try {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const stripeSub: any = await stripe.subscriptions.retrieve(sub.stripe_subscription_id);
+        const stripeSub: any = await stripe.subscriptions.retrieve(sub.stripe_subscription_id); // TODO: Refactor 'any' to strict type [Jules]
         subscriptionData.cancel_at_period_end = stripeSub.cancel_at_period_end;
         subscriptionData.status = stripeSub.status;
         const endDate = stripeSub.cancel_at || stripeSub.current_period_end;

@@ -58,16 +58,16 @@ export function ExamBuilder() {
         .single();
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      if ((job as any)?.status === 'completed') {
+      if ((job as any)?.status === 'completed') { // TODO: Refactor 'any' to strict type [Jules]
         clearInterval(interval);
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const result = (job as any).result;
+        const result = (job as any).result; // TODO: Refactor 'any' to strict type [Jules]
         // Handle both direct array (v1) and wrapped object (v2)
         const rawQuestions = Array.isArray(result) ? result : result?.questions || [];
 
         // Normalize questions to match ExamBuilder expectations
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const questions = rawQuestions.map((q: any) => ({
+        const questions = rawQuestions.map((q: any) => ({ // TODO: Refactor 'any' to strict type [Jules]
           stem: q.stem || '',
           options: Array.isArray(q.options) ? q.options : ['', '', '', ''],
           correct_answer: String(q.correct_answer || '0'),
@@ -78,7 +78,7 @@ export function ExamBuilder() {
         setStep('review');
         toast.success('Questões geradas com sucesso!');
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      } else if ((job as any)?.status === 'failed') {
+      } else if ((job as any)?.status === 'failed') { // TODO: Refactor 'any' to strict type [Jules]
         clearInterval(interval);
         setStep('config');
         toast.error('Falha ao gerar questões. Tente novamente.');

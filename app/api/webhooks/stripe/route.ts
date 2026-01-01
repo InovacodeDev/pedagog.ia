@@ -83,7 +83,7 @@ export async function POST(req: Request) {
             cost_credits: -creditAmount,
             provider_cost_brl: 0, // We could track real BRL cost here if we had it from metadata
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          } as any);
+          } as any); // TODO: Refactor 'any' to strict type [Jules]
         }
         return new NextResponse(null, { status: 200 });
       }
@@ -183,7 +183,7 @@ export async function POST(req: Request) {
                 cost_credits: -MONTHLY_CREDITS,
                 provider_cost_brl: 0,
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              } as any);
+              } as any); // TODO: Refactor 'any' to strict type [Jules]
             }
           }
         }
