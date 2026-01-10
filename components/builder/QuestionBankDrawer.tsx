@@ -24,14 +24,14 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { searchQuestionsAction } from '@/server/actions/questions';
 import { useDebounce } from '@/hooks/use-debounce';
 import { toast } from 'sonner';
+import { Json } from '@/types/database';
+import { QuestionContent } from '@/types/questions';
 
 export interface QuestionBankItem {
   id: string;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  content: any;
+  content: Json;
   type: string | null;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  options?: any;
+  options?: Json;
   correct_answer?: string | null;
   discipline?: string | null;
   subject?: string | null;
@@ -103,8 +103,9 @@ export function QuestionBankDrawer({ onAddQuestion, disabled }: QuestionBankDraw
   };
 
   const getStem = (question: QuestionBankItem) => {
-    if (typeof question.content === 'object' && question.content !== null) {
-      return question.content.stem || 'Questão sem enunciado';
+    if (typeof question.content === 'object' && question.content !== null && !Array.isArray(question.content)) {
+      const content = question.content as QuestionContent;
+      return content.stem || 'Questão sem enunciado';
     }
     return typeof question.content === 'string' ? question.content : 'Questão sem enunciado';
   };

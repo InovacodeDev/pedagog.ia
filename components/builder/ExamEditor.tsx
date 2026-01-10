@@ -59,6 +59,7 @@ import { ClassItem } from '@/server/actions/classes';
 import { ClassMultiSelect } from './class-multi-select';
 import { generateExamFromDatabaseAction } from '@/server/actions/questions';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { QuestionContent } from '@/types/questions';
 const useSubscription = () => ({ isPro: false });
 
 interface UserProfile {
@@ -222,17 +223,24 @@ export function ExamEditor({
   };
 
   const handleAddFromBank = (question: QuestionBankItem) => {
-    const stem =
-      typeof question.content === 'object' && question.content !== null
-        ? question.content.stem
-        : question.content;
+    let stem = 'Questão sem enunciado';
+    if (typeof question.content === 'object' && question.content !== null && !Array.isArray(question.content)) {
+      const content = question.content as QuestionContent;
+      if (content.stem) stem = content.stem;
+    } else if (typeof question.content === 'string') {
+      stem = question.content;
+    }
+
+    const options = Array.isArray(question.options)
+      ? question.options.filter((o): o is string => typeof o === 'string')
+      : undefined;
 
     const newBlock: ExamBlock = {
       id: `block-${Date.now()}`,
       type: question.type === 'multiple_choice' ? 'multiple_choice' : 'essay',
       content: {
-        text: stem || 'Questão sem enunciado',
-        options: question.options,
+        text: stem,
+        options: options,
         correctAnswer: question.correct_answer || undefined,
       },
       questionData: question,
@@ -267,18 +275,13 @@ export function ExamEditor({
 
     try {
       const maxToGenerate = 10 - questionCount;
-      // Generate between 1 and maxToGenerate, but at least 1.
-      // If maxToGenerate is large (e.g. 10), we might want a minimum of 5 like before,
-      // but we must respect the remaining slots.
-      // Logic: if we have 0 questions, generate 5-10.
-      // If we have 8 questions, generate 1-2.
       const minQuantity = Math.min(5, maxToGenerate);
       const quantity = Math.floor(Math.random() * (maxToGenerate - minQuantity + 1)) + minQuantity;
 
       const result = await generateExamFromDatabaseAction({
         discipline,
         quantity,
-        excludeTypes: ['essay', 'redaction'], // Exclude redaction as requested
+        excludeTypes: ['essay', 'redaction'],
       });
 
       if (!result.success || !result.questions) {
@@ -345,19 +348,6 @@ export function ExamEditor({
     setBlocks((prev) => prev.filter((b) => b.id !== id));
     if (selectedBlock?.id === id) setSelectedBlock(null);
   };
-
-  /*
-  const exportWord = async () => {
-    try {
-      const blob = await generateDocx(blocks);
-      saveAs(blob, 'prova-pedagog-ia.docx');
-      toast.success('Prova exportada para Word!');
-    } catch (error) {
-      console.error('Erro ao exportar Word:', error);
-      toast.error('Erro ao exportar para Word.');
-    }
-  };
-  */
 
   const exportPDF = async () => {
     const blob = await pdf(<BuilderPDFDocument blocks={blocks} />).toBlob();

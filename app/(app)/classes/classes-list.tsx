@@ -141,7 +141,7 @@ export function ClassesList({ initialClasses, currentTerm }: ClassesListProps) {
         <h1 className="text-3xl font-bold tracking-tight">Minhas Turmas</h1>
         <div className="flex items-center gap-2">
           <Select value={currentTerm} onValueChange={handleTermChange}>
-            <SelectTrigger className="w-[180px]">
+            <SelectTrigger className="w-48">
               <SelectValue placeholder="Selecione o período" />
             </SelectTrigger>
             <SelectContent>
@@ -227,7 +227,7 @@ export function ClassesList({ initialClasses, currentTerm }: ClassesListProps) {
                  <p className="text-xs font-semibold text-muted-foreground mb-3 uppercase tracking-wider">
                    Média Geral ({TERM_LABELS[currentTerm] || currentTerm})
                  </p>
-                 <ScrollArea className="h-[200px] -mr-4 pr-4">
+                 <ScrollArea className="h-48 -mr-4 pr-4">
                    <div className="space-y-3">
                      {cls.students_with_grades && cls.students_with_grades.length > 0 ? (
                        cls.students_with_grades.map(student => (

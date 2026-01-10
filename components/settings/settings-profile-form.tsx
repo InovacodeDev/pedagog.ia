@@ -121,7 +121,7 @@ export function SettingsProfileForm({ user }: SettingsProfileFormProps) {
                   <FormItem>
                     <FormLabel>Email</FormLabel>
                     <FormControl>
-                      <Input placeholder="seu@email.com" {...field} disabled readOnly />
+                      <Input placeholder="user@example.com" {...field} disabled readOnly />
                     </FormControl>
                     <FormDescription>O email não pode ser alterado diretamente.</FormDescription>
                     <FormMessage />
