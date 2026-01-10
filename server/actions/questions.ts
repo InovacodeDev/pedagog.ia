@@ -40,6 +40,26 @@ const GenerateQuestionsSchema = z
     }
   });
 
+// Schema for input validation of saveQuestionsAction
+const SaveQuestionsSchema = z.array(
+  z.object({
+    stem: z.string().min(1, 'Enunciado é obrigatório'),
+    type: z.enum(['multiple_choice', 'true_false', 'sum', 'association', 'open_ended', 'essay']),
+    support_texts: z.array(z.string()).optional().nullable(),
+    options: z.array(z.string()).optional().nullable(),
+    correct_answer: z.string().optional().or(z.literal('')),
+    explanation: z.string().optional().nullable(),
+    correction_criteria: z.array(z.string()).optional().nullable(),
+    bncc: z.string().optional().nullable(),
+    discipline: z.string().optional().nullable(),
+    subject: z.string().optional().nullable(),
+    difficulty: z.enum(['easy', 'medium', 'hard']).optional().nullable(),
+    style: z.string().optional().nullable(),
+    content: z.any().optional(), // We allow flexible content but should handle it carefully
+    source_tag: z.string().optional().nullable(),
+  })
+);
+
 const GenerateExamFromDbSchema = z.object({
   discipline: z.string().min(1, 'Selecione uma matéria.'),
   subject: z.string().optional(),
@@ -603,7 +623,16 @@ export async function saveQuestionsAction(questions: GeneratedQuestion[]) {
 
   if (!user) return { success: false, error: 'Unauthorized' };
 
-  const questionsToInsert: Database['public']['Tables']['questions']['Insert'][] = questions.map(
+  // Validate input
+  const validation = SaveQuestionsSchema.safeParse(questions);
+  if (!validation.success) {
+    console.error('Invalid questions data:', validation.error);
+    return { success: false, error: 'Dados das questões inválidos.' };
+  }
+
+  const validQuestions = validation.data;
+
+  const questionsToInsert: Database['public']['Tables']['questions']['Insert'][] = validQuestions.map(
     (q) => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       let dbContent: any = {
