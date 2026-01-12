@@ -373,6 +373,7 @@ export type Database = {
       };
       students: {
         Row: {
+          class_id: string;
           created_at: string | null;
           encrypted_name: string;
           grade_level: string;
@@ -380,6 +381,7 @@ export type Database = {
           institution_id: string;
         };
         Insert: {
+          class_id: string;
           created_at?: string | null;
           encrypted_name: string;
           grade_level: string;
@@ -387,13 +389,22 @@ export type Database = {
           institution_id: string;
         };
         Update: {
+          class_id?: string;
           created_at?: string | null;
           encrypted_name?: string;
           grade_level?: string;
           id?: string;
           institution_id?: string;
         };
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: 'students_class_id_fkey';
+            columns: ['class_id'];
+            isOneToOne: false;
+            referencedRelation: 'classes';
+            referencedColumns: ['id'];
+          },
+        ];
       };
       ia_cost_log: {
         Row: {

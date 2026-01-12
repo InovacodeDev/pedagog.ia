@@ -15,13 +15,13 @@ export function ExamViewer({ imageUrl }: ExamViewerProps) {
         {({ zoomIn, zoomOut, resetTransform }) => (
           <>
             <div className="absolute top-4 right-4 z-10 flex gap-2 bg-background/80 backdrop-blur-sm p-2 rounded-lg border shadow-sm">
-              <Button variant="ghost" size="icon" onClick={() => zoomIn()} title="Zoom In">
+              <Button variant="ghost" size="icon" onClick={() => zoomIn()} aria-label="Zoom In">
                 <ZoomIn className="h-4 w-4" />
               </Button>
-              <Button variant="ghost" size="icon" onClick={() => zoomOut()} title="Zoom Out">
+              <Button variant="ghost" size="icon" onClick={() => zoomOut()} aria-label="Zoom Out">
                 <ZoomOut className="h-4 w-4" />
               </Button>
-              <Button variant="ghost" size="icon" onClick={() => resetTransform()} title="Reset">
+              <Button variant="ghost" size="icon" onClick={() => resetTransform()} aria-label="Reset Zoom">
                 <RotateCcw className="h-4 w-4" />
               </Button>
             </div>
