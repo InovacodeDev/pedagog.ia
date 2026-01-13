@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
+import { Database } from '@/types/database';
 
 export interface ClassItem {
   id: string;
@@ -21,8 +22,7 @@ export async function getClassesAction() {
     throw new Error('Unauthorized');
   }
 
-  /* eslint-disable @typescript-eslint/no-explicit-any */
-  const { data, error } = await (supabase as any)
+  const { data, error } = await supabase
     .from('classes')
     .select('*, students(count)')
     .eq('user_id', user.id)
@@ -46,8 +46,7 @@ export async function getClassAction(id: string) {
     throw new Error('Unauthorized');
   }
 
-  /* eslint-disable @typescript-eslint/no-explicit-any */
-  const { data, error } = await (supabase as any)
+  const { data, error } = await supabase
     .from('classes')
     .select('*')
     .eq('id', id)
@@ -72,8 +71,7 @@ export async function createClassAction(name: string) {
     return { success: false, message: 'Unauthorized' };
   }
 
-  /* eslint-disable @typescript-eslint/no-explicit-any */
-  const { error } = await (supabase as any).from('classes').insert({
+  const { error } = await supabase.from('classes').insert({
     name,
     user_id: user.id,
   });
@@ -97,8 +95,7 @@ export async function updateClassAction(id: string, name: string) {
     return { success: false, message: 'Unauthorized' };
   }
 
-  /* eslint-disable @typescript-eslint/no-explicit-any */
-  const { error } = await (supabase as any)
+  const { error } = await supabase
     .from('classes')
     .update({ name })
     .eq('id', id)
@@ -138,8 +135,7 @@ export async function deleteClassAction(id: string) {
     return { success: false, message: 'A turma possui alunos. Remova-os antes de excluir.' };
   }
 
-  /* eslint-disable @typescript-eslint/no-explicit-any */
-  const { error } = await (supabase as any)
+  const { error } = await supabase
     .from('classes')
     .delete()
     .eq('id', id)
@@ -153,8 +149,6 @@ export async function deleteClassAction(id: string) {
   revalidatePath('/classes');
   return { success: true, message: 'Turma excluída com sucesso!' };
 }
-
-// ... (previous code)
 
 export interface StudentGradeInfo {
   id: string;
@@ -177,7 +171,7 @@ export async function getClassesWithGradesAction(term: string = '1_bimestre') {
   }
 
   // 1. Fetch Classes
-  const { data: classes, error: classesError } = await (supabase as any)
+  const { data: classes, error: classesError } = await supabase
     .from('classes')
     .select('*, students(count)')
     .eq('user_id', user.id)
@@ -186,8 +180,7 @@ export async function getClassesWithGradesAction(term: string = '1_bimestre') {
   if (classesError) throw new Error('Failed to fetch classes');
 
   // 2. Fetch Students
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: students, error: studentsError } = await (supabase as any)
+  const { data: students, error: studentsError } = await supabase
     .from('students')
     .select('id, name, class_id')
     .eq('user_id', user.id);
@@ -195,8 +188,7 @@ export async function getClassesWithGradesAction(term: string = '1_bimestre') {
   if (studentsError) throw new Error('Failed to fetch students');
 
   // 3. Fetch Exams for the Term
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: exams, error: examsError } = await (supabase as any)
+  const { data: exams, error: examsError } = await supabase
     .from('exams')
     .select('id, term')
     .eq('user_id', user.id)
@@ -204,14 +196,14 @@ export async function getClassesWithGradesAction(term: string = '1_bimestre') {
 
   if (examsError) throw new Error('Failed to fetch exams');
 
-  const examIds = exams.map((e: any) => e.id);
+  const examIds = exams.map((e) => e.id);
 
   // 4. Fetch Results if there are exams
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let results: any[] = [];
+  type ExamResult = Database['public']['Tables']['exam_results']['Row'];
+  let results: Pick<ExamResult, 'exam_id' | 'student_id' | 'score'>[] = [];
+
   if (examIds.length > 0) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: examResults, error: resultsError } = await (supabase as any)
+    const { data: examResults, error: resultsError } = await supabase
       .from('exam_results')
       .select('exam_id, student_id, score')
       .in('exam_id', examIds);
@@ -221,7 +213,7 @@ export async function getClassesWithGradesAction(term: string = '1_bimestre') {
   }
 
   // 5. Calculate Averages
-  const classesWithGrades = classes.map((cls: any) => {
+  const classesWithGrades = classes.map((cls) => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const classStudents = students.filter((s: any) => s.class_id === cls.id);
     
@@ -238,7 +230,7 @@ export async function getClassesWithGradesAction(term: string = '1_bimestre') {
 
       return {
         id: student.id,
-        name: student.name,
+        name: student.name || 'Aluno sem nome',
         average,
       };
     });
@@ -246,13 +238,11 @@ export async function getClassesWithGradesAction(term: string = '1_bimestre') {
     return {
       ...cls,
       students_with_grades: studentsWithGrades,
-    };
+    } as unknown as ClassWithGrades;
   });
 
-  return classesWithGrades as ClassWithGrades[];
+  return classesWithGrades;
 }
-
-// ... (previous code above is fine, just fixing the end)
 
 export async function getExamsByClassAction(classId: string) {
   const supabase = await createClient();
@@ -264,8 +254,7 @@ export async function getExamsByClassAction(classId: string) {
     throw new Error('Unauthorized');
   }
 
-  /* eslint-disable @typescript-eslint/no-explicit-any */
-  const { data, error } = await (supabase as any)
+  const { data, error } = await supabase
     .from('exam_classes')
     .select('exam:exams(*)')
     .eq('class_id', classId);
@@ -276,5 +265,8 @@ export async function getExamsByClassAction(classId: string) {
   }
 
   // Flatten the result to return just the exam objects
-  return data.map((item: any) => item.exam).filter(Boolean);
+  // Using unknown cast because the join returns a structure that TS might not fully infer automatically
+  return (data as unknown as { exam: Database['public']['Tables']['exams']['Row'] }[])
+    .map((item) => item.exam)
+    .filter(Boolean);
 }

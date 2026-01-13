@@ -58,8 +58,10 @@ function cleanJson(text: string) {
 }
 
 // Helper to format options based on question type
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function formatOptionsByType(type: string, options: string[] | undefined): any {
+function formatOptionsByType(
+  type: string,
+  options: string[] | undefined
+): string[] | { value: number; text: string }[] | null {
   if (!options) return null;
 
   if (type === 'sum') {
@@ -394,16 +396,13 @@ function buildSystemPrompt(params: {
  * Calculates estimated costs, deducts credits, and logs usage
  */
 async function calculateAndLogCost(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  supabase: any,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  user: any,
+  supabase: ReturnType<typeof createClient> extends Promise<infer T> ? T : never,
+  user: { id: string },
   input: {
     modelName: string;
     modelTier: string;
     quantity: number;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    usageMetadata: any;
+    usageMetadata: { promptTokenCount: number; candidatesTokenCount: number } | null | undefined;
     feature: string;
   }
 ) {
@@ -422,8 +421,7 @@ async function calculateAndLogCost(
       {
         p_user_id: user.id,
         p_amount: estimatedCreditsCost,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      } as any
+      }
     );
 
     if (deductionError || !deductionSuccess) {
@@ -470,8 +468,7 @@ async function calculateAndLogCost(
     output_tokens: outputTokens,
     cost_credits: estimatedCreditsCost,
     provider_cost_brl: providerCostBrl,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } as any);
+  });
 }
 
 // ==========================================

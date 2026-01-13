@@ -11,6 +11,7 @@ import { getUserInvoices } from '@/server/queries/get-invoices';
 import { InvoicesList } from '@/components/settings/invoices-list';
 import { getCreditUsage, getCreditBalance } from '@/server/queries/get-credit-usage';
 import { CreditUsageList } from '@/components/settings/credit-usage-list';
+import Stripe from 'stripe';
 
 export default async function SettingsPage({
   searchParams,
@@ -49,11 +50,13 @@ export default async function SettingsPage({
 
     if (sub.stripe_subscription_id) {
       try {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const stripeSub: any = await stripe.subscriptions.retrieve(sub.stripe_subscription_id);
+        const stripeSub: Stripe.Subscription = await stripe.subscriptions.retrieve(
+          sub.stripe_subscription_id
+        );
         subscriptionData.cancel_at_period_end = stripeSub.cancel_at_period_end;
         subscriptionData.status = stripeSub.status;
-        const endDate = stripeSub.cancel_at || stripeSub.current_period_end;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const endDate = stripeSub.cancel_at || (stripeSub as any).current_period_end;
         if (endDate) {
           subscriptionData.current_period_end = new Date(endDate * 1000).toISOString();
         }

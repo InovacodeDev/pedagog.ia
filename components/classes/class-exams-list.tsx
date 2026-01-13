@@ -16,10 +16,10 @@ import { Eye, Lock } from 'lucide-react';
 interface Exam {
   id: string;
   title: string;
-  created_at: string;
-  status: string;
+  created_at: string | null;
+  status: string | null;
   questions_list: unknown[];
-  correction_count: number;
+  correction_count: number | null;
 }
 
 interface ClassExamsListProps {
@@ -53,7 +53,7 @@ export function ClassExamsList({ exams }: ClassExamsListProps) {
                 <TableCell>{((exam.questions_list as unknown[])?.length ?? 2) - 2}</TableCell>
                 <TableCell>
                   <div className="flex items-center gap-2">
-                    {exam.correction_count > 0 ? (
+                    {(exam.correction_count || 0) > 0 ? (
                       <Badge variant="destructive" className="flex gap-1 items-center">
                         <Lock className="h-3 w-3" /> Travada
                       </Badge>
@@ -64,7 +64,9 @@ export function ClassExamsList({ exams }: ClassExamsListProps) {
                     )}
                   </div>
                 </TableCell>
-                <TableCell>{new Date(exam.created_at).toLocaleDateString('pt-BR')}</TableCell>
+                <TableCell>
+                  {exam.created_at ? new Date(exam.created_at).toLocaleDateString('pt-BR') : '-'}
+                </TableCell>
                 <TableCell>
                   <Button variant="ghost" size="icon" asChild>
                     <Link href={`/exams/${exam.id}`}>

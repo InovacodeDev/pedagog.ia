@@ -15,7 +15,6 @@ export interface GeneratedQuestion {
   subject?: string;
   difficulty?: 'easy' | 'medium' | 'hard';
   style?: string;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  content?: any;
+  content?: unknown;
   source_tag?: string;
 }

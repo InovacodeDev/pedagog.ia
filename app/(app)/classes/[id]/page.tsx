@@ -78,7 +78,12 @@ export default async function ClassDetailsPage({ params }: ClassDetailsPageProps
           )}
         </TabsContent>
         <TabsContent value="exams" className="mt-6">
-          <ClassExamsList exams={exams} />
+          <ClassExamsList
+            exams={exams.map((e) => ({
+              ...e,
+              questions_list: Array.isArray(e.questions_list) ? e.questions_list : [],
+            }))}
+          />
         </TabsContent>
         <TabsContent value="grades" className="mt-6">
           <ClassGradesList />
