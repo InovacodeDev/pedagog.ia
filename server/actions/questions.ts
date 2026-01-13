@@ -12,7 +12,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 // CONSTANTS & SCHEMAS
 // ==========================================
 
-const GenerateQuestionsSchema = z
+export const GenerateQuestionsSchema = z
   .object({
     content: z.string().optional(), // Now ignored logic-wise, just for form compatibility
     quantity: z.number().min(1).max(10),
@@ -28,7 +28,7 @@ const GenerateQuestionsSchema = z
         z.object({
           name: z.string(),
           type: z.string(),
-          content: z.string(), // base64
+          content: z.string().max(6700000, 'Arquivo muito grande. O limite é 5MB.'), // ~5MB in base64
         })
       )
       .min(1, 'Você deve adicionar pelo menos um arquivo de contexto.'),
