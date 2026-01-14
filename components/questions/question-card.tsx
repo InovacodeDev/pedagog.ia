@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Question } from '@/types/questions';
-import { QuestionDetailsDialog } from './question-details-dialog';
+import { QuestionDetailsDialog } from './QuestionDetailsDialog';
 
 // Helper: Type Mapping (Taxonomy)
 const TYPE_MAP = {

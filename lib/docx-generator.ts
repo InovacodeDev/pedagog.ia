@@ -11,7 +11,7 @@ import {
   AlignmentType,
   Footer,
 } from 'docx';
-import { ExamBlock } from '@/components/builder/exam-block';
+import { ExamBlock } from '@/components/builder/ExamBlock';
 
 export const generateDocx = async (blocks: ExamBlock[]) => {
   const children = [];

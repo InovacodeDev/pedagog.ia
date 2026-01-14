@@ -362,7 +362,6 @@ export function GeneratorForm({
         throw new Error(result.error || 'Erro ao gerar questões.');
       }
 
-      console.log({ questions: result.questions });
       setGeneratedQuestions(result.questions);
       setSelectedIndices(result.questions.map((_, i) => i));
       toast.success('Questões geradas com sucesso!');

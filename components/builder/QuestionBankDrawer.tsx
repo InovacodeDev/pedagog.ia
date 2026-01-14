@@ -24,11 +24,11 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { searchQuestionsAction } from '@/server/actions/questions';
 import { useDebounce } from '@/hooks/use-debounce';
 import { toast } from 'sonner';
+import { QuestionContent } from '@/types/questions';
 
 export interface QuestionBankItem {
   id: string;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  content: any;
+  content: QuestionContent | string; // Allowing string for legacy data
   type: string | null;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   options?: any;
@@ -81,7 +81,7 @@ export function QuestionBankDrawer({ onAddQuestion, disabled }: QuestionBankDraw
         });
 
         if (result.success && result.questions) {
-          setQuestions(result.questions);
+          setQuestions(result.questions as unknown as QuestionBankItem[]);
         } else {
           toast.error('Erro ao buscar questões.');
         }
@@ -104,7 +104,7 @@ export function QuestionBankDrawer({ onAddQuestion, disabled }: QuestionBankDraw
 
   const getStem = (question: QuestionBankItem) => {
     if (typeof question.content === 'object' && question.content !== null) {
-      return question.content.stem || 'Questão sem enunciado';
+      return (question.content as QuestionContent).stem || 'Questão sem enunciado';
     }
     return typeof question.content === 'string' ? question.content : 'Questão sem enunciado';
   };

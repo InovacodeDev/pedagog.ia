@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import { stripe } from '@/lib/stripe';
+import type { Stripe } from 'stripe';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { SettingsProfileForm } from '@/components/settings/settings-profile-form';
 import { SettingsBilling } from '@/components/settings/settings-billing';
@@ -49,11 +50,13 @@ export default async function SettingsPage({
 
     if (sub.stripe_subscription_id) {
       try {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const stripeSub: any = await stripe.subscriptions.retrieve(sub.stripe_subscription_id);
+        const stripeSub: Stripe.Subscription = await stripe.subscriptions.retrieve(
+          sub.stripe_subscription_id
+        );
         subscriptionData.cancel_at_period_end = stripeSub.cancel_at_period_end;
         subscriptionData.status = stripeSub.status;
-        const endDate = stripeSub.cancel_at || stripeSub.current_period_end;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const endDate = stripeSub.cancel_at || (stripeSub as any).current_period_end;
         if (endDate) {
           subscriptionData.current_period_end = new Date(endDate * 1000).toISOString();
         }

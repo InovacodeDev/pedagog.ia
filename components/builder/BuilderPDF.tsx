@@ -1,5 +1,5 @@
 import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
-import { ExamBlock } from './exam-block';
+import { ExamBlock } from './ExamBlock';
 
 const styles = StyleSheet.create({
   page: {
@@ -119,7 +119,6 @@ export const BuilderPDFDocument = ({ blocks }: BuilderPDFProps) => (
           return html.replace(/<[^>]*>?/gm, '');
         };
 
-        console.log({ block });
         if (block.type === 'multiple_choice') {
           return (
             <View key={block.id} style={styles.questionBlock} wrap={false}>

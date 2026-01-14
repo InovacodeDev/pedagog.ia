@@ -100,7 +100,7 @@ export function AuthForm() {
               <Input
                 id="email"
                 type="email"
-                placeholder="professor@escola.com"
+                  placeholder="professor@example.com"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}

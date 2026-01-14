@@ -2,6 +2,14 @@ import { Database } from './database';
 
 export type Question = Database['public']['Tables']['questions']['Row'];
 
+export interface QuestionContent {
+  stem?: string;
+  support_texts?: string[];
+  genre?: string;
+  column_b?: string[];
+  [key: string]: unknown;
+}
+
 export interface GeneratedQuestion {
   stem: string;
   type: 'multiple_choice' | 'true_false' | 'sum' | 'association' | 'open_ended' | 'essay';
@@ -15,7 +23,6 @@ export interface GeneratedQuestion {
   subject?: string;
   difficulty?: 'easy' | 'medium' | 'hard';
   style?: string;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  content?: any;
+  content?: QuestionContent;
   source_tag?: string;
 }

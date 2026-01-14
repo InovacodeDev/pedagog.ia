@@ -52,7 +52,7 @@ import { QuestionBankDrawer, QuestionBankItem } from './QuestionBankDrawer';
 import { toast } from 'sonner';
 // import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
-import { SortableBlock, ExamBlock, BlockType } from './exam-block';
+import { SortableBlock, ExamBlock, BlockType } from './ExamBlock';
 import { saveExamAction } from '@/server/actions/save-exam';
 import { useTransition } from 'react';
 import { ClassItem } from '@/server/actions/classes';
@@ -146,7 +146,7 @@ export function ExamEditor({
   // Ensure watermark exists if not pro
   React.useEffect(() => {
     if (!isPro) {
-      setBlocks((prev) => {
+      setBlocks((prev: ExamBlock[]) => {
         if (prev.find((b) => b.id === 'watermark')) return prev;
         return [
           ...prev,
@@ -803,7 +803,7 @@ export function ExamEditor({
               {selectedBlock.type === 'multiple_choice' && (
                 <div className="space-y-2">
                   <Label>Opções</Label>
-                  {selectedBlock.content.options?.map((opt, idx) => (
+                  {selectedBlock.content.options?.map((opt: string, idx: number) => (
                     <div key={idx} className="flex gap-2">
                       <Input
                         value={opt}
@@ -818,7 +818,7 @@ export function ExamEditor({
                         size="icon"
                         onClick={() => {
                           const newOptions = selectedBlock.content.options?.filter(
-                            (_, i) => i !== idx
+                            (_: string, i: number) => i !== idx
                           );
                           updateBlock(selectedBlock.id, { options: newOptions });
                         }}

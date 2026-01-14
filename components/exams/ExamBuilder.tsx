@@ -17,6 +17,7 @@ import { Loader2, Plus, Trash2, Save, Wand2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { generateQuestionsAction, saveExamAction } from '@/app/(app)/scan/actions';
 import { createClient } from '@/lib/supabase/client';
+import { GeneratedQuestion } from '@/types/questions';
 
 interface Question {
   stem: string;
@@ -57,28 +58,29 @@ export function ExamBuilder() {
         .eq('id', jobId)
         .single();
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      if ((job as any)?.status === 'completed') {
+      if (job?.status === 'completed') {
         clearInterval(interval);
+
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const result = (job as any).result;
+        const result = job.result as any;
+        // We cast to any because Json type is recursive and hard to narrow down without Zod validation at runtime.
+        // Ideally we should use Zod here.
+
         // Handle both direct array (v1) and wrapped object (v2)
         const rawQuestions = Array.isArray(result) ? result : result?.questions || [];
 
         // Normalize questions to match ExamBuilder expectations
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const questions = rawQuestions.map((q: any) => ({
+        const questions = (rawQuestions as GeneratedQuestion[]).map((q) => ({
           stem: q.stem || '',
           options: Array.isArray(q.options) ? q.options : ['', '', '', ''],
           correct_answer: String(q.correct_answer || '0'),
-          difficulty: q.difficulty || 'medium',
+          difficulty: (q.difficulty as 'easy' | 'medium' | 'hard') || 'medium',
         }));
 
         setValue('questions', questions);
         setStep('review');
         toast.success('Questões geradas com sucesso!');
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      } else if ((job as any)?.status === 'failed') {
+      } else if (job?.status === 'failed') {
         clearInterval(interval);
         setStep('config');
         toast.error('Falha ao gerar questões. Tente novamente.');
@@ -91,14 +93,12 @@ export function ExamBuilder() {
   const onGenerate = async (data: { topic: string; quantity: number; difficulty: string }) => {
     setStep('generating');
     try {
-      console.log({ data });
       const formData = new FormData();
       formData.append('topic', data.topic);
       formData.append('quantity', data.quantity.toString());
       formData.append('difficulty', data.difficulty);
 
       const result = await generateQuestionsAction(formData);
-      console.log({ result });
       setJobId(result.jobId);
     } catch (error) {
       console.error(error);

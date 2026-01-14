@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { CheckCircle2, Lightbulb, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Question } from '@/types/questions';
+import { Question, QuestionContent } from '@/types/questions';
 
 // 1. Helper: Type Mapping (Taxonomy) - Copied from QuestionCard
 const TYPE_MAP = {
@@ -47,10 +47,11 @@ const TYPE_MAP = {
 // Helper to extract stem from content
 const getStem = (question: Question): string => {
   if (typeof question.content === 'object' && question.content !== null) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const content = question.content as any;
+    const content = question.content as QuestionContent;
     if (typeof content.stem === 'string') return content.stem;
-    if (typeof content.text === 'string') return content.text;
+    // Fallback for potential legacy data
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    if (typeof (content as any).text === 'string') return (content as any).text;
   }
   return 'Sem enunciado disponível';
 };
@@ -122,8 +123,8 @@ export function QuestionDetailsDialog({
               {question.content &&
                 typeof question.content === 'object' &&
                 'support_texts' in question.content &&
-                Array.isArray((question.content as { support_texts: string[] }).support_texts) &&
-                (question.content as { support_texts: string[] }).support_texts.length > 0 && (
+                Array.isArray((question.content as QuestionContent).support_texts) &&
+                ((question.content as QuestionContent).support_texts?.length ?? 0) > 0 && (
                   <div className="w-full mb-8 space-y-4">
                     <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
                       <span className="bg-primary/10 text-primary px-2 py-1 rounded">
@@ -131,7 +132,7 @@ export function QuestionDetailsDialog({
                       </span>
                     </div>
                     <div className="grid gap-4">
-                      {(question.content as { support_texts: string[] }).support_texts.map(
+                      {(question.content as QuestionContent).support_texts?.map(
                         (text: string, idx: number) => (
                           <div
                             key={idx}
@@ -325,29 +326,23 @@ export function QuestionDetailsDialog({
                   {question.type === 'essay' && (
                     <div className="space-y-4">
                       {/* Genre Badge */}
-                      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                      {(question.content as any)?.genre && (
+                      {(question.content as QuestionContent)?.genre && (
                         <div className="flex items-center gap-2">
                           <Badge
                             variant="outline"
                             className="bg-pink-50 text-pink-700 border-pink-200 font-medium"
                           >
                             Gênero:{' '}
-                            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                            {typeof (question.content as any).genre === 'string'
-                              ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                                (question.content as any).genre
-                              : // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                                JSON.stringify((question.content as any).genre)}
+                            {typeof (question.content as QuestionContent).genre === 'string'
+                              ? (question.content as QuestionContent).genre
+                              : JSON.stringify((question.content as QuestionContent).genre)}
                           </Badge>
                         </div>
                       )}
 
                       {/* Support Texts - Defensive Rendering */}
-                      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                      {Array.isArray((question.content as any)?.support_texts) &&
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                        (question.content as any).support_texts.length > 0 && (
+                      {Array.isArray((question.content as QuestionContent)?.support_texts) &&
+                        ((question.content as QuestionContent).support_texts?.length ?? 0) > 0 && (
                           <div className="space-y-3 p-4 bg-muted/30 rounded-md border border-muted">
                             <h4 className="text-sm font-semibold text-muted-foreground flex items-center gap-2">
                               <span className="bg-primary/10 text-primary px-1.5 py-0.5 rounded text-xs">
@@ -356,10 +351,8 @@ export function QuestionDetailsDialog({
                               Textos de Apoio
                             </h4>
                             <div className="space-y-3">
-                              {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                              {(question.content as any).support_texts?.map(
-                                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                                (text: any, idx: number) => {
+                              {(question.content as QuestionContent).support_texts?.map(
+                                (text: string, idx: number) => {
                                   const safeText =
                                     typeof text === 'string' ? text : JSON.stringify(text);
                                   return (

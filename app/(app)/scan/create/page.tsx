@@ -1,4 +1,4 @@
-import { ExamBuilder } from '@/components/exams/exam-builder';
+import { ExamBuilder } from '@/components/exams/ExamBuilder';
 
 export default function CreateExamPage() {
   return (

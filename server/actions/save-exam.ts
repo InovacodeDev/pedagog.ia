@@ -3,12 +3,13 @@
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
+import { TablesInsert } from '@/types/database';
 
 const saveExamSchema = z.object({
   examId: z.string().uuid(),
   // We accept any JSON array for blocks as strict typing of the complex block structure
   // is handled by the frontend and stored as JSONB
-  blocks: z.array(z.any()),
+  blocks: z.array(z.unknown()), // Changed to unknown
   title: z.string().optional(),
   class_ids: z.array(z.string().uuid()).optional(),
   status: z.enum(['draft', 'published']).optional(),
@@ -34,19 +35,18 @@ export async function saveExamAction(input: z.infer<typeof saveExamSchema>) {
   }
 
   // Prepare data for Upsert
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const examData: any = {
+  const examData: TablesInsert<'exams'> = {
     id: examId,
     user_id: user.id,
-    questions_list: blocks,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    questions_list: blocks as any, // Cast to any to satisfy Json type
     updated_at: new Date().toISOString(),
     // Default status for new exams if not provided
-    status: input.status || 'draft',
+    status: (input.status || 'draft') as TablesInsert<'exams'>['status'],
     title: title || 'Nova Prova',
   };
 
-  /* eslint-disable @typescript-eslint/no-explicit-any */
-  const { error: upsertError } = await (supabase as any)
+  const { error: upsertError } = await supabase
     .from('exams')
     .upsert(examData)
     .select()
@@ -60,7 +60,7 @@ export async function saveExamAction(input: z.infer<typeof saveExamSchema>) {
   // Handle Class Links (Sync)
   if (class_ids !== undefined) {
     // 1. Delete existing links
-    const { error: deleteError } = await (supabase as any)
+    const { error: deleteError } = await supabase
       .from('exam_classes')
       .delete()
       .eq('exam_id', examId);
@@ -72,7 +72,7 @@ export async function saveExamAction(input: z.infer<typeof saveExamSchema>) {
 
     // 2. Insert new links
     if (class_ids.length > 0) {
-      const { error: insertError } = await (supabase as any).from('exam_classes').insert(
+      const { error: insertError } = await supabase.from('exam_classes').insert(
         class_ids.map((classId) => ({
           exam_id: examId,
           class_id: classId,

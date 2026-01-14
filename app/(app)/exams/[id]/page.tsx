@@ -1,7 +1,7 @@
 import { getExamAction } from '@/server/actions/get-exam';
 import { notFound, redirect } from 'next/navigation';
 import { ExamViewer } from '@/components/exams/exam-viewer';
-import { ExamBlock } from '@/components/builder/exam-block';
+import { ExamBlock } from '@/components/builder/ExamBlock';
 
 interface PageProps {
   params: Promise<{ id: string }>;

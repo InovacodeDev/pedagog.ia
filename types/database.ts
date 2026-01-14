@@ -375,9 +375,12 @@ export type Database = {
         Row: {
           created_at: string | null;
           encrypted_name: string;
+          name?: string; // Manually added: Missing in generated types but used in code
           grade_level: string;
           id: string;
           institution_id: string;
+          class_id?: string; // Manually added: Missing in generated types but used in code
+          user_id?: string; // Manually added: Missing in generated types but used in code
         };
         Insert: {
           created_at?: string | null;
