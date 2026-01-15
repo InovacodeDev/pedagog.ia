@@ -1,6 +1,7 @@
 {
   "imports": {
     "@supabase/supabase-js": "jsr:@supabase/supabase-js@2",
-    "resend": "npm:resend@4.0.0"
+    "resend": "npm:resend@4.0.0",
+    "openai": "npm:openai@4.86.1"
   }
 }

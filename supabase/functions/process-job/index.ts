@@ -7,6 +7,7 @@
 
 import { createClient } from '@supabase/supabase-js';
 import { Resend } from 'resend';
+import OpenAI from 'openai';
 
 // Type Definitions
 interface JobPayload {
@@ -69,7 +70,7 @@ function cleanJson(text: string) {
  * PRIVACY & SECURITY: PII Scrubbing
  * Removes sensitive data before sending to AI Providers.
  * Compliance with LGPD/GDPR.
- * 
+ *
  * - Masks Emails
  * - Masks CPF (Brazilian ID)
  * - Masks Phone Numbers
@@ -77,17 +78,20 @@ function cleanJson(text: string) {
  */
 function scrubPII(text: string): string {
   if (!text) return '';
-  
+
   // 1. Emails
-  let scrubbed = text.replace(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, '[EMAIL_REDACTED]');
-  
+  let scrubbed = text.replace(
+    /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g,
+    '[EMAIL_REDACTED]'
+  );
+
   // 2. CPFs (Brazil) - Simple pattern xxx.xxx.xxx-xx
   // Uses word boundaries to avoid breaking math expressions or versions
   scrubbed = scrubbed.replace(/\b\d{3}\.\d{3}\.\d{3}-\d{2}\b/g, '[CPF_REDACTED]');
-  
+
   // 3. Phone Numbers (Brazil) - (xx) 9xxxx-xxxx or (xx) xxxx-xxxx
   scrubbed = scrubbed.replace(/\(\d{2}\)\s?(?:9|)?\d{4}-\d{4}/g, '[PHONE_REDACTED]');
-  
+
   // 4. RG (Simple approximation) - xx.xxx.xxx-x
   scrubbed = scrubbed.replace(/\b\d{2}\.\d{3}\.\d{3}-[\d|X|x]\b/g, '[RG_REDACTED]');
 
@@ -108,6 +112,14 @@ const FLASH_OUTPUT_COST = 0.3;
 const PRO_INPUT_COST = 1.25;
 const PRO_OUTPUT_COST = 5.0;
 
+// OpenAI GPT-4o (Per 1M Tokens)
+const GPT4O_INPUT_COST = 5.0;
+const GPT4O_OUTPUT_COST = 15.0;
+
+// OpenAI GPT-4o-mini (Per 1M Tokens)
+const GPT4O_MINI_INPUT_COST = 0.15;
+const GPT4O_MINI_OUTPUT_COST = 0.6;
+
 function calculateProviderCost(model: string, inputTokens: number, outputTokens: number): number {
   let rateInput = 0;
   let rateOutput = 0;
@@ -118,6 +130,12 @@ function calculateProviderCost(model: string, inputTokens: number, outputTokens:
   } else if (model.includes('pro')) {
     rateInput = PRO_INPUT_COST;
     rateOutput = PRO_OUTPUT_COST;
+  } else if (model.includes('gpt-4o-mini')) {
+    rateInput = GPT4O_MINI_INPUT_COST;
+    rateOutput = GPT4O_MINI_OUTPUT_COST;
+  } else if (model.includes('gpt-4o')) {
+    rateInput = GPT4O_INPUT_COST;
+    rateOutput = GPT4O_OUTPUT_COST;
   }
 
   const inputCost = (inputTokens / 1_000_000) * rateInput;
@@ -130,8 +148,14 @@ function calculateProviderCost(model: string, inputTokens: number, outputTokens:
 function calculateCost(job: BackgroundJob): { cost: number; model: string } {
   const tier = (job.payload.model_tier as 'fast' | 'quality') || 'fast';
   const multiplier = tier === 'quality' ? 2 : 1;
-  // Map 'quality' to pro and 'fast' to flash
-  const model = tier === 'quality' ? 'gemini-1.5-pro' : 'gemini-1.5-flash';
+
+  // Map 'quality' to pro and 'fast' to flash/mini
+  let model: string;
+  if (job.job_type === 'generate_questions_v2') {
+    model = tier === 'quality' ? 'gemini-1.5-pro' : 'gemini-1.5-flash';
+  } else {
+    model = tier === 'quality' ? 'gpt-4o' : 'gpt-4o-mini';
+  }
 
   let baseCost = 0;
 
@@ -149,92 +173,194 @@ function calculateCost(job: BackgroundJob): { cost: number; model: string } {
 }
 
 // =====================================================
-// MOCK AI PIPELINE (Replace with real OpenAI/Anthropic)
+// AI PIPELINE (OpenAI / Anthropic)
 // =====================================================
 
+function getOpenAIClient() {
+  const apiKey = Deno.env.get('OPENAI_API_KEY');
+  if (!apiKey) throw new Error('Missing OPENAI_API_KEY');
+  return new OpenAI({ apiKey });
+}
+
 /**
- * Mock Vision Pipeline - Simulates OCR processing
- * In production, this would call OpenAI GPT-4 Vision or Anthropic Claude
+ * Vision Pipeline - OCR & Correction
+ * Uses OpenAI GPT-4o to analyze exam images and grade them against an answer key.
  */
 async function runVisionPipeline(
   imageUrl: string,
   examId?: string,
-  supabase?: any
+  supabase?: any,
+  model: string = 'gpt-4o'
 ): Promise<OCRResult> {
   console.log(`[Vision Pipeline] Processing image: ${imageUrl}`);
-  if (examId) {
-    console.log(`[Vision Pipeline] Using Answer Key from Exam ID: ${examId}`);
-    // In a real implementation, we would fetch the answer key here
-    // const { data: exam } = await supabase.from('exams').select('answer_key').eq('id', examId).single();
+
+  const openai = getOpenAIClient();
+  let answerKeyInstructions = '';
+
+  if (examId && supabase) {
+    console.log(`[Vision Pipeline] Fetching Answer Key for Exam ID: ${examId}`);
+    const { data: exam, error } = await supabase
+      .from('exams')
+      .select('answer_key')
+      .eq('id', examId)
+      .single();
+
+    if (!error && exam?.answer_key) {
+      answerKeyInstructions = `
+        Here is the official Answer Key for grading:
+        ${JSON.stringify(exam.answer_key)}
+
+        Please compare the student's selected answers in the image against this key.
+        - If the student selected the correct option, score = 1.0, correct = true.
+        - If incorrect, score = 0.0, correct = false.
+      `;
+    }
   }
 
-  // Simulate AI processing delay
-  await new Promise((resolve) => setTimeout(resolve, 2000));
+  const response = await openai.chat.completions.create({
+    model: model,
+    messages: [
+      {
+        role: 'system',
+        content: `
+          You are an expert OCR and Exam Grading AI.
+          Your task is to analyze the image of a student's exam or answer sheet.
 
-  // Mock result (replace with actual AI call)
-  const mockResult: OCRResult = {
-    total_questions: 10,
-    confidence: 0.92,
-    answers: Array.from({ length: 10 }, (_, i) => ({
-      question: i + 1,
-      score: Math.random() > 0.3 ? 1.0 : 0.0,
-      correct: Math.random() > 0.3,
-      confidence: 0.85 + Math.random() * 0.15,
-    })),
-    suggested_score: 0,
-    exam_id: examId,
-  };
+          Identify the questions and the option selected by the student.
 
-  // Calculate suggested score
-  mockResult.suggested_score = mockResult.answers.reduce((sum, a) => sum + a.score, 0);
+          ${answerKeyInstructions}
 
-  return mockResult;
+          If no answer key is provided, identify the selected answer and set score=0, correct=false (unless you can determine correctness from context marks like ticks/crosses).
+
+          Return a valid JSON object matching this structure:
+          {
+            "total_questions": number,
+            "confidence": number (0-1),
+            "answers": [
+              {
+                "question": number (index 1-based),
+                "score": number,
+                "correct": boolean,
+                "confidence": number (0-1)
+              }
+            ],
+            "suggested_score": number
+          }
+
+          Return ONLY valid JSON.
+        `,
+      },
+      {
+        role: 'user',
+        content: [
+          { type: 'text', text: 'Analyze this exam image.' },
+          { type: 'image_url', image_url: { url: imageUrl } },
+        ],
+      },
+    ],
+    response_format: { type: 'json_object' },
+  });
+
+  const content = response.choices[0].message.content;
+  if (!content) throw new Error('No content from OpenAI');
+
+  let result: OCRResult;
+  try {
+    result = JSON.parse(content) as OCRResult;
+  } catch (e) {
+    console.error('Failed to parse OpenAI response:', content);
+    throw new Error('Invalid JSON response from AI');
+  }
+
+  result.exam_id = examId;
+  return result;
 }
 
 /**
- * Mock Question Generator - Simulates LLM Question Generation
+ * Question Generator - Uses LLM to generate questions
  */
 async function runQuestionGenerator(
   topic: string,
   quantity: number,
-  difficulty: string
+  difficulty: string,
+  model: string = 'gpt-4o'
 ): Promise<Question[]> {
+  const openai = getOpenAIClient();
   console.log(`[Question Generator] Generating ${quantity} ${difficulty} questions about ${topic}`);
 
-  await new Promise((resolve) => setTimeout(resolve, 3000));
+  const response = await openai.chat.completions.create({
+    model: model,
+    messages: [
+      {
+        role: 'system',
+        content: `
+          You are an expert educational content generator.
+          Generate ${quantity} multiple-choice questions about "${topic}" at "${difficulty}" level.
 
-  // Mock generated questions
-  const questions: Question[] = Array.from({ length: quantity }, (_, i) => ({
-    stem: `Questão ${i + 1} sobre ${topic} (${difficulty}) - Qual é a resposta correta?`,
-    options: [
-      `Opção A (Incorreta)`,
-      `Opção B (Correta)`,
-      `Opção C (Incorreta)`,
-      `Opção D (Incorreta)`,
+          Return a valid JSON object with a "questions" key containing an array of questions.
+          Each question must match this structure:
+          {
+            "stem": "Question text...",
+            "options": ["Option A", "Option B", "Option C", "Option D"],
+            "correct_answer": "Index of correct option (0-3 as string, e.g. '0')",
+            "difficulty": "${difficulty}"
+          }
+        `,
+      },
     ],
-    correct_answer: '1', // Index 1 is Option B
-    difficulty: difficulty,
-  }));
+    response_format: { type: 'json_object' },
+  });
 
-  return questions;
+  const content = response.choices[0].message.content;
+  if (!content) throw new Error('No content from OpenAI');
+
+  try {
+    const result = JSON.parse(content);
+    return result.questions as Question[];
+  } catch (e) {
+    console.error('Failed to parse OpenAI response:', content);
+    throw new Error('Invalid JSON response from AI');
+  }
 }
 
 /**
- * Mock Exam Generator - Simulates BNCC-based exam creation
+ * Exam Generator - Creates BNCC-based exam structure
  */
-async function runExamGenerator(payload: unknown): Promise<unknown> {
+async function runExamGenerator(payload: unknown, model: string = 'gpt-4o'): Promise<unknown> {
+  const openai = getOpenAIClient();
   console.log('[Exam Generator] Creating exam...', payload);
 
-  await new Promise((resolve) => setTimeout(resolve, 3000));
+  const response = await openai.chat.completions.create({
+    model: model,
+    messages: [
+      {
+        role: 'system',
+        content: `
+          You are an expert exam creator.
+          Create a structured exam based on the following requirements:
+          ${JSON.stringify(payload)}
 
-  return {
-    exam_id: crypto.randomUUID(),
-    questions: [
-      { id: 1, text: 'Qual é a capital do Brasil?', type: 'multiple_choice' },
-      { id: 2, text: 'Resolva: 2 + 2 = ?', type: 'numeric' },
+          Return a valid JSON object representing the exam.
+          Include a 'questions' array with detailed questions.
+        `,
+      },
     ],
-    generated_at: new Date().toISOString(),
-  };
+    response_format: { type: 'json_object' },
+  });
+
+  const content = response.choices[0].message.content;
+  if (!content) throw new Error('No content from OpenAI');
+
+  try {
+    const result = JSON.parse(content);
+    return {
+      ...result,
+      generated_at: new Date().toISOString(),
+    };
+  } catch (e) {
+    console.error('Failed to parse OpenAI response:', content);
+    throw new Error('Invalid JSON response from AI');
+  }
 }
 
 // =====================================================
@@ -328,7 +454,12 @@ Deno.serve(async (req: Request): Promise<Response> => {
         if (!job.payload.image_url) {
           throw new Error('Missing image_url in payload');
         }
-        outputData = await runVisionPipeline(job.payload.image_url, job.payload.exam_id, supabase);
+        outputData = await runVisionPipeline(
+          job.payload.image_url,
+          job.payload.exam_id,
+          supabase,
+          selectedModel
+        );
         break;
 
       case 'generate_questions':
@@ -338,12 +469,13 @@ Deno.serve(async (req: Request): Promise<Response> => {
         outputData = await runQuestionGenerator(
           job.payload.topic,
           job.payload.quantity,
-          job.payload.difficulty
+          job.payload.difficulty,
+          selectedModel
         );
         break;
 
       case 'exam_generation':
-        outputData = await runExamGenerator(job.payload);
+        outputData = await runExamGenerator(job.payload, selectedModel);
         break;
 
       case 'weekly_report':
@@ -391,9 +523,9 @@ Deno.serve(async (req: Request): Promise<Response> => {
 
       // 1.5. SCRUB PII from Content (Security Compliance)
       const safeContent = scrubPII(content || '');
-      
+
       if (content && content !== safeContent) {
-          console.log('[PII Protection] Sensitive data scrubbed from input prompt.');
+        console.log('[PII Protection] Sensitive data scrubbed from input prompt.');
       }
 
       // 2. Construct System Prompt
