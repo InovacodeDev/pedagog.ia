@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { extractTextFromFile } from '@/lib/file-processing';
-import { GeneratedQuestion } from '@/types/questions';
+import { GeneratedQuestion, QuestionContent } from '@/types/questions';
 import { Database } from '@/types/database';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
@@ -606,24 +606,19 @@ export async function saveQuestionsAction(questions: GeneratedQuestion[]) {
   const questionsToInsert: Database['public']['Tables']['questions']['Insert'][] = questions.map(
     (q) => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      let dbContent: any = {
+      let dbContent: QuestionContent = {
         stem: q.stem,
         support_texts: q.support_texts || undefined,
       };
 
       // Essay handling
       if (q.type === 'essay') {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const rawGenre = (q.content as any)?.genre || (q as any).genre;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const rawSupportTexts =
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          (q.content as any)?.support_texts || q.support_texts || (q as any).support_texts;
+        const rawGenre = q.content?.genre;
+        const rawSupportTexts = q.content?.support_texts || q.support_texts;
 
         const genre = typeof rawGenre === 'string' ? rawGenre : 'Gênero não especificado';
         const support_texts = Array.isArray(rawSupportTexts)
-          ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            rawSupportTexts.map((t: any) => (typeof t === 'string' ? t : JSON.stringify(t)))
+          ? rawSupportTexts.map((t: unknown) => (typeof t === 'string' ? t : JSON.stringify(t)))
           : [];
 
         dbContent = { ...dbContent, genre, support_texts };
@@ -633,14 +628,15 @@ export async function saveQuestionsAction(questions: GeneratedQuestion[]) {
       if (q.type === 'association') {
         dbContent = {
           ...dbContent,
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          column_b: (q.content as any)?.column_b || (q as any).column_b,
+          column_b: q.content?.column_b || [],
         };
       }
 
       return {
         user_id: user.id,
-        content: dbContent,
+        // Cast to any to bypass the complex Json type from Supabase, but we are using strict internal type
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        content: dbContent as any,
         options: formatOptionsByType(q.type, q.options || undefined),
         correct_answer: q.correct_answer || '',
         type: q.type,

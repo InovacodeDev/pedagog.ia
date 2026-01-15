@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Question } from '@/types/questions';
+import { Question, QuestionContent } from '@/types/questions';
 import { QuestionDetailsDialog } from './question-details-dialog';
 
 // Helper: Type Mapping (Taxonomy)
@@ -43,8 +43,7 @@ const TYPE_MAP = {
 // Helper to extract stem from content
 const getStem = (question: Question): string => {
   if (typeof question.content === 'object' && question.content !== null) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const content = question.content as any;
+    const content = question.content as unknown as QuestionContent;
     if (typeof content.stem === 'string') return content.stem;
     if (typeof content.text === 'string') return content.text;
   }
@@ -65,8 +64,8 @@ export function QuestionCard({ question, onDelete }: QuestionCardProps) {
 
   const optionsPreview = (() => {
     if (question.type === 'essay') {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const genre = (question.content as any)?.genre;
+      const content = question.content as unknown as QuestionContent;
+      const genre = content?.genre;
       return (
         <div className="mt-2 flex flex-col items-start gap-2">
           {genre && (
