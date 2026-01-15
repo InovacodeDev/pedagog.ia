@@ -7,7 +7,8 @@
 
 import { createClient } from '@supabase/supabase-js';
 import { Resend } from 'resend';
-import OpenAI from 'openai';
+import { GoogleGenerativeAI } from '@google/generative-ai';
+import { encodeBase64 } from '@std/encoding/base64';
 
 // Type Definitions
 interface JobPayload {
@@ -112,14 +113,6 @@ const FLASH_OUTPUT_COST = 0.3;
 const PRO_INPUT_COST = 1.25;
 const PRO_OUTPUT_COST = 5.0;
 
-// OpenAI GPT-4o (Per 1M Tokens)
-const GPT4O_INPUT_COST = 5.0;
-const GPT4O_OUTPUT_COST = 15.0;
-
-// OpenAI GPT-4o-mini (Per 1M Tokens)
-const GPT4O_MINI_INPUT_COST = 0.15;
-const GPT4O_MINI_OUTPUT_COST = 0.6;
-
 function calculateProviderCost(model: string, inputTokens: number, outputTokens: number): number {
   let rateInput = 0;
   let rateOutput = 0;
@@ -130,12 +123,6 @@ function calculateProviderCost(model: string, inputTokens: number, outputTokens:
   } else if (model.includes('pro')) {
     rateInput = PRO_INPUT_COST;
     rateOutput = PRO_OUTPUT_COST;
-  } else if (model.includes('gpt-4o-mini')) {
-    rateInput = GPT4O_MINI_INPUT_COST;
-    rateOutput = GPT4O_MINI_OUTPUT_COST;
-  } else if (model.includes('gpt-4o')) {
-    rateInput = GPT4O_INPUT_COST;
-    rateOutput = GPT4O_OUTPUT_COST;
   }
 
   const inputCost = (inputTokens / 1_000_000) * rateInput;
@@ -149,13 +136,8 @@ function calculateCost(job: BackgroundJob): { cost: number; model: string } {
   const tier = (job.payload.model_tier as 'fast' | 'quality') || 'fast';
   const multiplier = tier === 'quality' ? 2 : 1;
 
-  // Map 'quality' to pro and 'fast' to flash/mini
-  let model: string;
-  if (job.job_type === 'generate_questions_v2') {
-    model = tier === 'quality' ? 'gemini-1.5-pro' : 'gemini-1.5-flash';
-  } else {
-    model = tier === 'quality' ? 'gpt-4o' : 'gpt-4o-mini';
-  }
+  // Map 'quality' to pro and 'fast' to flash
+  const model = tier === 'quality' ? 'gemini-1.5-pro' : 'gemini-1.5-flash';
 
   let baseCost = 0;
 
@@ -173,28 +155,29 @@ function calculateCost(job: BackgroundJob): { cost: number; model: string } {
 }
 
 // =====================================================
-// AI PIPELINE (OpenAI / Anthropic)
+// AI PIPELINE (Gemini)
 // =====================================================
 
-function getOpenAIClient() {
-  const apiKey = Deno.env.get('OPENAI_API_KEY');
-  if (!apiKey) throw new Error('Missing OPENAI_API_KEY');
-  return new OpenAI({ apiKey });
+function getGeminiModel(modelName: string = 'gemini-1.5-flash') {
+  const apiKey = Deno.env.get('GEMINI_API_KEY');
+  if (!apiKey) throw new Error('Missing GEMINI_API_KEY');
+  const genAI = new GoogleGenerativeAI(apiKey);
+  return genAI.getGenerativeModel({ model: modelName });
 }
 
 /**
  * Vision Pipeline - OCR & Correction
- * Uses OpenAI GPT-4o to analyze exam images and grade them against an answer key.
+ * Uses Gemini to analyze exam images and grade them against an answer key.
  */
 async function runVisionPipeline(
   imageUrl: string,
   examId?: string,
   supabase?: any,
-  model: string = 'gpt-4o'
+  model: string = 'gemini-1.5-flash'
 ): Promise<OCRResult> {
-  console.log(`[Vision Pipeline] Processing image: ${imageUrl}`);
+  console.log(`[Vision Pipeline] Processing image: ${imageUrl} with model: ${model}`);
 
-  const openai = getOpenAIClient();
+  const gemini = getGeminiModel(model);
   let answerKeyInstructions = '';
 
   if (examId && supabase) {
@@ -217,108 +200,110 @@ async function runVisionPipeline(
     }
   }
 
-  const response = await openai.chat.completions.create({
-    model: model,
-    messages: [
-      {
-        role: 'system',
-        content: `
-          You are an expert OCR and Exam Grading AI.
-          Your task is to analyze the image of a student's exam or answer sheet.
+  const prompt = `
+    You are an expert OCR and Exam Grading AI.
+    Your task is to analyze the image of a student's exam or answer sheet.
 
-          Identify the questions and the option selected by the student.
+    Identify the questions and the option selected by the student.
 
-          ${answerKeyInstructions}
+    ${answerKeyInstructions}
 
-          If no answer key is provided, identify the selected answer and set score=0, correct=false (unless you can determine correctness from context marks like ticks/crosses).
+    If no answer key is provided, identify the selected answer and set score=0, correct=false (unless you can determine correctness from context marks like ticks/crosses).
 
-          Return a valid JSON object matching this structure:
-          {
-            "total_questions": number,
-            "confidence": number (0-1),
-            "answers": [
-              {
-                "question": number (index 1-based),
-                "score": number,
-                "correct": boolean,
-                "confidence": number (0-1)
-              }
-            ],
-            "suggested_score": number
-          }
+    Return a valid JSON object matching this structure:
+    {
+      "total_questions": number,
+      "confidence": number (0-1),
+      "answers": [
+        {
+          "question": number (index 1-based),
+          "score": number,
+          "correct": boolean,
+          "confidence": number (0-1)
+        }
+      ],
+      "suggested_score": number
+    }
 
-          Return ONLY valid JSON.
-        `,
+    Return ONLY valid JSON. Do not use Markdown code blocks.
+  `;
+
+  // Fetch image content
+  const imageResp = await fetch(imageUrl);
+  if (!imageResp.ok) throw new Error(`Failed to fetch image: ${imageResp.statusText}`);
+  const imageBuffer = await imageResp.arrayBuffer();
+
+  // Convert buffer to base64
+  const base64Image = btoa(
+    new Uint8Array(imageBuffer).reduce((data, byte) => data + String.fromCharCode(byte), '')
+  );
+
+  const result = await gemini.generateContent([
+    prompt,
+    {
+      inlineData: {
+        data: base64Image,
+        mimeType: imageResp.headers.get('content-type') || 'image/jpeg',
       },
-      {
-        role: 'user',
-        content: [
-          { type: 'text', text: 'Analyze this exam image.' },
-          { type: 'image_url', image_url: { url: imageUrl } },
-        ],
-      },
-    ],
-    response_format: { type: 'json_object' },
-  });
+    },
+  ]);
 
-  const content = response.choices[0].message.content;
-  if (!content) throw new Error('No content from OpenAI');
+  const text = result.response.text();
 
-  let result: OCRResult;
+  let ocrResult: OCRResult;
   try {
-    result = JSON.parse(content) as OCRResult;
+    ocrResult = JSON.parse(cleanJson(text));
   } catch (e) {
-    console.error('Failed to parse OpenAI response:', content);
+    console.error('Failed to parse Gemini response:', text);
     throw new Error('Invalid JSON response from AI');
   }
 
-  result.exam_id = examId;
-  return result;
+  ocrResult.exam_id = examId;
+  return ocrResult;
 }
 
 /**
- * Question Generator - Uses LLM to generate questions
+ * Question Generator - Uses Gemini to generate questions
  */
 async function runQuestionGenerator(
   topic: string,
   quantity: number,
   difficulty: string,
-  model: string = 'gpt-4o'
+  model: string = 'gemini-1.5-flash'
 ): Promise<Question[]> {
-  const openai = getOpenAIClient();
-  console.log(`[Question Generator] Generating ${quantity} ${difficulty} questions about ${topic}`);
+  console.log(
+    `[Question Generator] Generating ${quantity} ${difficulty} questions about ${topic} with model: ${model}`
+  );
 
-  const response = await openai.chat.completions.create({
-    model: model,
-    messages: [
-      {
-        role: 'system',
-        content: `
-          You are an expert educational content generator.
-          Generate ${quantity} multiple-choice questions about "${topic}" at "${difficulty}" level.
+  const gemini = getGeminiModel(model);
 
-          Return a valid JSON object with a "questions" key containing an array of questions.
-          Each question must match this structure:
-          {
-            "stem": "Question text...",
-            "options": ["Option A", "Option B", "Option C", "Option D"],
-            "correct_answer": "Index of correct option (0-3 as string, e.g. '0')",
-            "difficulty": "${difficulty}"
-          }
-        `,
-      },
-    ],
-    response_format: { type: 'json_object' },
+  const prompt = `
+    You are an expert educational content generator.
+    Generate ${quantity} multiple-choice questions about "${topic}" at "${difficulty}" level.
+
+    Return a valid JSON object with a "questions" key containing an array of questions.
+    Each question must match this structure:
+    {
+      "stem": "Question text...",
+      "options": ["Option A", "Option B", "Option C", "Option D"],
+      "correct_answer": "Index of correct option (0-3 as string, e.g. '0')",
+      "difficulty": "${difficulty}"
+    }
+
+    Return ONLY valid JSON.
+  `;
+
+  const result = await gemini.generateContent({
+    contents: [{ role: 'user', parts: [{ text: prompt }] }],
+    generationConfig: { responseMimeType: 'application/json' },
   });
 
-  const content = response.choices[0].message.content;
-  if (!content) throw new Error('No content from OpenAI');
-
+  const text = result.response.text();
   try {
-    const result = JSON.parse(content);
-    return result.questions as Question[];
+    const data = JSON.parse(cleanJson(text));
+    return data.questions as Question[];
   } catch (e) {
-    console.error('Failed to parse OpenAI response:', content);
+    console.error('Failed to parse Gemini response:', text);
     throw new Error('Invalid JSON response from AI');
   }
 }
@@ -326,39 +311,39 @@ async function runQuestionGenerator(
 /**
  * Exam Generator - Creates BNCC-based exam structure
  */
-async function runExamGenerator(payload: unknown, model: string = 'gpt-4o'): Promise<unknown> {
-  const openai = getOpenAIClient();
-  console.log('[Exam Generator] Creating exam...', payload);
+async function runExamGenerator(
+  payload: unknown,
+  model: string = 'gemini-1.5-flash'
+): Promise<unknown> {
+  console.log(`[Exam Generator] Creating exam with model: ${model}...`, payload);
 
-  const response = await openai.chat.completions.create({
-    model: model,
-    messages: [
-      {
-        role: 'system',
-        content: `
-          You are an expert exam creator.
-          Create a structured exam based on the following requirements:
-          ${JSON.stringify(payload)}
+  const gemini = getGeminiModel(model);
 
-          Return a valid JSON object representing the exam.
-          Include a 'questions' array with detailed questions.
-        `,
-      },
-    ],
-    response_format: { type: 'json_object' },
+  const prompt = `
+    You are an expert exam creator.
+    Create a structured exam based on the following requirements:
+    ${JSON.stringify(payload)}
+
+    Return a valid JSON object representing the exam.
+    Include a 'questions' array with detailed questions.
+
+    Return ONLY valid JSON.
+  `;
+
+  const result = await gemini.generateContent({
+    contents: [{ role: 'user', parts: [{ text: prompt }] }],
+    generationConfig: { responseMimeType: 'application/json' },
   });
 
-  const content = response.choices[0].message.content;
-  if (!content) throw new Error('No content from OpenAI');
-
+  const text = result.response.text();
   try {
-    const result = JSON.parse(content);
+    const data = JSON.parse(cleanJson(text));
     return {
-      ...result,
+      ...data,
       generated_at: new Date().toISOString(),
     };
   } catch (e) {
-    console.error('Failed to parse OpenAI response:', content);
+    console.error('Failed to parse Gemini response:', text);
     throw new Error('Invalid JSON response from AI');
   }
 }
@@ -484,14 +469,12 @@ Deno.serve(async (req: Request): Promise<Response> => {
         break;
 
       default:
-        // If it's not a known job type that sets outputData, we'll handle it below
-        // This default case will only be hit if a new job type is added that doesn't
-        // have a specific case above and isn't handled by the subsequent if blocks.
-        // For now, we'll let the if blocks handle new types.
+        // Handled below or falling through
         break;
     }
 
-    // Handle generate_questions_v2 as a separate block
+    // Handle generate_questions_v2 as a separate block (or refactor it to use SDK too)
+    // I will refactor it to use the SDK for consistency, leveraging getGeminiModel
     if (job.job_type === 'generate_questions_v2') {
       const { content, quantity, types, style, discipline, subject, grade_level } = job.payload as {
         content?: string;
@@ -509,10 +492,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
 
       // 1. Calculate Distribution
       const distribution: string[] = [];
-      // First, assign 1 question to each selected type
       types.forEach((type) => distribution.push(type));
-
-      // Then, distribute remaining slots randomly
       const remainingSlots = quantity - types.length;
       if (remainingSlots > 0) {
         for (let i = 0; i < remainingSlots; i++) {
@@ -521,9 +501,8 @@ Deno.serve(async (req: Request): Promise<Response> => {
         }
       }
 
-      // 1.5. SCRUB PII from Content (Security Compliance)
+      // 1.5. SCRUB PII
       const safeContent = scrubPII(content || '');
-
       if (content && content !== safeContent) {
         console.log('[PII Protection] Sensitive data scrubbed from input prompt.');
       }
@@ -602,44 +581,25 @@ Deno.serve(async (req: Request): Promise<Response> => {
 
       // 2.5. Determine Max Tokens (Boost for Redaction/Essay)
       const hasRedaction = types.includes('essay') || types.includes('redaction');
-      const maxOutputTokens = hasRedaction ? 8192 : 2048; // 8k for essays, 2k for others
+      const maxOutputTokens = hasRedaction ? 8192 : 2048;
 
-      // 3. Call Gemini API
-      const geminiApiKey = Deno.env.get('GEMINI_API_KEY');
-      if (!geminiApiKey) {
-        throw new Error('Missing GEMINI_API_KEY');
-      }
+      // 3. Call Gemini API via SDK
+      const gemini = getGeminiModel(selectedModel);
 
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent?key=${geminiApiKey}`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: prompt }] }],
-            generationConfig: {
-              responseMimeType: 'application/json',
-              maxOutputTokens: maxOutputTokens,
-            },
-          }),
-        }
-      );
+      const result = await gemini.generateContent({
+        contents: [{ role: 'user', parts: [{ text: prompt }] }],
+        generationConfig: {
+          responseMimeType: 'application/json',
+          maxOutputTokens: maxOutputTokens,
+        },
+      });
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Gemini API Error: ${response.status} - ${errorText}`);
-      }
-
-      const data = await response.json();
-      const generatedText = data.candidates[0].content.parts[0].text;
-
+      const text = result.response.text();
       let generatedQuestions;
       try {
-        generatedQuestions = JSON.parse(cleanJson(generatedText));
+        generatedQuestions = JSON.parse(cleanJson(text));
       } catch (e) {
-        console.error('Failed to parse Gemini response:', generatedText);
+        console.error('Failed to parse Gemini response:', text);
         throw new Error('Invalid JSON response from AI');
       }
 
@@ -654,7 +614,10 @@ Deno.serve(async (req: Request): Promise<Response> => {
         .eq('id', job.id);
 
       // 4. Audit Log
-      const usage = data.usageMetadata || { promptTokenCount: 0, candidatesTokenCount: 0 };
+      const usage = result.response.usageMetadata || {
+        promptTokenCount: 0,
+        candidatesTokenCount: 0,
+      };
       const providerCost = calculateProviderCost(
         selectedModel,
         usage.promptTokenCount || 0,
@@ -677,10 +640,6 @@ Deno.serve(async (req: Request): Promise<Response> => {
       });
     }
 
-    // If outputData was not set by a specific case, it means the job type was not handled
-    // by the switch statement, and also not by the generate_questions_v2 block.
-    // This implies an unknown job type that should have been caught by the default case
-    // if it was placed there, or now needs to be explicitly checked.
     if (
       job.job_type !== 'ocr_correction' &&
       job.job_type !== 'generate_questions' &&
@@ -702,6 +661,11 @@ Deno.serve(async (req: Request): Promise<Response> => {
 
     // 7. Audit Log (For other job types)
     if (estimatedCost > 0) {
+      // Note: With SDK, token usage is in the result object, but here we might not have it easily available
+      // if we returned just the data.
+      // Ideally runVisionPipeline etc should return usage too.
+      // For now, defaulting to 0/0 usage for log but cost credits are logged.
+      // This matches previous behavior for non-v2 jobs.
       await supabase.from('ia_cost_log').insert({
         user_id: job.user_id,
         job_id: job.id,
@@ -721,17 +685,14 @@ Deno.serve(async (req: Request): Promise<Response> => {
 
     console.log(`[Process Job] Job ${job_id} completed successfully`);
 
-    // 7. Send Notification (Optional - Web Push would go here)
-    // In production, fetch user's push subscription and send notification
-    // For now, we'll just log it
+    // 7. Send Notification (Optional)
     console.log(`[Notification] Would notify user ${job.user_id} about job completion`);
 
-    // 8. Send Email (Optional - for weekly reports)
+    // 8. Send Email (Optional)
     if (job.job_type === 'weekly_report') {
       const resendApiKey = Deno.env.get('RESEND_API_KEY');
       if (resendApiKey) {
         const resend = new Resend(resendApiKey);
-        // Email sending logic would go here
         console.log('[Email] Would send weekly report email');
       }
     }
@@ -743,7 +704,6 @@ Deno.serve(async (req: Request): Promise<Response> => {
   } catch (error) {
     console.error('[Process Job] Error:', error);
 
-    // Try to update job status to failed
     try {
       const { job_id } = await req.clone().json();
       const supabase = createClient(
