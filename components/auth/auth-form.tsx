@@ -59,14 +59,24 @@ export function AuthForm() {
     setIsLoading(true);
 
     try {
+      // First try to verify as signup (new user)
       const { error } = await supabase.auth.verifyOtp({
         email,
         token: otp,
-        type: 'email',
+        type: 'signup',
       });
 
+      // If signup verification fails, try as magiclink (existing user login)
       if (error) {
-        throw error;
+        const { error: magicLinkError } = await supabase.auth.verifyOtp({
+          email,
+          token: otp,
+          type: 'magiclink',
+        });
+
+        if (magicLinkError) {
+          throw magicLinkError;
+        }
       }
 
       toast.success('Login realizado com sucesso!');
@@ -143,7 +153,10 @@ export function AuthForm() {
               variant="link"
               type="button"
               className="text-sm text-muted-foreground"
-              onClick={() => setStep('email')}
+              onClick={() => {
+                setStep('email');
+                setOtp('');
+              }}
               disabled={isLoading}
             >
               <ArrowLeft className="mr-2 h-3 w-3" />
