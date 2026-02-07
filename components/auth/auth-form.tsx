@@ -57,9 +57,18 @@ export function AuthForm() {
       toast.success('Código enviado!', {
         description: 'Verifique seu email para pegar o código de acesso.',
       });
-    } catch (error) {
+    } catch (error: unknown) {
       console.error(error);
-      toast.error('Erro ao enviar código. Tente novamente.');
+      if (
+        typeof error === 'object' &&
+        error !== null &&
+        'status' in error &&
+        (error as { status: number }).status === 429
+      ) {
+        toast.error('Muitas tentativas. Aguarde 60 segundos antes de tentar novamente.');
+      } else {
+        toast.error('Erro ao enviar código. Tente novamente.');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -84,9 +93,19 @@ export function AuthForm() {
       toast.success('Código reenviado!', {
         description: 'Verifique seu email para pegar o novo código.',
       });
-    } catch (error) {
+    } catch (error: unknown) {
       console.error(error);
-      toast.error('Erro ao reenviar código. Tente novamente.');
+      if (
+        typeof error === 'object' &&
+        error !== null &&
+        'status' in error &&
+        (error as { status: number }).status === 429
+      ) {
+        toast.error('Muitas tentativas. Aguarde 60 segundos antes de tentar novamente.');
+        setTimeLeft(60);
+      } else {
+        toast.error('Erro ao reenviar código. Tente novamente.');
+      }
     } finally {
       setIsLoading(false);
     }
