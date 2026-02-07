@@ -23,8 +23,18 @@ export function AuthForm() {
   const [step, setStep] = React.useState<'email' | 'otp'>('email');
   const [email, setEmail] = React.useState('');
   const [otp, setOtp] = React.useState('');
+  const [timeLeft, setTimeLeft] = React.useState(60);
   const supabase = createClient();
   const router = useRouter();
+
+  React.useEffect(() => {
+    if (step === 'otp' && timeLeft > 0) {
+      const timer = setTimeout(() => {
+        setTimeLeft((prev) => prev - 1);
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [step, timeLeft]);
 
   async function onSendOtp(event: React.FormEvent) {
     event.preventDefault();
@@ -43,12 +53,40 @@ export function AuthForm() {
       }
 
       setStep('otp');
+      setTimeLeft(60);
       toast.success('Código enviado!', {
         description: 'Verifique seu email para pegar o código de acesso.',
       });
     } catch (error) {
       console.error(error);
       toast.error('Erro ao enviar código. Tente novamente.');
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  async function onResendOtp() {
+    setIsLoading(true);
+
+    try {
+      const { error } = await supabase.auth.signInWithOtp({
+        email,
+        options: {
+          shouldCreateUser: true,
+        },
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      setTimeLeft(60);
+      toast.success('Código reenviado!', {
+        description: 'Verifique seu email para pegar o novo código.',
+      });
+    } catch (error) {
+      console.error(error);
+      toast.error('Erro ao reenviar código. Tente novamente.');
     } finally {
       setIsLoading(false);
     }
@@ -148,6 +186,15 @@ export function AuthForm() {
             <Button className="w-full" type="submit" disabled={isLoading || otp.length !== 6}>
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Verificar e Entrar
+            </Button>
+            <Button
+              variant="link"
+              type="button"
+              className="w-full text-xs text-muted-foreground"
+              onClick={onResendOtp}
+              disabled={isLoading || timeLeft > 0}
+            >
+              {timeLeft > 0 ? `Reenviar código em ${timeLeft}s` : 'Reenviar código'}
             </Button>
             <Button
               variant="link"
