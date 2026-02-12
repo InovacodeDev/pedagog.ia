@@ -54,10 +54,18 @@ const formSchema = z
           content: z.string(),
         })
       )
-      .min(1, 'Adicione pelo menos um arquivo (PDF, Imagem ou Texto).'),
+      .optional(), // Make files optional since internet search can now be used
+    use_internet_search: z.boolean().default(false),
   })
-  .superRefine(() => {
-    // Add additional refinements if needed
+  .superRefine((data, ctx) => {
+    // Require either files or internet search
+    if ((!data.files || data.files.length === 0) && !data.use_internet_search) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Adicione arquivos de contexto ou ative a busca na internet.',
+        path: ['files'],
+      });
+    }
   });
 
 const QUESTION_TYPES = [
@@ -298,6 +306,7 @@ export function GeneratorForm({
       style_subtype: '',
       model_tier: 'fast',
       files: [],
+      use_internet_search: false,
     },
   });
 
@@ -340,6 +349,7 @@ export function GeneratorForm({
   }, [selectedStyle, selectedSubtype, form]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
+    console.log('onSubmit');
     setIsLoading(true);
     setGeneratedQuestions(null);
 
@@ -367,6 +377,7 @@ export function GeneratorForm({
       setSelectedIndices(result.questions.map((_, i) => i));
       toast.success('Questões geradas com sucesso!');
     } catch (error: unknown) {
+      console.log({ error });
       if (error instanceof Error) {
         toast.error(error.message);
       } else {
@@ -422,7 +433,13 @@ export function GeneratorForm({
             </CardHeader>
             <CardContent>
               <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                <form
+                  onSubmit={form.handleSubmit(onSubmit, (errors) => {
+                    console.error('Form Errors:', errors);
+                    toast.error('Existem erros no formulário. Verifique os campos destacados.');
+                  })}
+                  className="space-y-6"
+                >
                   <FormField
                     control={form.control}
                     name="model_tier"
@@ -646,6 +663,11 @@ export function GeneratorForm({
                         Máx: {isPro ? '10MB' : '5MB'}
                       </span>
                     </div>
+                    {form.formState.errors.files && (
+                      <p className="text-sm font-medium text-destructive">
+                        {form.formState.errors.files.message}
+                      </p>
+                    )}
 
                     {selectedFiles.length > 0 && (
                       <div className="space-y-2">
@@ -674,6 +696,31 @@ export function GeneratorForm({
                         ))}
                       </div>
                     )}
+
+                    <FormField
+                      control={form.control}
+                      name="use_internet_search"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                          <div className="space-y-0.5">
+                            <FormLabel className="text-base">Buscar conteúdo na internet</FormLabel>
+                            <div className="text-sm text-muted-foreground">
+                              Utilize a IA para pesquisar e complementar o conteúdo. (Custo
+                              adicional: 5 créditos)
+                            </div>
+                          </div>
+                          <FormControl>
+                            <Checkbox
+                              checked={field.value}
+                              onCheckedChange={(checked) => {
+                                field.onChange(checked);
+                                form.trigger('files');
+                              }}
+                            />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
                   </div>
 
                   <FormField
@@ -723,11 +770,16 @@ export function GeneratorForm({
                                         checked={field.value?.includes(type.id)}
                                         disabled={!isAllowed}
                                         onCheckedChange={(checked) => {
-                                          return checked
-                                            ? field.onChange([...field.value, type.id])
-                                            : field.onChange(
-                                                field.value?.filter((value) => value !== type.id)
-                                              );
+                                          if (checked) {
+                                            return field.onChange([...field.value, type.id]);
+                                          } else {
+                                            // Clear subtype value and errors when type is deselected
+                                            form.setValue(`subtypes.${type.id}`, '');
+                                            form.clearErrors(`subtypes.${type.id}`);
+                                            return field.onChange(
+                                              field.value?.filter((value) => value !== type.id)
+                                            );
+                                          }
                                         }}
                                       />
                                     </FormControl>

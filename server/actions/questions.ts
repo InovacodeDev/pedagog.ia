@@ -31,7 +31,8 @@ const GenerateQuestionsSchema = z
           content: z.string(), // base64
         })
       )
-      .min(1, 'Você deve adicionar pelo menos um arquivo de contexto.'),
+      .optional(), // Can be optional if internet search is used
+    use_internet_search: z.boolean().optional(),
   })
   .superRefine((data) => {
     // files are already checked by min(1) above
@@ -53,7 +54,16 @@ const GenerateExamFromDbSchema = z.object({
 
 function cleanJson(text: string) {
   // Remove markdown code blocks like ```json ... ```
-  const clean = text.replace(/```json/g, '').replace(/```/g, '');
+  let clean = text.replace(/```json/g, '').replace(/```/g, '');
+
+  // Find the first '[' and last ']' to extract just the array
+  const firstOpen = clean.indexOf('[');
+  const lastClose = clean.lastIndexOf(']');
+
+  if (firstOpen !== -1 && lastClose !== -1 && lastClose > firstOpen) {
+    clean = clean.substring(firstOpen, lastClose + 1);
+  }
+
   return clean.trim();
 }
 
@@ -264,6 +274,7 @@ function buildSystemPrompt(params: {
   subtypes?: Record<string, string> | null;
   quantity: number;
   combinedContent: string;
+  use_internet_search?: boolean;
 }): string {
   const {
     style,
@@ -379,11 +390,10 @@ function buildSystemPrompt(params: {
         - Se REDAÇÃO (${subtypes?.essay || 'Livre'}): Forneça textos motivadores (extraídos dos arquivos) e critérios de correção detalhados (ex: Competências 1-5 para ENEM se aplicável, ou critérios do gênero).
         - Se MÚLTIPLA ESCOLHA: O gabarito deve ser incontestável.
         
-        Conteúdo Base para Geração (USAR EXCLUSIVAMENTE):
-        "${combinedContent || 'ERRO CRÍTICO: Nenhum conteúdo extraído. Aborte.'}"
+        Conteúdo Base para Geração (USAR EXCLUSIVAMENTE NOS ARQUIVOS, SE HOUVER):
+        "${combinedContent || (params.use_internet_search ? 'Nenhum arquivo fornecido. Utilize EXCLUSIVAMENTE a pesquisa na internet.' : 'ERRO CRÍTICO: Nenhum conteúdo extraído. Aborte.')}"
         
-        Retorne APENAS o JSON válido, sem markdown ou explicações extras.
-      `;
+        Retorne EXATAMENTE o array JSON, sem blocos de código markdown (\`\`\`json), sem comentários e sem texto introdutório. A saída deve começar com '[' e terminar com ']'.`;
 }
 
 // ==========================================
@@ -405,15 +415,21 @@ async function calculateAndLogCost(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     usageMetadata: any;
     feature: string;
+    use_internet_search?: boolean;
   }
 ) {
-  const { modelName, modelTier, quantity, usageMetadata, feature } = input;
+  const { modelName, modelTier, quantity, usageMetadata, feature, use_internet_search } = input;
 
   // 1. Calculate Estimated Cost (Credits)
   const multiplier = modelTier === 'quality' ? 2 : 1;
   const quantityNum = quantity || 0;
   // Ensure floating point precision is handled (round to 2 decimals)
-  const estimatedCreditsCost = Math.round(0.5 * quantityNum * multiplier * 100) / 100;
+  let estimatedCreditsCost = Math.round(0.5 * quantityNum * multiplier * 100) / 100;
+
+  // Search cost: 5 credits
+  if (use_internet_search) {
+    estimatedCreditsCost += 5;
+  }
 
   // 2. Deduct Credits
   if (estimatedCreditsCost > 0) {
@@ -504,6 +520,7 @@ export async function generateQuestionsV2Action(
     subtypes,
     files,
     style_subtype,
+    use_internet_search,
   } = validation.data;
 
   // 2. Process Files
@@ -546,12 +563,28 @@ export async function generateQuestionsV2Action(
       subtypes,
       quantity,
       combinedContent,
+      use_internet_search: !!use_internet_search,
     });
 
     // 5. Call AI
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const tools: any = use_internet_search ? [{ googleSearch: {} }] : [];
+
+    // Update prompt if search is enabled to encourage using it
+    let finalPrompt = prompt;
+    if (use_internet_search) {
+      finalPrompt += `\n\nINSTRUÇÃO DE PESQUISA: O usuário ativou a pesquisa na internet. OBRIGATÓRIO: Utilize a tool 'googleSearch' para encontrar informações ATUALIZADAS, PRECISAS E CONTEXTUALIZADAS sobre:
+      - Disciplina: ${discipline}
+      - Assunto: ${subject}
+      - Contexto/Nível: ${grade_level || style_subtype || 'Geral'}
+      
+      Busque por definições, exemplos práticos, dados recentes ou questões similares para enriquecer a geração. Se houver arquivos anexos, use a pesquisa para complementar, não substituir.`;
+    }
+
     const result = await model.generateContent({
-      contents: [{ role: 'user', parts: [{ text: prompt }] }],
-      generationConfig: { responseMimeType: 'application/json' },
+      contents: [{ role: 'user', parts: [{ text: finalPrompt }] }],
+      tools: tools,
+      generationConfig: use_internet_search ? undefined : { responseMimeType: 'application/json' },
     });
 
     // 6. Parse Response
@@ -586,6 +619,7 @@ export async function generateQuestionsV2Action(
       quantity,
       usageMetadata: result.response.usageMetadata,
       feature: 'generate_questions_v2',
+      use_internet_search: !!use_internet_search,
     });
 
     return { success: true, questions: generatedQuestions };
