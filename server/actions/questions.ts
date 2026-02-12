@@ -337,10 +337,10 @@ function buildSystemPrompt(params: {
            - "correct_answer": Uma string com a sequência de V e F (ex: "V-F-V-V-F").
 
         3. TIPO: "sum" (Somatória)
-           - "options": Array de 4 a 7 proposições (Texto apenas).
-           - "correct_answer": A SOMA numérica dos valores das proposições corretas.
-           - REGRA MATEMÁTICA: Considere que a 1ª opção vale 01, a 2ª vale 02, a 3ª vale 04, a 4ª vale 08, etc.
-           - CRÍTICO: A soma das corretas NÃO PODE EXCEDER 99. Selecione proposições corretas de modo que a soma fique <= 99.
+           - "options": Array de 5 proposições MISTAS (Verdadeiras e Falsas).
+           - "correct_answer": A SOMA numérica dos valores APENAS das proposições VERDADEIRAS.
+           - VALORES: 1ª opção=01, 2ª=02, 3ª=04, 4ª=08, 5ª=16.
+           - IMPORTANTE: É OBRIGATÓRIO haver pelo menos 2 afirmações FALSAS misturadas com as verdadeiras. A soma correta NUNCA deve ser a soma de todas as opções.
 
         4. TIPO: "association" (Associação de Colunas)
            - "options": Array de strings (Coluna da Esquerda/Parênteses).

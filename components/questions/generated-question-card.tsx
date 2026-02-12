@@ -108,6 +108,43 @@ export function GeneratedQuestionCard({
           </ul>
         )}
 
+        {/* Sum Options (Always visible, styling changes with showAnswer) */}
+        {question.type === 'sum' && Array.isArray(question.options) && (
+          <div className="space-y-3 mb-4">
+            {question.options.map((option: unknown, idx: number) => {
+              const text = typeof option === 'string' ? option : JSON.stringify(option);
+              const value = Math.pow(2, idx);
+              // Only check correctness if showAnswer is true
+              const isCorrect = showAnswer && (Number(question.correct_answer) & value) === value;
+
+              return (
+                <div
+                  key={idx}
+                  className={cn(
+                    'p-3 rounded-md border text-sm transition-colors flex items-center gap-3',
+                    showAnswer && isCorrect
+                      ? 'bg-green-50 border-green-500 text-green-900 ring-1 ring-green-500'
+                      : 'border-border bg-muted/30'
+                  )}
+                >
+                  <div
+                    className={cn(
+                      'flex items-center justify-center w-8 h-8 rounded-md border font-mono text-xs shrink-0',
+                      showAnswer && isCorrect
+                        ? 'bg-green-600 text-white border-green-600'
+                        : 'bg-muted text-muted-foreground border-muted-foreground/30'
+                    )}
+                  >
+                    {String(value).padStart(2, '0')}
+                  </div>
+                  <span className="flex-grow">{text}</span>
+                  {showAnswer && isCorrect && <CheckCircle2 className="h-5 w-5 text-green-600" />}
+                </div>
+              );
+            })}
+          </div>
+        )}
+
         {/* Metadata Badges */}
         <div className="flex flex-wrap gap-2 text-xs mb-4">
           <span className={cn('px-2 py-1 rounded font-medium border', typeConfig.color)}>
@@ -156,45 +193,7 @@ export function GeneratedQuestionCard({
           <div className="mt-4 pt-4 border-t animate-in fade-in slide-in-from-top-2 duration-200">
             {question.type === 'sum' ? (
               <div className="space-y-3">
-                {Array.isArray(question.options) &&
-                  question.options.map((option: unknown, idx: number) => {
-                    // Handle both string options (generated) and object options (if any)
-                    // The generator usually returns strings for options in 'sum' initially,
-                    // but the prompt says: "options": Array de 4 a 7 proposições (Texto apenas).
-                    // The `formatOptionsByType` in server action converts them to objects {value, text}.
-                    // But here we are dealing with the raw `GeneratedQuestion` returned by the AI (before saving).
-                    // The AI returns strings in `options`.
-                    // So we need to calculate values on the fly: 2^idx.
-                    const text = typeof option === 'string' ? option : JSON.stringify(option);
-                    const value = Math.pow(2, idx);
-                    const isCorrect = (Number(question.correct_answer) & value) === value;
-
-                    return (
-                      <div
-                        key={idx}
-                        className={cn(
-                          'p-3 rounded-md border text-sm transition-colors flex items-center gap-3',
-                          isCorrect
-                            ? 'bg-green-50 border-green-500 text-green-900 ring-1 ring-green-500'
-                            : 'opacity-70 border-border bg-muted/30'
-                        )}
-                      >
-                        <div
-                          className={cn(
-                            'flex items-center justify-center w-8 h-8 rounded-md border font-mono text-xs shrink-0',
-                            isCorrect
-                              ? 'bg-green-600 text-white border-green-600'
-                              : 'bg-muted text-muted-foreground border-muted-foreground/30'
-                          )}
-                        >
-                          {String(value).padStart(2, '0')}
-                        </div>
-                        <span className="flex-grow">{text}</span>
-                        {isCorrect && <CheckCircle2 className="h-5 w-5 text-green-600" />}
-                      </div>
-                    );
-                  })}
-                <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-md flex items-center justify-between">
+                <div className="p-4 bg-green-50 border border-green-200 rounded-md flex items-center justify-between">
                   <span className="text-sm font-bold text-green-800 uppercase">Soma Correta</span>
                   <span className="text-2xl font-mono font-bold text-green-900">
                     {String(question.correct_answer).padStart(2, '0')}

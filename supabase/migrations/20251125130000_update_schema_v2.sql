@@ -2,7 +2,7 @@
 
 -- 1. Update questions table
 ALTER TABLE public.questions
-ADD COLUMN type text CHECK (type IN ('multiple_choice', 'true_false', 'essay', 'summation', 'redaction', 'association')),
+ADD COLUMN type text CHECK (type IN ('multiple_choice', 'true_false', 'essay', 'sum', 'redaction', 'association')),
 ADD COLUMN style text CHECK (style IN ('enem', 'high_school', 'entrance_exam', 'civil_service')),
 ADD COLUMN usage_count integer DEFAULT 0;
 
