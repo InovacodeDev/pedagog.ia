@@ -165,7 +165,7 @@ export async function POST(req: Request) {
               .single();
 
             if (subData?.user_id) {
-              const MONTHLY_CREDITS = 300;
+              const MONTHLY_CREDITS = 100;
 
               // Add credits
               await supabaseAdmin.rpc('deduct_user_credits', {
