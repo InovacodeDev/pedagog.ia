@@ -5,12 +5,14 @@ import { SiX, SiXHex, SiGithub, SiGithubHex } from '@icons-pack/react-simple-ico
 
 export function Footer() {
   return (
-    <footer className="bg-slate-50 text-slate-600 py-12 border-t border-slate-200">
+    <footer className="bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-400 py-12 border-t border-slate-200 dark:border-slate-800">
       <div className="container mx-auto px-4 md:px-6">
         <div className="grid gap-8 md:grid-cols-4 mb-8">
           <div className="col-span-1 md:col-span-2">
             <Link href="/" className="flex items-center gap-2 mb-4">
-              <span className="text-xl font-bold tracking-tighter text-slate-900">Pedagog.IA</span>
+              <span className="text-xl font-bold tracking-tighter text-slate-900 dark:text-white">
+                Pedagog.IA
+              </span>
             </Link>
             <p className="text-sm text-slate-500 max-w-xs leading-relaxed">
               Transformando a educação através da tecnologia. Menos burocracia, mais ensino.
@@ -18,7 +20,7 @@ export function Footer() {
           </div>
 
           <div>
-            <h3 className="font-bold text-slate-900 mb-4">Produto</h3>
+            <h3 className="font-bold text-slate-900 dark:text-white mb-4">Produto</h3>
             <ul className="space-y-2 text-sm">
               <li>
                 <Link href="/#features" className="hover:text-indigo-600 transition-colors">
@@ -39,7 +41,7 @@ export function Footer() {
           </div>
 
           <div>
-            <h3 className="font-bold text-slate-900 mb-4">Legal</h3>
+            <h3 className="font-bold text-slate-900 dark:text-white mb-4">Legal</h3>
             <ul className="space-y-2 text-sm">
               <li>
                 <Link href="/privacy" className="hover:text-indigo-600 transition-colors">
@@ -60,15 +62,21 @@ export function Footer() {
           </div>
         </div>
 
-        <div className="pt-8 border-t border-slate-200 flex flex-col md:flex-row justify-between items-center gap-4">
+        <div className="pt-8 border-t border-slate-200 dark:border-slate-800 flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-sm text-slate-500">
             © {new Date().getFullYear()} Pedagog.IA. Todos os direitos reservados.
           </p>
           <div className="flex items-center gap-4">
-            <Link href="#" className="text-slate-400 hover:text-indigo-600 transition-colors">
+            <Link
+              href="#"
+              className="text-slate-400 dark:text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+            >
               <SiX size={20} color={SiXHex} />
             </Link>
-            <Link href="#" className="text-slate-400 hover:text-indigo-600 transition-colors">
+            <Link
+              href="#"
+              className="text-slate-400 dark:text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+            >
               <SiGithub size={20} color={SiGithubHex} />
             </Link>
           </div>

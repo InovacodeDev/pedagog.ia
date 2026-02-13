@@ -3,6 +3,7 @@ import './globals.css';
 import { cn } from '@/lib/utils';
 import type { Metadata } from 'next';
 import { Toaster } from '@/components/ui/sonner';
+import { ThemeProvider } from '@/components/theme-provider';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -34,8 +35,15 @@ export default function RootLayout({
           spaceGrotesk.variable
         )}
       >
-        {children}
-        <Toaster />
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          {children}
+          <Toaster />
+        </ThemeProvider>
       </body>
     </html>
   );

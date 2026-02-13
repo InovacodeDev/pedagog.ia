@@ -1,6 +1,5 @@
 import { Sidebar } from '@/components/layout/sidebar';
 import { Header } from '@/components/layout/header';
-import { ThemeProvider } from '@/components/theme-provider';
 import { GlobalJobListener } from '@/components/layout/global-job-listener';
 
 import { getSubscriptionPlan } from '@/lib/subscription';
@@ -9,7 +8,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const { isPro } = await getSubscriptionPlan();
 
   return (
-    <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+    <>
       <GlobalJobListener />
       <div className="fixed inset-0 flex w-full overflow-hidden bg-[hsl(var(--sidebar-bg))] text-foreground transition-colors duration-300">
         <div className="hidden md:flex md:w-64 md:flex-col">
@@ -22,6 +21,6 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           </main>
         </div>
       </div>
-    </ThemeProvider>
+    </>
   );
 }

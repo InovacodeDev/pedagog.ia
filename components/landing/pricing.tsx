@@ -32,14 +32,14 @@ const PLANS = [
 
 export function Pricing() {
   return (
-    <section id="pricing" className="py-24 bg-slate-50">
+    <section id="pricing" className="py-24 bg-slate-50 dark:bg-slate-900">
       <div className="container mx-auto px-4 md:px-6">
         <div className="text-center mb-16">
-          <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl font-display text-slate-900">
+          <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl font-display text-slate-900 dark:text-white">
             Investimento que se paga no{' '}
             <span className="text-teal-600">primeiro fim de semana</span>
           </h2>
-          <p className="mt-4 text-slate-600">Quanto vale o seu tempo livre?</p>
+          <p className="mt-4 text-slate-600 dark:text-slate-400">Quanto vale o seu tempo livre?</p>
         </div>
 
         <div className="grid gap-8 md:grid-cols-2 max-w-4xl mx-auto items-start">
@@ -50,10 +50,10 @@ export function Pricing() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: index * 0.1 }}
-              className={`relative rounded-3xl bg-white p-8 shadow-xl border ${
+              className={`relative rounded-3xl bg-white dark:bg-slate-950 p-8 shadow-xl dark:shadow-2xl dark:shadow-indigo-900/20 border ${
                 plan.popular
-                  ? 'border-indigo-600 ring-4 ring-indigo-600/10 scale-105 z-10'
-                  : 'border-slate-100 shadow-slate-200/50'
+                  ? 'border-indigo-600 ring-4 ring-indigo-600/10 dark:ring-indigo-500/20 scale-105 z-10'
+                  : 'border-slate-100 dark:border-slate-800 shadow-slate-200/50 dark:shadow-none'
               }`}
             >
               {plan.popular && (
@@ -63,17 +63,19 @@ export function Pricing() {
               )}
 
               <div className="mb-8">
-                <h3 className="text-lg font-bold text-slate-900">{plan.name}</h3>
-                <div className="mt-4 flex items-baseline text-slate-900">
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white">{plan.name}</h3>
+                <div className="mt-4 flex items-baseline text-slate-900 dark:text-white">
                   <span className="text-4xl font-bold tracking-tight">{plan.price}</span>
                   {plan.period && (
                     <span className="ml-1 text-xl font-semibold text-slate-500">{plan.period}</span>
                   )}
                 </div>
-                <p className="mt-2 text-sm text-slate-600">{plan.description}</p>
+                <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
+                  {plan.description}
+                </p>
               </div>
 
-              <ul className="mb-8 space-y-4 text-sm text-slate-600">
+              <ul className="mb-8 space-y-4 text-sm text-slate-600 dark:text-slate-300">
                 {plan.features.map((feature) => (
                   <li key={feature} className="flex items-center">
                     <Check className="mr-3 h-5 w-5 text-teal-500 flex-shrink-0" />
@@ -82,7 +84,7 @@ export function Pricing() {
                 ))}
                 {plan.notIncluded.map((feature) => (
                   <li key={feature} className="flex items-center text-slate-400">
-                    <X className="mr-3 h-5 w-5 text-slate-300 flex-shrink-0" />
+                    <X className="mr-3 h-5 w-5 text-slate-300 dark:text-slate-600 flex-shrink-0" />
                     {feature}
                   </li>
                 ))}
@@ -92,8 +94,8 @@ export function Pricing() {
                 asChild
                 className={`w-full h-12 text-base ${
                   plan.popular
-                    ? 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-200'
-                    : 'border-slate-200 text-slate-900 hover:bg-slate-50'
+                    ? 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-200 dark:shadow-indigo-900/50'
+                    : 'border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white hover:bg-slate-50 dark:hover:bg-slate-800'
                 }`}
                 variant={plan.variant === 'outline' ? 'outline' : 'default'}
               >
