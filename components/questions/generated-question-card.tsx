@@ -112,7 +112,8 @@ export function GeneratedQuestionCard({
         {question.type === 'sum' && Array.isArray(question.options) && (
           <div className="space-y-3 mb-4">
             {question.options.map((option: unknown, idx: number) => {
-              const text = typeof option === 'string' ? option : JSON.stringify(option);
+              let text = typeof option === 'string' ? option : JSON.stringify(option);
+              text = text.replace(/^\d+[\.\-)]\s*/, '').trim();
               const value = Math.pow(2, idx);
               // Only check correctness if showAnswer is true
               const isCorrect = showAnswer && (Number(question.correct_answer) & value) === value;
@@ -135,7 +136,7 @@ export function GeneratedQuestionCard({
                         : 'bg-muted text-muted-foreground border-muted-foreground/30'
                     )}
                   >
-                    {String(value).padStart(2, '0')}
+                    {String(value)}
                   </div>
                   <span className="flex-grow">{text}</span>
                   {showAnswer && isCorrect && <CheckCircle2 className="h-5 w-5 text-green-600" />}
@@ -196,7 +197,7 @@ export function GeneratedQuestionCard({
                 <div className="p-4 bg-green-50 border border-green-200 rounded-md flex items-center justify-between">
                   <span className="text-sm font-bold text-green-800 uppercase">Soma Correta</span>
                   <span className="text-2xl font-mono font-bold text-green-900">
-                    {String(question.correct_answer).padStart(2, '0')}
+                    {String(question.correct_answer)}
                   </span>
                 </div>
               </div>

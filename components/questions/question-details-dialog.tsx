@@ -165,6 +165,7 @@ export function QuestionDetailsDialog({
                       if (typeof option !== 'object' || option === null || !('value' in option))
                         return null;
                       const opt = option as { value: number; text: string };
+                      const cleanText = opt.text.replace(/^\d+[\.\-)]\s*/, '').trim();
                       const isCorrect = (Number(question.correct_answer) & opt.value) === opt.value;
 
                       return (
@@ -185,9 +186,9 @@ export function QuestionDetailsDialog({
                                 : 'bg-muted text-muted-foreground border-muted-foreground/30'
                             )}
                           >
-                            {String(opt.value).padStart(2, '0')}
+                            {String(opt.value)}
                           </div>
-                          <span className="flex-grow">{opt.text}</span>
+                          <span className="flex-grow">{cleanText}</span>
                           {isCorrect && (
                             <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400" />
                           )}
@@ -197,7 +198,7 @@ export function QuestionDetailsDialog({
                   <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-md flex items-center justify-between">
                     <span className="text-sm font-bold text-green-800 uppercase">Soma Correta</span>
                     <span className="text-2xl font-mono font-bold text-green-900">
-                      {String(question.correct_answer).padStart(2, '0')}
+                      {String(question.correct_answer)}
                     </span>
                   </div>
                 </div>

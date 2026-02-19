@@ -133,13 +133,14 @@ export function StaticBlock({ block }: StaticBlockProps) {
               return (
                 <div className="space-y-2 pl-2">
                   {options.map((opt: string, idx: number) => {
-                    const value = Math.pow(2, idx).toString().padStart(2, '0');
+                    const value = Math.pow(2, idx).toString();
+                    const cleanOpt = opt.replace(/^\d+[\.\-)]\s*/, '').trim();
                     return (
                       <div key={idx} className="flex gap-2 text-base items-center">
                         <Badge variant="outline" className="font-mono h-6 w-8 justify-center">
                           {value}
                         </Badge>
-                        <span>{opt}</span>
+                        <span>{cleanOpt}</span>
                       </div>
                     );
                   })}

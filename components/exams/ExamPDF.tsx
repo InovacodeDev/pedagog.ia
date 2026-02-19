@@ -1,4 +1,3 @@
-
 import { Document, Page, Text, View, StyleSheet, Image } from '@react-pdf/renderer';
 import QRCode from 'qrcode';
 
@@ -177,13 +176,14 @@ const RenderQuestionBody = ({ question }: { question: Question }) => {
       return (
         <View>
           {question.options?.map((opt, i) => {
-            const value = Math.pow(2, i).toString().padStart(2, '0');
+            const value = Math.pow(2, i).toString();
+            const cleanOpt = opt.replace(/^\d+[\.\-)]\s*/, '').trim();
             return (
               <View key={i} style={styles.row}>
                 <View style={styles.badge}>
                   <Text>{value}</Text>
                 </View>
-                <Text style={styles.optionText}>{opt}</Text>
+                <Text style={styles.optionText}>{cleanOpt}</Text>
               </View>
             );
           })}

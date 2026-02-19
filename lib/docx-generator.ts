@@ -148,13 +148,14 @@ export const generateDocx = async (blocks: ExamBlock[]) => {
       case 'summation':
         options.forEach((opt: string, idx: number) => {
           const isLast = idx === options.length - 1;
-          const value = Math.pow(2, idx).toString().padStart(2, '0');
+          const value = Math.pow(2, idx).toString();
+          const cleanOpt = opt.replace(/^\d+[\.\-)]\s*/, '').trim();
           children.push(
             new Paragraph({
               children: [
                 new TextRun({ text: `[ ${value} ]`, bold: true, font: 'Courier New' }),
                 new TextRun({ text: '\t' }),
-                new TextRun(opt),
+                new TextRun(cleanOpt),
               ],
               tabStops: [{ type: 'left', position: 720 }],
               indent: { left: 360 },
