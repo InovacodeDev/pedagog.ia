@@ -17,6 +17,7 @@ import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp
 import { toast } from 'sonner';
 import { Loader2, ArrowLeft, Mail } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { Logo } from '@/components/ui/logo';
 
 export function AuthForm() {
   const [isLoading, setIsLoading] = React.useState(false);
@@ -150,6 +151,9 @@ export function AuthForm() {
   return (
     <Card className="w-full max-w-md mx-auto">
       <CardHeader className="space-y-1">
+        <div className="flex justify-center mb-4">
+          <Logo iconOnly iconClassName="w-12 h-12" />
+        </div>
         <CardTitle className="text-2xl font-bold text-center">
           {step === 'email' ? 'Entrar no Pedagog.IA' : 'Confirme seu email'}
         </CardTitle>

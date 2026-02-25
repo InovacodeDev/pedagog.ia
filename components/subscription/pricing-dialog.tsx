@@ -12,6 +12,7 @@ import {
 import { createCheckoutSessionAction } from '@/server/actions/stripe';
 import { Check, Loader2 } from 'lucide-react';
 import { useState } from 'react';
+import { Logo } from '@/components/ui/logo';
 import { toast } from 'sonner';
 
 interface PricingDialogProps {
@@ -42,6 +43,9 @@ export function PricingDialog({ trigger, isOpen, onOpenChange }: PricingDialogPr
       {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
       <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
+          <div className="flex justify-center mb-4">
+            <Logo iconOnly iconClassName="w-12 h-12" />
+          </div>
           <DialogTitle className="text-2xl font-bold text-center">
             Desbloqueie todo o potencial da Pedagog.IA
           </DialogTitle>

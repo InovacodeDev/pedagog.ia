@@ -18,6 +18,14 @@ const spaceGrotesk = Space_Grotesk({
 export const metadata: Metadata = {
   title: 'Pedagog.IA | Sistema Operacional Cognitivo',
   description: 'Correção de provas e planejamento automatizado para professores.',
+  icons: {
+    icon: [
+      { url: '/favicon.ico', sizes: 'any' },
+      { url: '/icon.svg', type: 'image/svg+xml' },
+    ],
+    apple: '/icon-192x192.png',
+  },
+  manifest: '/manifest.json',
 };
 
 export default function RootLayout({

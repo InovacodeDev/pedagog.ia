@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { SiX, SiXHex, SiGithub, SiGithubHex } from '@icons-pack/react-simple-icons';
+import { Logo } from '@/components/ui/logo';
 
 export function Footer() {
   return (
@@ -9,10 +10,11 @@ export function Footer() {
       <div className="container mx-auto px-4 md:px-6">
         <div className="grid gap-8 md:grid-cols-4 mb-8">
           <div className="col-span-1 md:col-span-2">
-            <Link href="/" className="flex items-center gap-2 mb-4">
-              <span className="text-xl font-bold tracking-tighter text-slate-900 dark:text-white">
-                Pedagog.IA
-              </span>
+            <Link
+              href="/"
+              className="flex items-center gap-2 mb-4 hover:opacity-80 transition-opacity"
+            >
+              <Logo textClassName="text-slate-900 dark:text-white" />
             </Link>
             <p className="text-sm text-slate-500 max-w-xs leading-relaxed">
               Transformando a educação através da tecnologia. Menos burocracia, mais ensino.

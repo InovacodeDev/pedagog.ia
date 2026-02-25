@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Menu } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme-toggle';
+import { Logo } from '@/components/ui/logo';
 
 export function Navbar() {
   return (
@@ -14,10 +15,8 @@ export function Navbar() {
       className="fixed top-0 left-0 right-0 z-50 border-b border-white/10 bg-white/60 backdrop-blur-md supports-[backdrop-filter]:bg-white/60 dark:bg-slate-900/60 dark:border-slate-800/60"
     >
       <div className="container mx-auto flex h-16 items-center justify-between px-4 md:px-6">
-        <Link href="/" className="flex items-center gap-2">
-          <span className="text-xl font-bold tracking-tighter text-indigo-600 dark:text-indigo-400">
-            Pedagog.IA
-          </span>
+        <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+          <Logo />
         </Link>
 
         <nav className="hidden gap-6 md:flex">

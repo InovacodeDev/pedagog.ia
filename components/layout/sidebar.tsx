@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { LayoutDashboard, FileText, Users, Camera, Settings, FileQuestion } from 'lucide-react';
+import { Logo } from '@/components/ui/logo';
 import { SidebarFooter } from '@/components/layout/sidebar-footer';
 
 const routes = [
@@ -55,13 +56,11 @@ export function Sidebar({ isPro = false }: SidebarProps) {
   return (
     <div className="space-y-4 py-4 flex flex-col h-full bg-[hsl(var(--sidebar-bg))] text-[hsl(var(--sidebar-fg))] transition-colors duration-300">
       <div className="px-3 py-2 flex-1">
-        <Link href="/home" className="flex items-center pl-3 mb-14">
-          <div className="relative w-8 h-8 mr-4">
-            <div className="bg-primary rounded-full w-full h-full flex items-center justify-center text-primary-foreground font-bold">
-              P
-            </div>
-          </div>
-          <h1 className="text-2xl font-bold">Pedagog.IA</h1>
+        <Link
+          href="/home"
+          className="flex items-center pl-3 mb-14 hover:opacity-80 transition-opacity"
+        >
+          <Logo />
         </Link>
         <div className="space-y-1">
           {routes.map((route) => {
