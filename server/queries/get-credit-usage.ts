@@ -48,7 +48,7 @@ export async function getCreditBalance() {
     .from('subscriptions')
     .select('credits_balance')
     .eq('user_id', user.id)
-    .single();
+    .maybeSingle();
 
   if (error) {
     console.error('Error fetching credit balance:', error);

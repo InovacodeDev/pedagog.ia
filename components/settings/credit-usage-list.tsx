@@ -109,6 +109,7 @@ function formatFeatureName(feature: string): string {
     generate_exam_db: 'Geração de Prova Inteligente',
     credit_purchase: 'Compra de Créditos',
     monthly_renewal: 'Renovação Mensal',
+    subscription_activated: 'Ativação de Assinatura',
   };
   return map[feature] || feature;
 }
