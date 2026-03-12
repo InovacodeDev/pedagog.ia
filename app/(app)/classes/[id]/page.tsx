@@ -3,16 +3,16 @@ import { getStudentsAction } from '@/server/actions/students';
 import { ClassStudentList } from '@/components/students/class-student-list';
 import { AddStudentDialog } from '@/components/students/add-student-dialog';
 import Link from 'next/link';
-import { ChevronRight, Users } from 'lucide-react';
+import { ChevronRight, Users, Lock } from 'lucide-react';
 import { DataUnavailable } from '@/components/ui/data-unavailable';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ClassExamsList } from '@/components/classes/class-exams-list';
 import { ClassGradesList } from '@/components/classes/class-grades-list';
 import { ClassAnalytics } from '@/components/classes/class-analytics';
 import { AttendanceForm } from '@/components/students/attendance-form';
-
-
-
+import { getSubscriptionPlan } from '@/lib/subscription';
+import { Button } from '@/components/ui/button';
+import { PricingDialog } from '@/components/subscription/pricing-dialog';
 
 interface ClassDetailsPageProps {
   params: Promise<{ id: string }>;
@@ -23,6 +23,8 @@ export default async function ClassDetailsPage({ params }: ClassDetailsPageProps
   const classData = await getClassAction(id);
   const { students, success, error } = await getStudentsAction(id);
   const exams = await getExamsByClassAction(id);
+  const { isPro } = await getSubscriptionPlan();
+
   if (!classData) {
     return (
       <div className="container mx-auto p-8">
@@ -39,7 +41,6 @@ export default async function ClassDetailsPage({ params }: ClassDetailsPageProps
     );
   }
 
-  if (!classData) return null; // Should not happen due to check above
   const schoolPeriod = classData.period_type || 'bimestre';
   const studentCount = students?.length || 0;
 
@@ -72,7 +73,9 @@ export default async function ClassDetailsPage({ params }: ClassDetailsPageProps
       {/* Content */}
       <Tabs defaultValue="analytics" className="w-full">
         <TabsList>
-          <TabsTrigger value="analytics">Analytics</TabsTrigger>
+          <TabsTrigger value="analytics" className="flex items-center gap-2">
+            Analytics {!isPro && <Lock className="h-3 w-3" />}
+          </TabsTrigger>
           <TabsTrigger value="students">Alunos</TabsTrigger>
           <TabsTrigger value="attendance">Presença</TabsTrigger>
           <TabsTrigger value="exams">Provas</TabsTrigger>
@@ -80,7 +83,28 @@ export default async function ClassDetailsPage({ params }: ClassDetailsPageProps
         </TabsList>
         
         <TabsContent value="analytics" className="mt-6">
-          <ClassAnalytics classData={classData} />
+          {isPro ? (
+            <ClassAnalytics classData={classData} />
+          ) : (
+            <div className="flex flex-col items-center justify-center p-12 text-center border rounded-lg bg-muted/30 space-y-4">
+              <div className="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center">
+                <Lock className="w-6 h-6 text-indigo-600" />
+              </div>
+              <div className="space-y-2 max-w-md">
+                <h3 className="text-xl font-bold">Analytics de Turmas é um recurso Pro</h3>
+                <p className="text-muted-foreground">
+                  Acompanhe o desempenho detalhado de seus alunos, médias por disciplina e muito mais com o plano Pro.
+                </p>
+              </div>
+              <PricingDialog 
+                trigger={
+                  <Button className="bg-indigo-600 hover:bg-indigo-700">
+                    Fazer Upgrade Agora
+                  </Button>
+                }
+              />
+            </div>
+          )}
         </TabsContent>
 
         <TabsContent value="students" className="mt-6">
@@ -106,3 +130,4 @@ export default async function ClassDetailsPage({ params }: ClassDetailsPageProps
     </div>
   );
 }
+

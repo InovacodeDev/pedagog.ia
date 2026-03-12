@@ -83,6 +83,29 @@ export async function createClassAction(
     return { success: false, message: 'Unauthorized' };
   }
 
+  // Check subscription and classes limit
+  const { getSubscriptionPlan } = await import('@/lib/subscription');
+  const { isPro } = await getSubscriptionPlan();
+
+  if (!isPro) {
+    const { count, error: countError } = await supabase
+      .from('classes')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', user.id);
+
+    if (countError) {
+      console.error('Error checking classes count:', countError);
+      return { success: false, message: 'Erro ao verificar limite de turmas' };
+    }
+
+    if (count && count >= 1) {
+      return { 
+        success: false, 
+        message: 'Usuários do plano gratuito podem criar apenas uma turma. Faça upgrade para criar turmas ilimitadas!' 
+      };
+    }
+  }
+
   const { error } = await supabase.from('classes').insert({
     name,
     user_id: user.id,
@@ -101,6 +124,7 @@ export async function createClassAction(
   revalidatePath('/classes');
   return { success: true, message: 'Turma criada com sucesso!' };
 }
+
 
 export async function updateClassAction(
   id: string, 

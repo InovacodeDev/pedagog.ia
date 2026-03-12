@@ -2,6 +2,7 @@
 
 import { ClassesList } from './classes-list';
 import { getClassesWithGradesAction } from '@/server/actions/classes';
+import { getSubscriptionPlan } from '@/lib/subscription';
 
 
 export const metadata = {
@@ -11,6 +12,7 @@ export const metadata = {
 
 export default async function ClassesPage() {
   const classes = await getClassesWithGradesAction();
+  const { isPro } = await getSubscriptionPlan();
 
   return (
     <div className="container py-8">
@@ -22,11 +24,12 @@ export default async function ClassesPage() {
           </p>
         </div>
 
-        <ClassesList initialClasses={classes || []} />
+        <ClassesList initialClasses={classes || []} isPro={!!isPro} />
       </div>
     </div>
   );
 }
+
 
 
 

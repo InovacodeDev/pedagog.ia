@@ -46,16 +46,21 @@ import {
   Users,
   X as CloseIcon,
   Calendar,
+  Lock,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
+import { PricingDialog } from '@/components/subscription/pricing-dialog';
+
 
 interface ClassesListProps {
   initialClasses: ClassWithGrades[];
+  isPro: boolean;
 }
 
-export function ClassesList({ initialClasses }: ClassesListProps) {
+export function ClassesList({ initialClasses, isPro }: ClassesListProps) {
+
   const router = useRouter();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
@@ -68,6 +73,8 @@ export function ClassesList({ initialClasses }: ClassesListProps) {
   const [periodType, setPeriodType] = useState<'bimestre' | 'trimestre' | 'semestre'>('bimestre');
   const [periodStarts, setPeriodStarts] = useState<string[]>(['', '', '', '']);
   const [isLoading, setIsLoading] = useState(false);
+  const [isPricingOpen, setIsPricingOpen] = useState(false);
+
 
   const daysOfWeek = [
     { id: 1, label: 'Segunda-feira' },
@@ -232,148 +239,156 @@ export function ClassesList({ initialClasses }: ClassesListProps) {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <h1 className="text-3xl font-bold tracking-tight">Minhas Turmas</h1>
         <div className="flex items-center gap-2">
-          <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-            <DialogTrigger asChild>
-              <Button onClick={resetForm}>
-                <Plus className="mr-2 h-4 w-4" />
-                Nova Turma
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>Nova Turma</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-6 py-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="name">Nome da Turma</Label>
-                    <Input
-                      id="name"
-                      placeholder="Ex: 6º Ano A"
-                      value={className}
-                      onChange={(e) => setClassName(e.target.value)}
-                    />
+          {(!isPro && initialClasses.length >= 1) ? (
+            <Button onClick={() => setIsPricingOpen(true)}>
+              <Lock className="mr-2 h-4 w-4" />
+              Nova Turma
+            </Button>
+          ) : (
+            <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+              <DialogTrigger asChild>
+                <Button onClick={resetForm}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Nova Turma
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>Nova Turma</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-6 py-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="name">Nome da Turma</Label>
+                      <Input
+                        id="name"
+                        placeholder="Ex: 6º Ano A"
+                        value={className}
+                        onChange={(e) => setClassName(e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="year">Ano Letivo</Label>
+                      <Select
+                        value={String(academicYear)}
+                        onValueChange={(v) => setAcademicYear(Number(v))}
+                      >
+                        <SelectTrigger id="year">
+                          <SelectValue placeholder="Selecione o ano" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {years.map((y) => (
+                            <SelectItem key={y} value={String(y)}>
+                              {y}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="year">Ano Letivo</Label>
+
+                  <div className="space-y-3">
+                    <Label>Tipo de Período</Label>
                     <Select
-                      value={String(academicYear)}
-                      onValueChange={(v) => setAcademicYear(Number(v))}
+                      value={periodType}
+                      onValueChange={(v) => setPeriodType(v as typeof periodType)}
                     >
-                      <SelectTrigger id="year">
-                        <SelectValue placeholder="Selecione o ano" />
+                      <SelectTrigger>
+                        <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {years.map((y) => (
-                          <SelectItem key={y} value={String(y)}>
-                            {y}
-                          </SelectItem>
-                        ))}
+                        <SelectItem value="bimestre">Bimestre (4 por ano)</SelectItem>
+                        <SelectItem value="trimestre">Trimestre (3 por ano)</SelectItem>
+                        <SelectItem value="semestre">Semestre (2 por ano)</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
-                </div>
 
-                <div className="space-y-3">
-                  <Label>Tipo de Período</Label>
-                  <Select
-                    value={periodType}
-                    onValueChange={(v) => setPeriodType(v as typeof periodType)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="bimestre">Bimestre (4 por ano)</SelectItem>
-                      <SelectItem value="trimestre">Trimestre (3 por ano)</SelectItem>
-                      <SelectItem value="semestre">Semestre (2 por ano)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+                  <div className="space-y-3">
+                    <Label>Início dos Períodos</Label>
+                    <div className="grid grid-cols-2 gap-4">
+                      {Array.from({
+                        length: periodType === 'bimestre' ? 4 : periodType === 'trimestre' ? 3 : 2,
+                      }).map((_, i) => (
+                        <div key={i} className="space-y-1">
+                          <Label className="text-xs text-muted-foreground">
+                            {i + 1}º {periodType.charAt(0).toUpperCase() + periodType.slice(1)}
+                          </Label>
+                          <DatePicker
+                            date={
+                              periodStarts[i] ? new Date(periodStarts[i] + 'T00:00:00') : undefined
+                            }
+                            onChange={(date) =>
+                              handlePeriodStartChange(i, date ? date.toISOString().split('T')[0] : '')
+                            }
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
 
-                <div className="space-y-3">
-                  <Label>Início dos Períodos</Label>
-                  <div className="grid grid-cols-2 gap-4">
-                    {Array.from({
-                      length: periodType === 'bimestre' ? 4 : periodType === 'trimestre' ? 3 : 2,
-                    }).map((_, i) => (
-                      <div key={i} className="space-y-1">
-                        <Label className="text-xs text-muted-foreground">
-                          {i + 1}º {periodType.charAt(0).toUpperCase() + periodType.slice(1)}
-                        </Label>
-                        <DatePicker
-                          date={
-                            periodStarts[i] ? new Date(periodStarts[i] + 'T00:00:00') : undefined
-                          }
-                          onChange={(date) =>
-                            handlePeriodStartChange(i, date ? date.toISOString().split('T')[0] : '')
-                          }
-                        />
-                      </div>
-                    ))}
+                  <div className="space-y-3">
+                    <Label>Dias de Aula</Label>
+                    <div className="grid grid-cols-2 gap-3">
+                      {daysOfWeek.slice(0, 5).map((day) => (
+                        <div key={day.id} className="flex items-center space-x-2">
+                          <Checkbox
+                            id={`day-${day.id}`}
+                            checked={lessonDays.includes(day.id)}
+                            onCheckedChange={() => toggleDay(day.id)}
+                          />
+                          <Label
+                            htmlFor={`day-${day.id}`}
+                            className="text-sm font-normal cursor-pointer"
+                          >
+                            {day.label}
+                          </Label>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    <Label>Matérias/Disciplinas</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder="Ex: Matemática"
+                        value={disciplineInput}
+                        onChange={(e) => setDisciplineInput(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addDiscipline())}
+                      />
+                      <Button type="button" variant="secondary" onClick={addDiscipline}>
+                        Adicionar
+                      </Button>
+                    </div>
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {disciplines.map((disc) => (
+                        <Badge key={disc} variant="secondary" className="pl-2 pr-1 py-1 gap-1">
+                          {disc}
+                          <button
+                            onClick={() => removeDiscipline(disc)}
+                            className="hover:bg-muted rounded-full p-0.5"
+                          >
+                            <CloseIcon className="h-3 w-3" />
+                          </button>
+                        </Badge>
+                      ))}
+                    </div>
                   </div>
                 </div>
-
-                <div className="space-y-3">
-                  <Label>Dias de Aula</Label>
-                  <div className="grid grid-cols-2 gap-3">
-                    {daysOfWeek.slice(0, 5).map((day) => (
-                      <div key={day.id} className="flex items-center space-x-2">
-                        <Checkbox
-                          id={`day-${day.id}`}
-                          checked={lessonDays.includes(day.id)}
-                          onCheckedChange={() => toggleDay(day.id)}
-                        />
-                        <Label
-                          htmlFor={`day-${day.id}`}
-                          className="text-sm font-normal cursor-pointer"
-                        >
-                          {day.label}
-                        </Label>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="space-y-3">
-                  <Label>Matérias/Disciplinas</Label>
-                  <div className="flex gap-2">
-                    <Input
-                      placeholder="Ex: Matemática"
-                      value={disciplineInput}
-                      onChange={(e) => setDisciplineInput(e.target.value)}
-                      onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addDiscipline())}
-                    />
-                    <Button type="button" variant="secondary" onClick={addDiscipline}>
-                      Adicionar
-                    </Button>
-                  </div>
-                  <div className="flex flex-wrap gap-2 mt-2">
-                    {disciplines.map((disc) => (
-                      <Badge key={disc} variant="secondary" className="pl-2 pr-1 py-1 gap-1">
-                        {disc}
-                        <button
-                          onClick={() => removeDiscipline(disc)}
-                          className="hover:bg-muted rounded-full p-0.5"
-                        >
-                          <CloseIcon className="h-3 w-3" />
-                        </button>
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-              </div>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setIsCreateOpen(false)}>
-                  Cancelar
-                </Button>
-                <Button onClick={handleCreate} disabled={isLoading}>
-                  {isLoading ? 'Criando...' : 'Criar Turma'}
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setIsCreateOpen(false)}>
+                    Cancelar
+                  </Button>
+                  <Button onClick={handleCreate} disabled={isLoading}>
+                    {isLoading ? 'Criando...' : 'Criar Turma'}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          )}
         </div>
+
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -622,6 +637,9 @@ export function ClassesList({ initialClasses }: ClassesListProps) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <PricingDialog isOpen={isPricingOpen} onOpenChange={setIsPricingOpen} />
     </div>
   );
 }
+
