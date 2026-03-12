@@ -622,6 +622,8 @@ export async function generateQuestionsV2Action(
       use_internet_search: !!use_internet_search,
     });
 
+    revalidatePath('/', 'layout');
+
     return { success: true, questions: generatedQuestions };
   } catch (error) {
     console.error('Unexpected Error:', error);
