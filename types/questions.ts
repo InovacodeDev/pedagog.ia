@@ -1,4 +1,4 @@
-import { Database } from './database';
+import { Database, Json } from './database';
 
 export type Question = Database['public']['Tables']['questions']['Row'];
 
@@ -15,7 +15,6 @@ export interface GeneratedQuestion {
   subject?: string;
   difficulty?: 'easy' | 'medium' | 'hard';
   style?: string;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  content?: any;
+  content?: Json;
   source_tag?: string;
 }

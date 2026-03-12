@@ -161,7 +161,7 @@ export function GradeForm({ questions, onChange, onSubmit, isSubmitting }: Grade
             <span className="font-medium text-foreground">{questions.length}</span>
           </div>
           <div className="text-lg font-bold">
-            Nota Final: <span className="text-primary">{totalScore.toFixed(1)}</span>
+            Nota Final: <span className="text-primary">{totalScore.toFixed(2)}</span>
           </div>
         </div>
 

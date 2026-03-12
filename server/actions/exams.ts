@@ -96,8 +96,7 @@ export async function uploadExamAction(formData: FormData): Promise<UploadExamRe
     } = supabase.storage.from('exams').getPublicUrl(uploadData.path);
 
     // 5. Create background job (this triggers the Edge Function via database trigger)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const jobPayload: any = {
+    const jobPayload = {
       user_id: user.id,
       job_type: 'ocr_correction',
       payload: {
@@ -110,14 +109,11 @@ export async function uploadExamAction(formData: FormData): Promise<UploadExamRe
       status: 'pending',
     };
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: jobData, error } = (await supabase
+    const { data: jobData, error } = await supabase
       .from('background_jobs')
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       .insert(jobPayload)
       .select('id')
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .single()) as any;
+      .single();
 
     if (error) {
       console.error('[Upload Exam] Job creation error:', error);
@@ -237,11 +233,9 @@ export async function duplicateExamAction(examId: string) {
     correction_count: 0, // Reset correction count
   };
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: newExam, error: createError } = await supabase
     .from('exams')
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    .insert(newExamData as any)
+    .insert(newExamData)
     .select()
     .single();
 

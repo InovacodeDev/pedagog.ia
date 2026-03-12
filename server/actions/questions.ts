@@ -5,8 +5,8 @@ import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { extractTextFromFile } from '@/lib/file-processing';
 import { GeneratedQuestion } from '@/types/questions';
-import { Database } from '@/types/database';
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { Database, Json } from '@/types/database';
+import { GoogleGenerativeAI, Tool } from '@google/generative-ai';
 
 // ==========================================
 // CONSTANTS & SCHEMAS
@@ -68,8 +68,7 @@ function cleanJson(text: string) {
 }
 
 // Helper to format options based on question type
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function formatOptionsByType(type: string, options: string[] | undefined): any {
+function formatOptionsByType(type: string, options: string[] | undefined): Json | null {
   if (!options) return null;
 
   if (type === 'sum') {
@@ -404,16 +403,13 @@ function buildSystemPrompt(params: {
  * Calculates estimated costs, deducts credits, and logs usage
  */
 async function calculateAndLogCost(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  supabase: any,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  user: any,
+  supabase: ReturnType<typeof createClient> extends Promise<infer T> ? T : never,
+  user: { id: string },
   input: {
     modelName: string;
     modelTier: string;
     quantity: number;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    usageMetadata: any;
+    usageMetadata: { promptTokenCount?: number; candidatesTokenCount?: number } | null | undefined;
     feature: string;
     use_internet_search?: boolean;
   }
@@ -438,8 +434,7 @@ async function calculateAndLogCost(
       {
         p_user_id: user.id,
         p_amount: estimatedCreditsCost,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      } as any
+      }
     );
 
     if (deductionError || !deductionSuccess) {
@@ -486,8 +481,7 @@ async function calculateAndLogCost(
     output_tokens: outputTokens,
     cost_credits: estimatedCreditsCost,
     provider_cost_brl: providerCostBrl,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } as any);
+  });
 }
 
 // ==========================================
@@ -567,8 +561,7 @@ export async function generateQuestionsV2Action(
     });
 
     // 5. Call AI
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const tools: any = use_internet_search ? [{ googleSearch: {} }] : [];
+    const tools = (use_internet_search ? [{ googleSearch: {} }] : []) as unknown as Tool[];
 
     // Update prompt if search is enabled to encourage using it
     let finalPrompt = prompt;
@@ -641,25 +634,21 @@ export async function saveQuestionsAction(questions: GeneratedQuestion[]) {
 
   const questionsToInsert: Database['public']['Tables']['questions']['Insert'][] = questions.map(
     (q) => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      let dbContent: any = {
+      let dbContent: Json = {
         stem: q.stem,
         support_texts: q.support_texts || undefined,
       };
 
       // Essay handling
       if (q.type === 'essay') {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const rawGenre = (q.content as any)?.genre || (q as any).genre;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const contentObj = q.content as unknown as Record<string, unknown>;
+        const rawGenre = contentObj?.genre || (q as unknown as Record<string, unknown>).genre;
         const rawSupportTexts =
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          (q.content as any)?.support_texts || q.support_texts || (q as any).support_texts;
+          contentObj?.support_texts || q.support_texts || (q as unknown as Record<string, unknown>).support_texts;
 
         const genre = typeof rawGenre === 'string' ? rawGenre : 'Gênero não especificado';
         const support_texts = Array.isArray(rawSupportTexts)
-          ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            rawSupportTexts.map((t: any) => (typeof t === 'string' ? t : JSON.stringify(t)))
+          ? rawSupportTexts.map((t) => (typeof t === 'string' ? t : JSON.stringify(t)))
           : [];
 
         dbContent = { ...dbContent, genre, support_texts };
@@ -669,8 +658,7 @@ export async function saveQuestionsAction(questions: GeneratedQuestion[]) {
       if (q.type === 'association') {
         dbContent = {
           ...dbContent,
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          column_b: (q.content as any)?.column_b || (q as any).column_b,
+          column_b: ((q.content as unknown as Record<string, unknown>)?.column_b || (q as unknown as Record<string, unknown>).column_b) as Json,
         };
       }
 
@@ -697,8 +685,7 @@ export async function saveQuestionsAction(questions: GeneratedQuestion[]) {
 
   const { data, error } = await supabase
     .from('questions')
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    .insert(questionsToInsert as any)
+    .insert(questionsToInsert)
     .select();
 
   if (error) {

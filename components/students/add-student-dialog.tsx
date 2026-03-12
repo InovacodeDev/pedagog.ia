@@ -100,6 +100,7 @@ export function AddStudentDialog({ classId }: AddStudentDialogProps) {
               onChange={(e) => setName(e.target.value)}
               required
               autoComplete="off"
+              className="mt-2"
             />
           </div>
 

@@ -8,6 +8,11 @@ import { DataUnavailable } from '@/components/ui/data-unavailable';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ClassExamsList } from '@/components/classes/class-exams-list';
 import { ClassGradesList } from '@/components/classes/class-grades-list';
+import { ClassAnalytics } from '@/components/classes/class-analytics';
+import { AttendanceForm } from '@/components/students/attendance-form';
+
+
+
 
 interface ClassDetailsPageProps {
   params: Promise<{ id: string }>;
@@ -18,7 +23,6 @@ export default async function ClassDetailsPage({ params }: ClassDetailsPageProps
   const classData = await getClassAction(id);
   const { students, success, error } = await getStudentsAction(id);
   const exams = await getExamsByClassAction(id);
-
   if (!classData) {
     return (
       <div className="container mx-auto p-8">
@@ -35,6 +39,8 @@ export default async function ClassDetailsPage({ params }: ClassDetailsPageProps
     );
   }
 
+  if (!classData) return null; // Should not happen due to check above
+  const schoolPeriod = classData.period_type || 'bimestre';
   const studentCount = students?.length || 0;
 
   return (
@@ -64,12 +70,19 @@ export default async function ClassDetailsPage({ params }: ClassDetailsPageProps
       </div>
 
       {/* Content */}
-      <Tabs defaultValue="students" className="w-full">
+      <Tabs defaultValue="analytics" className="w-full">
         <TabsList>
+          <TabsTrigger value="analytics">Analytics</TabsTrigger>
           <TabsTrigger value="students">Alunos</TabsTrigger>
-          <TabsTrigger value="exams">Provas da Turma</TabsTrigger>
-          <TabsTrigger value="grades">Notas da Turma</TabsTrigger>
+          <TabsTrigger value="attendance">Presença</TabsTrigger>
+          <TabsTrigger value="exams">Provas</TabsTrigger>
+          <TabsTrigger value="grades">Notas</TabsTrigger>
         </TabsList>
+        
+        <TabsContent value="analytics" className="mt-6">
+          <ClassAnalytics classData={classData} />
+        </TabsContent>
+
         <TabsContent value="students" className="mt-6">
           {!success ? (
             <DataUnavailable message={error} />
@@ -77,11 +90,17 @@ export default async function ClassDetailsPage({ params }: ClassDetailsPageProps
             <ClassStudentList initialStudents={students || []} classId={classData.id} />
           )}
         </TabsContent>
+
+        <TabsContent value="attendance" className="mt-6">
+          <AttendanceForm classId={classData.id} students={students || []} lessonDays={classData.lesson_days} />
+        </TabsContent>
+
         <TabsContent value="exams" className="mt-6">
           <ClassExamsList exams={exams} />
         </TabsContent>
+
         <TabsContent value="grades" className="mt-6">
-          <ClassGradesList />
+          <ClassGradesList classId={classData.id} students={students || []} schoolPeriod={schoolPeriod} />
         </TabsContent>
       </Tabs>
     </div>

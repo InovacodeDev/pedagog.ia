@@ -4,8 +4,7 @@ import { stripe } from '@/lib/stripe';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { SettingsProfileForm } from '@/components/settings/settings-profile-form';
 import { SettingsBilling } from '@/components/settings/settings-billing';
-import { SettingsClasses } from '@/components/settings/settings-classes';
-import { User, CreditCard, Receipt, Coins, GraduationCap } from 'lucide-react';
+import { User, CreditCard, Receipt, Coins } from 'lucide-react';
 import { SubscriptionDetails } from '@/types/app';
 import { getUserInvoices } from '@/server/queries/get-invoices';
 import { InvoicesList } from '@/components/settings/invoices-list';
@@ -78,7 +77,6 @@ export default async function SettingsPage({
   // Fetch credit usage
   const creditLogs = await getCreditUsage();
   const creditBalance = await getCreditBalance();
-  const schoolPeriod = user.user_metadata?.school_period || 'bimestre';
 
   return (
     <div className="container mx-auto py-8 space-y-8">
@@ -93,9 +91,6 @@ export default async function SettingsPage({
             <User className="h-4 w-4" /> Geral
           </TabsTrigger>
 
-          <TabsTrigger value="classes" className="gap-2">
-            <GraduationCap className="h-4 w-4" /> Turmas
-          </TabsTrigger>
           <TabsTrigger value="billing" className="gap-2">
             <CreditCard className="h-4 w-4" /> Assinatura
           </TabsTrigger>
@@ -109,10 +104,6 @@ export default async function SettingsPage({
 
         <TabsContent value="general">
           <SettingsProfileForm user={userData} />
-        </TabsContent>
-
-        <TabsContent value="classes">
-          <SettingsClasses schoolPeriod={schoolPeriod} />
         </TabsContent>
 
         <TabsContent value="billing">
