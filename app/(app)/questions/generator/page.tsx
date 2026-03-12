@@ -1,6 +1,8 @@
 import { GeneratorForm } from '@/components/questions/generator-form';
 import { getSubscriptionPlan } from '@/lib/subscription';
 
+export const maxDuration = 60; // Configuração para a página esperar até 60s pelo AI (Limite Pro da Vercel)
+
 export default async function GeneratorPage() {
   const { isPro } = await getSubscriptionPlan();
 
