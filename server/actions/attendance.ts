@@ -6,15 +6,16 @@ import { revalidatePath } from 'next/cache';
 export interface AttendanceRecord {
   student_id: string;
   status: 'present' | 'absent' | 'late';
+  date?: string; // Optional date for multi-date records
 }
 
 /**
- * Records attendance for multiple students in a class.
+ * Records attendance for multiple students (and potentially multiple dates) in a class.
  */
 export async function recordAttendanceAction(
   classId: string,
-  date: string,
-  records: AttendanceRecord[]
+  records: AttendanceRecord[],
+  singleDate?: string
 ): Promise<{ success: boolean; message?: string }> {
   try {
     const supabase = await createClient();
@@ -27,12 +28,16 @@ export async function recordAttendanceAction(
     const attendanceData = records.map(record => ({
       class_id: classId,
       student_id: record.student_id,
-      date,
+      date: record.date || singleDate,
       status: record.status,
       user_id: user.id
     }));
 
-    const { error } = await supabase
+    const { error } = await (supabase as unknown as { 
+      from: (t: string) => { 
+        upsert: (d: unknown[], o: { onConflict: string }) => Promise<{ error: unknown }> 
+      } 
+    })
       .from('class_attendance')
       .upsert(attendanceData, {
         onConflict: 'student_id,date'
@@ -63,7 +68,15 @@ export async function getAttendanceAction(classId: string, date: string): Promis
 
     if (!user) throw new Error('Unauthorized');
 
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as unknown as {
+      from: (t: string) => {
+        select: (s: string) => {
+          eq: (c: string, v: string) => {
+            eq: (c: string, v: string) => Promise<{ data: unknown[] | null; error: unknown }>
+          }
+        }
+      }
+    })
       .from('class_attendance')
       .select('student_id, status')
       .eq('class_id', classId)
@@ -74,7 +87,7 @@ export async function getAttendanceAction(classId: string, date: string): Promis
       return { success: false, error: 'Erro ao buscar presença' };
     }
 
-    return { success: true, records: data as AttendanceRecord[] || [] };
+    return { success: true, records: (data as AttendanceRecord[]) || [] };
   } catch (error) {
     console.error('[Get Attendance] unexpected error:', error);
     return { success: false, error: 'Erro inesperado ao buscar presença' };
@@ -95,7 +108,17 @@ export async function getMonthAttendanceAction(
 
     if (!user) throw new Error('Unauthorized');
 
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as unknown as {
+      from: (t: string) => {
+        select: (s: string) => {
+          eq: (c: string, v: string) => {
+            gte: (c: string, v: string) => {
+              lte: (c: string, v: string) => Promise<{ data: unknown[] | null; error: unknown }>
+            }
+          }
+        }
+      }
+    })
       .from('class_attendance')
       .select('student_id, status, date')
       .eq('class_id', classId)
@@ -107,7 +130,7 @@ export async function getMonthAttendanceAction(
       return { success: false, error: 'Erro ao buscar presença do mês' };
     }
 
-    return { success: true, records: data as (AttendanceRecord & { date: string })[] || [] };
+    return { success: true, records: (data as (AttendanceRecord & { date: string })[]) || [] };
   } catch (error) {
     console.error('[Get Month Attendance] unexpected error:', error);
     return { success: false, error: 'Erro inesperado ao buscar presença do mês' };
