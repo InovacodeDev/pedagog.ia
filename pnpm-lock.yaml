@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      '@amplitude/analytics-node':
+        specifier: ^1.5.44
+        version: 1.5.44
       '@amplitude/unified':
         specifier: ^1.0.4
         version: 1.0.4(@amplitude/rrweb@2.0.0-alpha.35)(rollup@4.53.3)
@@ -273,6 +276,12 @@ packages:
 
   '@amplitude/analytics-core@2.41.3':
     resolution: {integrity: sha512-UujceP+22zVi/0hl4ccrKEQ94rsCTOVtNZIeM2UxELYLZj24fqjUgdTX+x+gUuzgzOSDRiohkRLwRt6hiBmgmw==}
+
+  '@amplitude/analytics-core@2.41.4':
+    resolution: {integrity: sha512-sZi4fD6KSOUTvyMtBtCX8E/1VjUrS1VIShyJpKWoYKW55IF5y1/knVkhLzbycNKzMCOv/pl/vXHeXDqHy5eU9w==}
+
+  '@amplitude/analytics-node@1.5.44':
+    resolution: {integrity: sha512-WFXQe4I8IRbv0UCUuIGR/gdMJKhYfVaWeKMx67Z4lxR8if6nsmJOlXdPaetBB7cH88e2rnMT/f2L2txcSSBl4Q==}
 
   '@amplitude/analytics-types@1.4.0':
     resolution: {integrity: sha512-RiMPHBqdrJ8ktTqG+Wzj2htnN/PCG9jGZG0SXtTFnWwVvcAJYbYm55/nrP1TTyrx1OlLhvF2VG3lVUP/xGAU8w==}
@@ -5169,6 +5178,19 @@ snapshots:
       safe-json-stringify: 1.2.0
       tslib: 2.8.1
       zen-observable: 0.10.0
+
+  '@amplitude/analytics-core@2.41.4':
+    dependencies:
+      '@amplitude/analytics-connector': 1.6.4
+      '@types/zen-observable': 0.8.3
+      safe-json-stringify: 1.2.0
+      tslib: 2.8.1
+      zen-observable: 0.10.0
+
+  '@amplitude/analytics-node@1.5.44':
+    dependencies:
+      '@amplitude/analytics-core': 2.41.4
+      tslib: 2.8.1
 
   '@amplitude/analytics-types@1.4.0': {}
 
