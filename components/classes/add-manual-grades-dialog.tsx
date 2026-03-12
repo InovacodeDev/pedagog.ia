@@ -35,6 +35,7 @@ interface AddManualGradesDialogProps {
   classId: string;
   students: Student[];
   schoolPeriod: string;
+  disciplines: string[];
 }
 
 const TERM_LABELS: Record<string, string> = {
@@ -53,11 +54,12 @@ export function AddManualGradesDialog({
   classId,
   students,
   schoolPeriod,
+  disciplines,
 }: AddManualGradesDialogProps) {
   const [open, setOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [title, setTitle] = useState('');
-  const [discipline, setDiscipline] = useState('');
+  const [discipline, setDiscipline] = useState(disciplines[0] || '');
 
   // Filter labels based on school period type
   const filteredTermLabels = Object.fromEntries(
@@ -112,7 +114,7 @@ export function AddManualGradesDialog({
         setOpen(false);
         // Reset form
         setTitle('');
-        setDiscipline('');
+        setDiscipline(disciplines[0] || '');
         setGrades({});
         router.refresh();
       } else {
@@ -156,13 +158,24 @@ export function AddManualGradesDialog({
             </div>
             <div className="space-y-2">
               <Label htmlFor="discipline">Disciplina</Label>
-              <Input
-                id="discipline"
-                placeholder="Ex: Matemática"
-                value={discipline}
-                onChange={(e) => setDiscipline(e.target.value)}
-                className="mt-2"
-              />
+              <Select value={discipline} onValueChange={setDiscipline}>
+                <SelectTrigger id="discipline" className="mt-2">
+                  <SelectValue placeholder="Selecione a disciplina" />
+                </SelectTrigger>
+                <SelectContent>
+                  {disciplines.length > 0 ? (
+                    disciplines.map((d) => (
+                      <SelectItem key={d} value={d}>
+                        {d}
+                      </SelectItem>
+                    ))
+                  ) : (
+                    <SelectItem value="Outros" disabled>
+                      Nenhuma disciplina configurada
+                    </SelectItem>
+                  )}
+                </SelectContent>
+              </Select>
             </div>
           </div>
 

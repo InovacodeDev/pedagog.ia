@@ -3,14 +3,15 @@
 import * as React from "react"
 import {
   ChevronDownIcon,
-  ChevronLeftIcon,
-  ChevronRightIcon,
+  ArrowUp,
+  ArrowDown,
 } from "lucide-react"
 import {
   DayPicker,
   getDefaultClassNames,
   type DayButton,
 } from "react-day-picker"
+import { ptBR } from "date-fns/locale"
 
 import { cn } from "@/lib/utils"
 import { Button, buttonVariants } from "@/components/ui/button"
@@ -20,13 +21,10 @@ function Calendar({
   classNames,
   showOutsideDays = true,
   captionLayout = "label",
-  buttonVariant = "ghost",
   formatters,
   components,
   ...props
-}: React.ComponentProps<typeof DayPicker> & {
-  buttonVariant?: React.ComponentProps<typeof Button>["variant"]
-}) {
+}: React.ComponentProps<typeof DayPicker>) {
   const defaultClassNames = getDefaultClassNames()
 
   return (
@@ -38,10 +36,15 @@ function Calendar({
         String.raw`rtl:**:[.rdp-button\_previous>svg]:rotate-180`,
         className
       )}
+      locale={ptBR}
       captionLayout={captionLayout}
       formatters={{
         formatMonthDropdown: (date) =>
-          date.toLocaleString("default", { month: "short" }),
+          date.toLocaleString("pt-BR", { month: "long" }),
+        formatWeekdayName: (date) => {
+          const names = ["D", "S", "T", "Q", "Q", "S", "S"];
+          return names[date.getDay()];
+        },
         ...formatters,
       }}
       classNames={{
@@ -52,21 +55,21 @@ function Calendar({
         ),
         month: cn("flex w-full flex-col gap-4", defaultClassNames.month),
         nav: cn(
-          "absolute inset-x-0 top-0 flex w-full items-center justify-between gap-1",
+          "absolute right-2 top-0 flex items-center justify-end gap-1",
           defaultClassNames.nav
         ),
         button_previous: cn(
-          buttonVariants({ variant: buttonVariant }),
-          "size-(--cell-size) p-0 select-none aria-disabled:opacity-50",
+          buttonVariants({ variant: "ghost" }),
+          "size-(--cell-size) p-0 select-none aria-disabled:opacity-50 hover:bg-zinc-800 rounded-lg",
           defaultClassNames.button_previous
         ),
         button_next: cn(
-          buttonVariants({ variant: buttonVariant }),
-          "size-(--cell-size) p-0 select-none aria-disabled:opacity-50",
+          buttonVariants({ variant: "ghost" }),
+          "size-(--cell-size) p-0 select-none aria-disabled:opacity-50 hover:bg-zinc-800 rounded-lg",
           defaultClassNames.button_next
         ),
         month_caption: cn(
-          "flex h-(--cell-size) w-full items-center justify-center px-(--cell-size)",
+          "flex h-(--cell-size) w-full items-center justify-start pl-2 text-zinc-100 font-semibold",
           defaultClassNames.month_caption
         ),
         dropdowns: cn(
@@ -91,7 +94,7 @@ function Calendar({
         table: "w-full border-collapse",
         weekdays: cn("flex", defaultClassNames.weekdays),
         weekday: cn(
-          "flex-1 rounded-md text-[0.8rem] font-normal text-muted-foreground select-none",
+          "flex-1 rounded-md text-[0.8rem] font-medium text-zinc-400 select-none uppercase py-2",
           defaultClassNames.weekday
         ),
         week: cn("mt-2 flex w-full", defaultClassNames.week),
@@ -137,7 +140,7 @@ function Calendar({
             <div
               data-slot="calendar"
               ref={rootRef}
-              className={cn(className)}
+              className={cn("bg-[#2a2a2a] text-white border-zinc-800 rounded-xl overflow-hidden shadow-2xl", className)}
               {...props}
             />
           )
@@ -145,21 +148,21 @@ function Calendar({
         Chevron: ({ className, orientation, ...props }) => {
           if (orientation === "left") {
             return (
-              <ChevronLeftIcon className={cn("size-4", className)} {...props} />
+              <ArrowUp className={cn("size-4 text-zinc-400 hover:text-white transition-colors", className)} {...props} />
             )
           }
 
           if (orientation === "right") {
             return (
-              <ChevronRightIcon
-                className={cn("size-4", className)}
+              <ArrowDown
+                className={cn("size-4 text-zinc-400 hover:text-white transition-colors", className)}
                 {...props}
               />
             )
           }
 
           return (
-            <ChevronDownIcon className={cn("size-4", className)} {...props} />
+            <ChevronDownIcon className={cn("size-4 text-zinc-400", className)} {...props} />
           )
         },
         DayButton: CalendarDayButton,
@@ -208,7 +211,8 @@ function CalendarDayButton({
       data-range-end={modifiers.range_end}
       data-range-middle={modifiers.range_middle}
       className={cn(
-        "flex aspect-square size-auto w-full min-w-(--cell-size) flex-col gap-1 leading-none font-normal group-data-[focused=true]/day:relative group-data-[focused=true]/day:z-10 group-data-[focused=true]/day:border-ring group-data-[focused=true]/day:ring-[3px] group-data-[focused=true]/day:ring-ring/50 data-[range-end=true]:rounded-md data-[range-end=true]:rounded-r-md data-[range-end=true]:bg-primary data-[range-end=true]:text-primary-foreground data-[range-middle=true]:rounded-none data-[range-middle=true]:bg-accent data-[range-middle=true]:text-accent-foreground data-[range-start=true]:rounded-md data-[range-start=true]:rounded-l-md data-[range-start=true]:bg-primary data-[range-start=true]:text-primary-foreground data-[selected-single=true]:bg-primary data-[selected-single=true]:text-primary-foreground dark:hover:text-accent-foreground [&>span]:text-xs [&>span]:opacity-70",
+        "flex aspect-square size-auto w-full min-w-(--cell-size) flex-col gap-1 leading-none font-normal rounded-lg transition-all hover:bg-zinc-800 text-zinc-100 data-[selected-single=true]:bg-[#99c9ff] data-[selected-single=true]:text-black data-[range-start=true]:bg-[#99c9ff] data-[range-start=true]:text-black data-[range-end=true]:bg-[#99c9ff] data-[range-end=true]:text-black data-[today=true]:text-[#99c9ff] data-[today=true]:font-bold",
+        modifiers.outside && "text-zinc-600 opacity-50",
         defaultClassNames.day,
         className
       )}

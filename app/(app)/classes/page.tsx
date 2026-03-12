@@ -2,7 +2,7 @@
 
 import { ClassesList } from './classes-list';
 import { getClassesWithGradesAction } from '@/server/actions/classes';
-import { getSchoolPeriodAction } from '@/server/actions/settings';
+
 
 export const metadata = {
   title: 'Minhas Turmas | Pedagog.IA',
@@ -10,13 +10,7 @@ export const metadata = {
 };
 
 export default async function ClassesPage() {
-  const schoolPeriod = await getSchoolPeriodAction();
-  // Map school_period type to a default term if necessary
-  const currentTerm = schoolPeriod === 'bimestre' ? '1_bimestre' : 
-                     schoolPeriod === 'trimestre' ? '1_trimestre' : 
-                     schoolPeriod === 'semestre' ? '1_semestre' : '1_bimestre';
-                     
-  const classes = await getClassesWithGradesAction(currentTerm);
+  const classes = await getClassesWithGradesAction();
 
   return (
     <div className="container py-8">
@@ -28,7 +22,7 @@ export default async function ClassesPage() {
           </p>
         </div>
 
-        <ClassesList initialClasses={classes || []} currentTerm={currentTerm} schoolPeriod={schoolPeriod} />
+        <ClassesList initialClasses={classes || []} />
       </div>
     </div>
   );

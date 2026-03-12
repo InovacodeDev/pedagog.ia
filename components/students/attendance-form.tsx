@@ -6,7 +6,6 @@ import {
   startOfMonth, 
   endOfMonth, 
   eachDayOfInterval, 
-  isWeekend, 
   isFuture, 
   isSameDay,
   parseISO,
@@ -51,6 +50,7 @@ interface Student {
 interface AttendanceFormProps {
   classId: string;
   students: Student[];
+  lessonDays?: number[];
 }
 
 type AttendanceStatus = 'present' | 'absent' | 'late';
@@ -58,7 +58,7 @@ type AttendanceStatus = 'present' | 'absent' | 'late';
 // Map studentId -> date -> status
 type MonthlyAttendance = Record<string, Record<string, AttendanceStatus>>;
 
-export function AttendanceForm({ classId, students }: AttendanceFormProps) {
+export function AttendanceForm({ classId, students, lessonDays = [1, 2, 3, 4, 5] }: AttendanceFormProps) {
   const [currentMonth, setCurrentMonth] = useState<Date>(startOfMonth(new Date()));
   const [attendance, setAttendance] = useState<MonthlyAttendance>({});
   const [isSaving, setIsSaving] = useState(false);
@@ -66,10 +66,12 @@ export function AttendanceForm({ classId, students }: AttendanceFormProps) {
 
   // Generate business days for the selected month
   const businessDays = useMemo(() => {
+    const activeDays = lessonDays.length > 0 ? lessonDays : [1, 2, 3, 4, 5];
     const start = startOfMonth(currentMonth);
     const end = endOfMonth(currentMonth);
-    return eachDayOfInterval({ start, end }).filter(day => !isWeekend(day));
-  }, [currentMonth]);
+    const days = eachDayOfInterval({ start, end });
+    return days.filter((day) => activeDays.includes(day.getDay())).map((day) => format(day, 'yyyy-MM-dd'));
+  }, [currentMonth, lessonDays]);
 
   useEffect(() => {
     async function loadMonthlyAttendance() {
@@ -84,8 +86,7 @@ export function AttendanceForm({ classId, students }: AttendanceFormProps) {
         // Initialize with default 'present' for all students and business days
         students.forEach(student => {
           newAttendance[student.id] = {};
-          businessDays.forEach(day => {
-            const dateStr = format(day, 'yyyy-MM-dd');
+          businessDays.forEach(dateStr => {
             newAttendance[student.id][dateStr] = 'present';
           });
         });
@@ -103,8 +104,7 @@ export function AttendanceForm({ classId, students }: AttendanceFormProps) {
         const defaultAttendance: MonthlyAttendance = {};
         students.forEach(student => {
           defaultAttendance[student.id] = {};
-          businessDays.forEach(day => {
-            const dateStr = format(day, 'yyyy-MM-dd');
+          businessDays.forEach(dateStr => {
             defaultAttendance[student.id][dateStr] = 'present';
           });
         });
@@ -140,7 +140,7 @@ export function AttendanceForm({ classId, students }: AttendanceFormProps) {
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      const dates = businessDays.map(d => format(d, 'yyyy-MM-dd'));
+      const dates = businessDays;
       const allRecords: AttendanceRecord[] = [];
 
       dates.forEach(dateStr => {

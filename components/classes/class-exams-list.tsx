@@ -17,14 +17,15 @@ import { Eye, Lock, Trash2, Loader2 } from 'lucide-react';
 import { deleteExamAction } from '@/server/actions/exams';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { toast } from 'sonner';
+import { Json } from '@/types/database';
 
 interface Exam {
   id: string;
-  title: string;
-  created_at: string;
-  status: string;
-  questions_list: unknown[];
-  correction_count: number;
+  title: string | null;
+  created_at: string | null;
+  status: string | null;
+  questions_list?: Json;
+  correction_count: number | null;
   discipline?: string | null;
 }
 
@@ -80,12 +81,13 @@ export function ClassExamsList({ exams }: ClassExamsListProps) {
             </TableRow>
           ) : (
             exams.map((exam) => {
-              const isManual = !exam.questions_list || exam.questions_list.length === 0;
+              const questionsList = Array.isArray(exam.questions_list) ? (exam.questions_list as unknown[]) : [];
+              const isManual = questionsList.length === 0;
               
               return (
                 <TableRow key={exam.id}>
                   <TableCell className="font-medium">
-                    {exam.title}
+                    {exam.title || 'Sem título'}
                     {isManual && (
                       <Badge variant="outline" className="ml-2 text-[10px] h-4 uppercase">
                         Manual
@@ -94,11 +96,11 @@ export function ClassExamsList({ exams }: ClassExamsListProps) {
                   </TableCell>
                   <TableCell>{exam.discipline || '--'}</TableCell>
                   <TableCell>
-                    {isManual ? '--' : (exam.questions_list.length || 2) - 2}
+                    {isManual ? '--' : Math.max(0, (questionsList.length || 2) - 2)}
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
-                      {exam.correction_count > 0 ? (
+                      {exam.correction_count && exam.correction_count > 0 ? (
                         <Badge variant="destructive" className="flex gap-1 items-center">
                           <Lock className="h-3 w-3" /> Travada
                         </Badge>
@@ -109,7 +111,9 @@ export function ClassExamsList({ exams }: ClassExamsListProps) {
                       )}
                     </div>
                   </TableCell>
-                  <TableCell>{new Date(exam.created_at).toLocaleDateString('pt-BR')}</TableCell>
+                  <TableCell>
+                    {exam.created_at ? new Date(exam.created_at).toLocaleDateString('pt-BR') : '--'}
+                  </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
                       <Button variant="ghost" size="icon" asChild disabled={isManual}>

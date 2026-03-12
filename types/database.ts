@@ -46,21 +46,36 @@ export type Database = {
       };
       classes: {
         Row: {
+          academic_year: number | null;
           created_at: string;
+          disciplines: string[] | null;
           id: string;
+          lesson_days: number[] | null;
           name: string;
+          period_starts: Json | null;
+          period_type: string | null;
           user_id: string;
         };
         Insert: {
+          academic_year?: number | null;
           created_at?: string;
+          disciplines?: string[] | null;
           id?: string;
+          lesson_days?: number[] | null;
           name: string;
+          period_starts?: Json | null;
+          period_type?: string | null;
           user_id: string;
         };
         Update: {
+          academic_year?: number | null;
           created_at?: string;
+          disciplines?: string[] | null;
           id?: string;
+          lesson_days?: number[] | null;
           name?: string;
+          period_starts?: Json | null;
+          period_type?: string | null;
           user_id?: string;
         };
         Relationships: [
@@ -233,6 +248,7 @@ export type Database = {
           id: string;
           questions_list: Json;
           status: Database['public']['Enums']['exam_status'] | null;
+          term: string | null;
           title: string;
           updated_at: string | null;
           user_id: string;
@@ -247,6 +263,7 @@ export type Database = {
           id?: string;
           questions_list?: Json;
           status?: Database['public']['Enums']['exam_status'] | null;
+          term?: string | null;
           title: string;
           updated_at?: string | null;
           user_id: string;
@@ -261,6 +278,7 @@ export type Database = {
           id?: string;
           questions_list?: Json;
           status?: Database['public']['Enums']['exam_status'] | null;
+          term?: string | null;
           title?: string;
           updated_at?: string | null;
           user_id?: string;
@@ -373,27 +391,48 @@ export type Database = {
       };
       students: {
         Row: {
+          class_id: string | null;
           created_at: string | null;
           encrypted_name: string;
-          grade_level: string;
+          grade_level: string | null;
           id: string;
-          institution_id: string;
+          name: string | null;
+          user_id: string;
         };
         Insert: {
+          class_id?: string | null;
           created_at?: string | null;
           encrypted_name: string;
-          grade_level: string;
+          grade_level?: string | null;
           id?: string;
-          institution_id: string;
+          name?: string | null;
+          user_id: string;
         };
         Update: {
+          class_id?: string | null;
           created_at?: string | null;
           encrypted_name?: string;
-          grade_level?: string;
+          grade_level?: string | null;
           id?: string;
-          institution_id?: string;
+          name?: string | null;
+          user_id?: string;
         };
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: 'students_class_id_fkey';
+            columns: ['class_id'];
+            isOneToOne: false;
+            referencedRelation: 'classes';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'students_user_id_fkey';
+            columns: ['user_id'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+        ];
       };
       ia_cost_log: {
         Row: {

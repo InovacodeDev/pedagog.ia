@@ -4,26 +4,10 @@ import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 
 export async function getSchoolPeriodAction(): Promise<string> {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  return user?.user_metadata?.school_period || 'bimestre';
+  return 'bimestre';
 }
 
-export async function updateSchoolPeriodAction(period: string) {
 
-  const supabase = await createClient();
-  const { error } = await supabase.auth.updateUser({
-    data: { school_period: period },
-  });
-
-  if (error) {
-    console.error('Error updating school period:', error);
-    return { success: false, message: 'Erro ao atualizar período.' };
-  }
-
-  revalidatePath('/settings');
-  return { success: true, message: 'Período atualizado com sucesso.' };
-}
 
 export async function resetClassesAction() {
   const supabase = await createClient();
@@ -60,7 +44,7 @@ export async function resetClassesAction() {
       results: results || [],
       examClasses: examClasses || [],
       timestamp: new Date().toISOString(),
-      school_period: user.user_metadata?.school_period || 'bimestre',
+      school_period: 'historico',
     };
 
     // 2. Save Snapshot

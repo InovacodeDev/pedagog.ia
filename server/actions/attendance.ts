@@ -149,27 +149,43 @@ interface GroupedAttendance {
 /**
  * Fetches aggregated attendance analytics for a class.
  */
-export async function getClassAttendanceAnalyticsAction(classId: string) {
+export async function getClassAttendanceAnalyticsAction(
+  classId: string,
+  startDate?: string,
+  endDate?: string
+) {
   try {
     const supabase = await createClient();
     
-    // Fetch last 30 days of attendance
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    // Default to last 30 days if no range provided
+    let finalStartDate = startDate;
+    if (!finalStartDate) {
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      finalStartDate = thirtyDaysAgo.toISOString().split('T')[0];
+    }
 
-    const { data, error } = await (supabase as unknown as { 
-      from: (t: string) => { 
-        select: (s: string) => { 
-          eq: (c: string, v: string) => { 
-            gte: (c: string, v: string) => Promise<{ data: unknown[] | null; error: unknown }> 
-          } 
-        } 
-      } 
+    interface AttendanceRow {
+      date: string;
+      status: string;
+    }
+
+    const { data, error } = await (supabase as unknown as {
+      from: (t: string) => {
+        select: (s: string) => {
+          eq: (c: string, v: string) => {
+            gte: (c: string, v: string) => {
+              lte: (c: string, v: string) => Promise<{ data: AttendanceRow[] | null; error: unknown }>
+            }
+          }
+        }
+      }
     })
       .from('class_attendance')
       .select('date, status')
       .eq('class_id', classId)
-      .gte('date', thirtyDaysAgo.toISOString().split('T')[0]);
+      .gte('date', finalStartDate)
+      .lte('date', endDate || '9999-12-31');
 
 
 
@@ -193,7 +209,7 @@ export async function getClassAttendanceAnalyticsAction(classId: string) {
 
     const chartData = Object.values(groupedData).map((day) => ({
       ...day,
-      presenceRate: parseFloat(((day.present + day.late) / (day.total || 1) * 100).toFixed(1))
+      presenceRate: parseFloat(((day.present + day.late) / (day.total || 1) * 100).toFixed(2))
     })).sort((a, b) => a.date.localeCompare(b.date));
 
 

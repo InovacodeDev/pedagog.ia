@@ -2,12 +2,18 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
+import { ExamRow } from '@/types/app';
 
 export interface ClassItem {
   id: string;
   name: string;
   user_id: string;
   created_at: string;
+  lesson_days: number[];
+  disciplines: string[];
+  academic_year: number;
+  period_type: 'bimestre' | 'trimestre' | 'semestre';
+  period_starts: string[];
   students: { count: number }[];
 }
 
@@ -21,8 +27,7 @@ export async function getClassesAction() {
     throw new Error('Unauthorized');
   }
 
-  /* eslint-disable @typescript-eslint/no-explicit-any */
-  const { data, error } = await (supabase as any)
+  const { data, error } = await supabase
     .from('classes')
     .select('*, students(count)')
     .eq('user_id', user.id)
@@ -46,8 +51,7 @@ export async function getClassAction(id: string) {
     throw new Error('Unauthorized');
   }
 
-  /* eslint-disable @typescript-eslint/no-explicit-any */
-  const { data, error } = await (supabase as any)
+  const { data, error } = await supabase
     .from('classes')
     .select('*')
     .eq('id', id)
@@ -62,7 +66,14 @@ export async function getClassAction(id: string) {
   return data as ClassItem;
 }
 
-export async function createClassAction(name: string) {
+export async function createClassAction(
+  name: string, 
+  lessonDays: number[] = [], 
+  disciplines: string[] = [],
+  academicYear: number = new Date().getFullYear(),
+  periodType: 'bimestre' | 'trimestre' | 'semestre' = 'bimestre',
+  periodStarts: string[] = []
+) {
   const supabase = await createClient();
   const {
     data: { user },
@@ -72,10 +83,14 @@ export async function createClassAction(name: string) {
     return { success: false, message: 'Unauthorized' };
   }
 
-  /* eslint-disable @typescript-eslint/no-explicit-any */
-  const { error } = await (supabase as any).from('classes').insert({
+  const { error } = await supabase.from('classes').insert({
     name,
     user_id: user.id,
+    lesson_days: lessonDays,
+    disciplines: disciplines,
+    academic_year: academicYear,
+    period_type: periodType,
+    period_starts: periodStarts,
   });
 
   if (error) {
@@ -87,7 +102,15 @@ export async function createClassAction(name: string) {
   return { success: true, message: 'Turma criada com sucesso!' };
 }
 
-export async function updateClassAction(id: string, name: string) {
+export async function updateClassAction(
+  id: string, 
+  name: string, 
+  lessonDays: number[] = [], 
+  disciplines: string[] = [],
+  academicYear?: number,
+  periodType?: 'bimestre' | 'trimestre' | 'semestre',
+  periodStarts?: string[]
+) {
   const supabase = await createClient();
   const {
     data: { user },
@@ -97,10 +120,16 @@ export async function updateClassAction(id: string, name: string) {
     return { success: false, message: 'Unauthorized' };
   }
 
-  /* eslint-disable @typescript-eslint/no-explicit-any */
-  const { error } = await (supabase as any)
+  const { error } = await supabase
     .from('classes')
-    .update({ name })
+    .update({ 
+      name,
+      lesson_days: lessonDays,
+      disciplines: disciplines,
+      academic_year: academicYear,
+      period_type: periodType,
+      period_starts: periodStarts,
+    })
     .eq('id', id)
     .eq('user_id', user.id);
 
@@ -138,8 +167,7 @@ export async function deleteClassAction(id: string) {
     return { success: false, message: 'A turma possui alunos. Remova-os antes de excluir.' };
   }
 
-  /* eslint-disable @typescript-eslint/no-explicit-any */
-  const { error } = await (supabase as any)
+  const { error } = await supabase
     .from('classes')
     .delete()
     .eq('id', id)
@@ -159,15 +187,17 @@ export async function deleteClassAction(id: string) {
 export interface StudentGradeInfo {
   id: string;
   name: string | null;
-
+  discipline_grades: Record<string, number | null>;
+  discipline_exam_details: Record<string, { exam_title: string; score: number }[]>;
   average: number | null;
 }
 
 export interface ClassWithGrades extends ClassItem {
   students_with_grades: StudentGradeInfo[];
+  disciplines: string[];
 }
 
-export async function getClassesWithGradesAction(term: string = '1_bimestre') {
+export async function getClassesWithGradesAction(term?: string) {
   const supabase = await createClient();
   const {
     data: { user },
@@ -178,7 +208,7 @@ export async function getClassesWithGradesAction(term: string = '1_bimestre') {
   }
 
   // 1. Fetch Classes
-  const { data: classes, error: classesError } = await (supabase as any)
+  const { data: classes, error: classesError } = await supabase
     .from('classes')
     .select('*, students(count)')
     .eq('user_id', user.id)
@@ -187,59 +217,114 @@ export async function getClassesWithGradesAction(term: string = '1_bimestre') {
   if (classesError) throw new Error('Failed to fetch classes');
 
   // 2. Fetch Students
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: students, error: studentsError } = await (supabase as any)
+  const { data: students, error: studentsError } = await supabase
     .from('students')
     .select('id, name, class_id')
     .eq('user_id', user.id);
 
   if (studentsError) throw new Error('Failed to fetch students');
 
-  // 3. Fetch Exams for the Term
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: exams, error: examsError } = await (supabase as any)
+  // 3. Fetch ALL Exams for this user
+  const { data: exams, error: examsError } = await supabase
     .from('exams')
-    .select('id, term')
-    .eq('user_id', user.id)
-    .eq('term', term);
+    .select('id, title, term, discipline')
+    .eq('user_id', user.id);
 
   if (examsError) throw new Error('Failed to fetch exams');
 
-  const examIds = exams.map((e: any) => e.id);
+  const examIds = exams?.map((e) => e.id) || [];
 
-  // 4. Fetch Results if there are exams
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let results: any[] = [];
+  // 4. Fetch ALL Results
+  let results: { exam_id: string | null; student_id: string | null; score: number | null }[] = [];
   if (examIds.length > 0) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: examResults, error: resultsError } = await (supabase as any)
+    const { data: examResults, error: resultsError } = await supabase
       .from('exam_results')
       .select('exam_id, student_id, score')
       .in('exam_id', examIds);
     
     if (resultsError) throw new Error('Failed to fetch results');
-    results = examResults;
+    results = examResults || [];
   }
 
-  // 5. Calculate Averages
-  const classesWithGrades = classes.map((cls: any) => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const classStudents = students.filter((s: any) => s.class_id === cls.id);
+  // 5. Fetch exam-class relationships
+  const { data: examClassesRefs, error: refsError } = await supabase
+    .from('exam_classes')
+    .select('exam_id, class_id')
+    .in('exam_id', examIds);
+
+  if (refsError) throw new Error('Failed to fetch exam class references');
+
+  // 6. Calculate Averages per Class based on CURRENT term
+  const classesWithGrades = (classes || []).map((cls) => {
+    const classStudents = (students || []).filter((s) => s.class_id === cls.id);
     
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const studentsWithGrades = classStudents.map((student: any) => {
-      // Find all results for this student in the fetched exams (which are already filtered by term)
-      const studentResults = results.filter((r) => r.student_id === student.id);
+    let currentTerm = term;
+    if (!currentTerm) {
+      // Determine the current term for this class
+      const periodStarts = (cls.period_starts || []) as string[];
+      const periodType = cls.period_type || 'bimestre';
+      const now = new Date();
+      const todayStr = now.toISOString().split('T')[0];
       
+      let currentTermIndex = 0;
+      for (let i = periodStarts.length - 1; i >= 0; i--) {
+        if (todayStr >= periodStarts[i]) {
+          currentTermIndex = i;
+          break;
+        }
+      }
+      
+      currentTerm = `${currentTermIndex + 1}_${periodType}`;
+    }
+    
+    // Filter exams that are in the current term AND linked to this class
+    const classTermExams = (exams || []).filter(e => {
+      const isCorrectTerm = e.term === currentTerm;
+      const isLinkedToClass = (examClassesRefs || []).some(ref => ref.exam_id === e.id && ref.class_id === cls.id);
+      return isCorrectTerm && isLinkedToClass;
+    });
+    
+    const classTermExamIds = classTermExams.map(e => e.id);
+    
+    const classDefinedDisciplines = cls.disciplines || [];
+    const examDisciplines = classTermExams.map((e) => e.discipline).filter((d): d is string => !!d);
+    const allClassDisciplines = Array.from(new Set([...classDefinedDisciplines, ...examDisciplines])).sort();
+
+    const studentsWithGrades = classStudents.map((student) => {
+      const studentResults = results.filter((r) => r.student_id === student.id && classTermExamIds.includes(r.exam_id || ''));
+      
+      const disciplineGrades: Record<string, number | null> = {};
+      const disciplineExamDetails: Record<string, { exam_title: string; score: number }[]> = {};
+
+      allClassDisciplines.forEach(discipline => {
+        const disciplineExams = classTermExams.filter((e) => e.discipline === discipline);
+        const disciplineExamIds = disciplineExams.map((e) => e.id);
+        const disciplineResults = studentResults.filter(r => disciplineExamIds.includes(r.exam_id || ''));
+        
+        disciplineExamDetails[discipline] = disciplineResults.map(res => ({
+          exam_title: disciplineExams.find((e) => e.id === res.exam_id)?.title || 'Prova',
+          score: Number(res.score) || 0
+        }));
+
+        if (disciplineResults.length > 0) {
+          const sum = disciplineResults.reduce((acc, curr) => acc + (Number(curr.score) || 0), 0);
+          disciplineGrades[discipline] = parseFloat((sum / disciplineResults.length).toFixed(2));
+        } else {
+          disciplineGrades[discipline] = null;
+        }
+      });
+
       let average = null;
       if (studentResults.length > 0) {
         const sum = studentResults.reduce((acc, curr) => acc + (Number(curr.score) || 0), 0);
-        average = parseFloat((sum / studentResults.length).toFixed(1));
+        average = parseFloat((sum / studentResults.length).toFixed(2));
       }
 
       return {
         id: student.id,
         name: student.name,
+        discipline_grades: disciplineGrades,
+        discipline_exam_details: disciplineExamDetails,
         average,
       };
     });
@@ -247,6 +332,7 @@ export async function getClassesWithGradesAction(term: string = '1_bimestre') {
     return {
       ...cls,
       students_with_grades: studentsWithGrades,
+      disciplines: allClassDisciplines,
     };
   });
 
@@ -265,8 +351,7 @@ export async function getExamsByClassAction(classId: string) {
     throw new Error('Unauthorized');
   }
 
-  /* eslint-disable @typescript-eslint/no-explicit-any */
-  const { data, error } = await (supabase as any)
+  const { data, error } = await supabase
     .from('exam_classes')
     .select('exam:exams(*)')
     .eq('class_id', classId);
@@ -277,59 +362,102 @@ export async function getExamsByClassAction(classId: string) {
   }
 
   // Flatten the result to return just the exam objects
-  return data.map((item: any) => item.exam).filter(Boolean);
+  return (data as unknown as { exam: ExamRow }[] || []).map((item) => item.exam).filter(Boolean);
 }
 
-export async function getClassDisciplineAnalyticsAction(classId: string) {
+export async function getClassDisciplineAnalyticsAction(
+  classId: string,
+  startDate?: string,
+  endDate?: string,
+  term?: string
+) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) throw new Error('Unauthorized');
 
-  // 1. Get exams linked to this class
-  const { data: examRefs, error: refError } = await (supabase as any)
+  // 1. Get class details for predefined disciplines
+  const { data: classData, error: classError } = await supabase
+    .from('classes')
+    .select('disciplines')
+    .eq('id', classId)
+    .single();
+
+  if (classError) return { success: false, error: 'Erro ao buscar dados da turma' };
+
+  const classDisciplines = classData?.disciplines || [];
+
+  // 2. Get exams linked to this class
+  const { data: examRefs, error: refError } = await supabase
     .from('exam_classes')
     .select('exam_id')
     .eq('class_id', classId);
 
   if (refError || !examRefs) return { success: false, error: 'Erro ao buscar provas da turma' };
 
-  const examIds = examRefs.map((r: any) => r.exam_id);
-  if (examIds.length === 0) return { success: true, data: [] };
-
-  // 2. Get exams details (discipline) and their results
-  const { data: exams, error: examsError } = await (supabase as any)
-    .from('exams')
-    .select('id, discipline')
-    .in('id', examIds);
-
-  if (examsError) return { success: false, error: 'Erro ao buscar disciplinas' };
-
-  const { data: results, error: resultsError } = await (supabase as any)
-    .from('exam_results')
-    .select('exam_id, score')
-    .in('exam_id', examIds);
-
-  if (resultsError) return { success: false, error: 'Erro ao buscar resultados' };
-
-  // 3. Aggregate by discipline
+  const examIds = (examRefs || []).map((r) => r.exam_id);
+  
+  // 3. Initialize disciplineGrades with all class disciplines
   const disciplineGrades: Record<string, { total: number; count: number }> = {};
-
-  results.forEach((res: any) => {
-    const exam = exams.find((e: any) => e.id === res.exam_id);
-    const discipline = exam?.discipline || 'Outros';
-    
-    if (!disciplineGrades[discipline]) {
-      disciplineGrades[discipline] = { total: 0, count: 0 };
-    }
-    disciplineGrades[discipline].total += Number(res.score) || 0;
-    disciplineGrades[discipline].count += 1;
+  classDisciplines.forEach((d: string) => {
+    disciplineGrades[d] = { total: 0, count: 0 };
   });
+
+  if (examIds.length > 0) {
+    // 4. Get exams details (discipline) and their results
+    let examsQuery = supabase
+      .from('exams')
+      .select('id, discipline, term, created_at')
+      .in('id', examIds);
+    
+    if (term) {
+      examsQuery = examsQuery.eq('term', term);
+    }
+    if (startDate) {
+      examsQuery = examsQuery.gte('created_at', startDate);
+    }
+    if (endDate) {
+      // Add one day to endDate to include the full day
+      const end = new Date(endDate);
+      end.setDate(end.getDate() + 1);
+      examsQuery = examsQuery.lt('created_at', end.toISOString().split('T')[0]);
+    }
+
+    const { data: exams, error: examsError } = await examsQuery;
+
+    if (examsError) return { success: false, error: 'Erro ao buscar disciplinas' };
+
+    // Filter examIds to only those that matched the filters
+    const filteredExamIds = (exams || []).map((e: { id: string }) => e.id);
+
+    if (filteredExamIds.length === 0) {
+      return { success: true, data: Object.entries(disciplineGrades).map(([discipline]) => ({ discipline, average: 0 })) };
+    }
+
+    const { data: results, error: resultsError } = await supabase
+      .from('exam_results')
+      .select('exam_id, score')
+      .in('exam_id', filteredExamIds);
+
+    if (resultsError) return { success: false, error: 'Erro ao buscar resultados' };
+
+    // 5. Aggregate results
+    (results || []).forEach((res) => {
+      const exam = (exams || []).find((e) => e.id === res.exam_id);
+      const discipline = exam?.discipline || 'Outros';
+      
+      if (!disciplineGrades[discipline]) {
+        disciplineGrades[discipline] = { total: 0, count: 0 };
+      }
+      disciplineGrades[discipline].total += Number(res.score) || 0;
+      disciplineGrades[discipline].count += 1;
+    });
+  }
 
   const chartData = Object.entries(disciplineGrades).map(([discipline, stats]) => ({
     discipline,
-    average: parseFloat((stats.total / stats.count).toFixed(1))
-  }));
+    average: stats.count > 0 ? parseFloat((stats.total / stats.count).toFixed(2)) : 0
+  })).sort((a, b) => a.discipline.localeCompare(b.discipline));
 
   return { success: true, data: chartData };
 }
