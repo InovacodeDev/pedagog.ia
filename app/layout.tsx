@@ -2,7 +2,7 @@ import { Inter, Space_Grotesk } from 'next/font/google';
 import './globals.css';
 import { Analytics } from '@vercel/analytics/next';
 import { cn } from '@/lib/utils';
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Toaster } from '@/components/ui/sonner';
 import { ThemeProvider } from '@/components/theme-provider';
 
@@ -16,9 +16,28 @@ const spaceGrotesk = Space_Grotesk({
   variable: '--font-space',
 });
 
+const APP_NAME: string = 'Pedagog.IA';
+const APP_DESCRIPTION: string =
+  'Sistema cognitivo com IA para professores — gere provas, questões e corrija automaticamente.';
+
+export const viewport: Viewport = {
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#f0f4f8' },
+    { media: '(prefers-color-scheme: dark)', color: '#172033' },
+  ],
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  viewportFit: 'cover',
+};
+
 export const metadata: Metadata = {
-  title: 'Pedagog.IA | Sistema Operacional Cognitivo',
-  description: 'Correção de provas e planejamento automatizado para professores.',
+  applicationName: APP_NAME,
+  title: {
+    default: `${APP_NAME} | Sistema Operacional Cognitivo`,
+    template: `%s | ${APP_NAME}`,
+  },
+  description: APP_DESCRIPTION,
   icons: {
     icon: [
       { url: '/favicon.ico', sizes: 'any' },
@@ -27,6 +46,31 @@ export const metadata: Metadata = {
     apple: '/icon-192x192.png',
   },
   manifest: '/manifest.json',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black-translucent',
+    title: APP_NAME,
+  },
+  formatDetection: {
+    telephone: false,
+  },
+  openGraph: {
+    type: 'website',
+    siteName: APP_NAME,
+    title: {
+      default: `${APP_NAME} | Sistema Operacional Cognitivo`,
+      template: `%s | ${APP_NAME}`,
+    },
+    description: APP_DESCRIPTION,
+  },
+  twitter: {
+    card: 'summary',
+    title: {
+      default: `${APP_NAME} | Sistema Operacional Cognitivo`,
+      template: `%s | ${APP_NAME}`,
+    },
+    description: APP_DESCRIPTION,
+  },
 };
 
 export default function RootLayout({
@@ -35,7 +79,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }): React.ReactElement {
   return (
-    <html lang="pt-BR" suppressHydrationWarning>
+    <html lang="pt-BR" dir="ltr" suppressHydrationWarning>
       <body
         suppressHydrationWarning
         className={cn(

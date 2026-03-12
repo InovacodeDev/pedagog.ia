@@ -1,15 +1,31 @@
 import { defaultCache } from '@serwist/next/worker';
-import type { PrecacheEntry } from '@serwist/precaching';
-import { installSerwist } from '@serwist/sw';
+import type { PrecacheEntry, SerwistGlobalConfig } from 'serwist';
+import { Serwist } from 'serwist';
 
-declare const self: ServiceWorkerGlobalScope & {
-  __SW_MANIFEST: (PrecacheEntry | string)[] | undefined;
-};
+declare global {
+  interface WorkerGlobalScope extends SerwistGlobalConfig {
+    __SW_MANIFEST: (PrecacheEntry | string)[] | undefined;
+  }
+}
 
-installSerwist({
+declare const self: ServiceWorkerGlobalScope;
+
+const serwist: Serwist = new Serwist({
   precacheEntries: self.__SW_MANIFEST,
   skipWaiting: true,
   clientsClaim: true,
   navigationPreload: true,
   runtimeCaching: defaultCache,
+  fallbacks: {
+    entries: [
+      {
+        url: '/~offline',
+        matcher({ request }: { request: Request }): boolean {
+          return request.destination === 'document';
+        },
+      },
+    ],
+  },
 });
+
+serwist.addEventListeners();

@@ -1,6 +1,9 @@
 {
   "compilerOptions": {
     "target": "ES2022",
+    "types": [
+      "@serwist/next/typings"
+    ],
     "lib": [
       "dom",
       "dom.iterable",
@@ -43,6 +46,7 @@
   ],
   "exclude": [
     "node_modules",
-    "supabase/functions"
+    "supabase/functions",
+    "public/sw.js"
   ]
 }

@@ -83,12 +83,6 @@ importers:
       '@serwist/next':
         specifier: ^9.2.3
         version: 9.2.3(next@16.0.10(@babel/core@7.28.5)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.1(react@19.2.1))(react@19.2.1))(typescript@5.9.3)
-      '@serwist/precaching':
-        specifier: ^9.2.3
-        version: 9.2.3(typescript@5.9.3)
-      '@serwist/sw':
-        specifier: ^9.2.3
-        version: 9.2.3(typescript@5.9.3)
       '@supabase/ssr':
         specifier: ^0.8.0
         version: 0.8.0(@supabase/supabase-js@2.86.2)
@@ -155,6 +149,9 @@ importers:
       react-zoom-pan-pinch:
         specifier: ^3.7.0
         version: 3.7.0(react-dom@19.2.1(react@19.2.1))(react@19.2.1)
+      serwist:
+        specifier: ^9.2.3
+        version: 9.2.3(typescript@5.9.3)
       sonner:
         specifier: ^2.0.7
         version: 2.0.7(react-dom@19.2.1(react@19.2.1))(react@19.2.1)
@@ -1713,22 +1710,6 @@ packages:
     engines: {node: '>=18.0.0'}
     peerDependencies:
       next: '>=14.0.0'
-      typescript: '>=5.0.0'
-    peerDependenciesMeta:
-      typescript:
-        optional: true
-
-  '@serwist/precaching@9.2.3':
-    resolution: {integrity: sha512-8wgJwhVX6qEdLc4vaahN9GK9Lb2tE90YET7vQOM7xju2DSYdMut0c+LpRUj3PV61yYiW/TW2rayeezUwy7ToNQ==}
-    peerDependencies:
-      typescript: '>=5.0.0'
-    peerDependenciesMeta:
-      typescript:
-        optional: true
-
-  '@serwist/sw@9.2.3':
-    resolution: {integrity: sha512-79LYI3XOOJ8Sa0TXgGLsalF0aSkm81Ykhol+yr0Xv7vH6KBPzzgffPtxse77GWaxZ87kPE3pNpQPv2WgTe6RKA==}
-    peerDependencies:
       typescript: '>=5.0.0'
     peerDependenciesMeta:
       typescript:
@@ -6024,18 +6005,6 @@ snapshots:
       typescript: 5.9.3
     transitivePeerDependencies:
       - webpack
-
-  '@serwist/precaching@9.2.3(typescript@5.9.3)':
-    dependencies:
-      serwist: 9.2.3(typescript@5.9.3)
-    optionalDependencies:
-      typescript: 5.9.3
-
-  '@serwist/sw@9.2.3(typescript@5.9.3)':
-    dependencies:
-      serwist: 9.2.3(typescript@5.9.3)
-    optionalDependencies:
-      typescript: 5.9.3
 
   '@serwist/webpack-plugin@9.2.3(typescript@5.9.3)':
     dependencies:

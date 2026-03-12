@@ -1,11 +1,17 @@
+import { spawnSync } from 'node:child_process';
 import withSerwistInit from '@serwist/next';
 
 const isDev = process.env.NODE_ENV === 'development';
 
+const revision =
+  spawnSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf-8' }).stdout?.trim() ??
+  crypto.randomUUID();
+
 const withSerwist = withSerwistInit({
+  additionalPrecacheEntries: [{ url: '/~offline', revision }],
   swSrc: 'app/sw.ts',
   swDest: 'public/sw.js',
-  disable: isDev, // Disable service worker in development to prevent infinite HMR loop
+  disable: isDev,
 });
 
 /** @type {import('next').NextConfig} */
