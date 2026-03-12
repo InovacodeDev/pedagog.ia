@@ -1,7 +1,5 @@
 'use server';
 
-export const maxDuration = 60; // Timeout de 60s para Vercel Pro/Hobby dependendo do plano
-
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
