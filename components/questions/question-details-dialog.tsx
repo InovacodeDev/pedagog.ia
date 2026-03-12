@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { CheckCircle2, Lightbulb, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Question } from '@/types/questions';
+import { FormatText } from '@/components/ui/format-text'; // imported FormatText
 
 // 1. Helper: Type Mapping (Taxonomy) - Copied from QuestionCard
 const TYPE_MAP = {
@@ -138,7 +139,7 @@ export function QuestionDetailsDialog({
                             className="bg-background p-5 rounded-md text-sm leading-relaxed text-foreground/90 border border-border shadow-sm relative overflow-hidden"
                           >
                             <div className="absolute top-0 left-0 w-1 h-full bg-primary/20" />
-                            {text}
+                            <FormatText text={text} />
                           </div>
                         )
                       )}
@@ -147,7 +148,7 @@ export function QuestionDetailsDialog({
                 )}
 
               <p className="text-lg font-medium leading-relaxed text-foreground">
-                {getStem(question)}
+                <FormatText text={getStem(question)} />
               </p>
             </div>
           </section>
@@ -188,7 +189,7 @@ export function QuestionDetailsDialog({
                           >
                             {String(opt.value)}
                           </div>
-                          <span className="flex-grow">{cleanText}</span>
+                          <span className="flex-grow"><FormatText text={cleanText} /></span>
                           {isCorrect && (
                             <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400" />
                           )}
@@ -229,7 +230,7 @@ export function QuestionDetailsDialog({
                           >
                             {isTrue ? 'V' : 'F'}
                           </div>
-                          <span className="flex-grow">{optionText}</span>
+                          <span className="flex-grow"><FormatText text={optionText} /></span>
                         </div>
                       );
                     })}
@@ -258,14 +259,14 @@ export function QuestionDetailsDialog({
                           className="p-3 border rounded-md bg-muted/20 flex flex-col sm:flex-row sm:items-center gap-3"
                         >
                           <div className="flex-1 text-sm font-medium text-foreground/80">
-                            {itemA}
+                            <FormatText text={itemA} />
                           </div>
                           <div className="hidden sm:flex shrink-0 text-muted-foreground">→</div>
                           <div className="flex-1 flex items-center gap-2">
                             <Badge variant="outline" className="font-mono">
                               {letter}
                             </Badge>
-                            <span className="text-sm text-foreground">{itemB}</span>
+                            <span className="text-sm text-foreground"><FormatText text={itemB} /></span>
                           </div>
                         </div>
                       );
@@ -315,7 +316,7 @@ export function QuestionDetailsDialog({
                           >
                             {isCorrect && <CheckCircle2 className="h-3.5 w-3.5" />}
                           </div>
-                          <span className="leading-relaxed">{optionText}</span>
+                          <span className="leading-relaxed"><FormatText text={optionText} /></span>
                         </div>
                       );
                     })}
@@ -368,7 +369,7 @@ export function QuestionDetailsDialog({
                                       key={idx}
                                       className="text-sm text-foreground/80 italic border-l-2 border-primary/20 pl-3 py-1"
                                     >
-                                      &quot;{safeText}&quot;
+                                      &quot;<FormatText text={safeText} />&quot;
                                     </div>
                                   );
                                 }
@@ -390,7 +391,7 @@ export function QuestionDetailsDialog({
                       </h4>
                     </div>
                     <div className="text-sm text-foreground/90 whitespace-pre-wrap leading-relaxed">
-                      {question.correct_answer || 'Modelo de resposta não disponível.'}
+                      <FormatText text={question.correct_answer || 'Modelo de resposta não disponível.'} />
                     </div>
                   </div>
 
@@ -431,7 +432,7 @@ export function QuestionDetailsDialog({
                 <div className="space-y-4">
                   <div className="p-4 rounded-md bg-muted/30 border border-muted">
                     <p className="text-sm text-foreground whitespace-pre-wrap">
-                      {question.correct_answer || 'Resposta não disponível.'}
+                      <FormatText text={question.correct_answer || 'Resposta não disponível.'} />
                     </p>
                   </div>
                 </div>
@@ -447,7 +448,7 @@ export function QuestionDetailsDialog({
                 Explicação Pedagógica
               </h3>
               <div className="bg-yellow-50/50 dark:bg-yellow-900/10 border border-yellow-200 dark:border-yellow-900/30 p-6 rounded-lg">
-                <p className="text-sm text-foreground/90 leading-relaxed">{question.explanation}</p>
+                <div className="text-sm text-foreground/90 leading-relaxed"><FormatText text={question.explanation} /></div>
               </div>
             </section>
           )}

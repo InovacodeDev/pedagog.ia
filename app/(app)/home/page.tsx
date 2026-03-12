@@ -10,7 +10,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { FileText, Plus, Camera, Wand2, ArrowRight } from 'lucide-react';
+import { FileText, Plus, Wand2, ArrowRight } from 'lucide-react';
 import { getDashboardMetrics } from '@/server/actions/dashboard';
 import { EmptyState } from '@/components/ui/empty-state';
 import { DashboardRealtimeMetrics } from '@/components/dashboard/realtime-metrics';
@@ -74,7 +74,9 @@ export default async function DashboardPage() {
                       </TableCell>
                       <TableCell>{exam.correction_count}</TableCell>
                       <TableCell className="text-right text-muted-foreground">
-                        {exam.created_at ? new Date(exam.created_at).toLocaleDateString('pt-BR') : '-'}
+                        {exam.created_at
+                          ? new Date(exam.created_at).toLocaleDateString('pt-BR')
+                          : '-'}
                       </TableCell>
                     </TableRow>
                   ))}
@@ -99,7 +101,7 @@ export default async function DashboardPage() {
                 <Plus className="mr-2 h-4 w-4" /> Nova Prova
               </Link>
             </Button>
-            <Button
+            {/* <Button
               asChild
               variant="outline"
               className="w-full justify-start active:scale-95 transition-transform"
@@ -108,7 +110,7 @@ export default async function DashboardPage() {
               <Link href="/scan">
                 <Camera className="mr-2 h-4 w-4" /> Escanear Provas
               </Link>
-            </Button>
+            </Button> */}
             <Button
               asChild
               variant="secondary"

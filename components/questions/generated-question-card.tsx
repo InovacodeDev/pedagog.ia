@@ -9,6 +9,7 @@ import { CheckCircle2, ChevronDown, ChevronUp, Eye, EyeOff, Pencil, Save, X } fr
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 import { GeneratedQuestion } from '@/types/questions';
+import { FormatText } from '@/components/ui/format-text';
 
 const TYPE_MAP = {
   multiple_choice: {
@@ -92,7 +93,7 @@ export function GeneratedQuestionCard({
         />
         <div className="flex-1">
           <CardTitle className="text-base font-medium leading-none flex items-start justify-between gap-4">
-            <span className="leading-relaxed">{question.stem}</span>
+            <span className="leading-relaxed"><FormatText text={question.stem} /></span>
           </CardTitle>
         </div>
       </CardHeader>
@@ -102,7 +103,7 @@ export function GeneratedQuestionCard({
           <ul className="space-y-2 mb-4">
             {question.options.map((opt: string, idx: number) => (
               <li key={idx} className="text-sm text-muted-foreground">
-                {String.fromCharCode(65 + idx)}) {opt}
+                {String.fromCharCode(65 + idx)}) <FormatText text={opt} />
               </li>
             ))}
           </ul>
@@ -138,7 +139,7 @@ export function GeneratedQuestionCard({
                   >
                     {String(value)}
                   </div>
-                  <span className="flex-grow">{text}</span>
+                  <span className="flex-grow"><FormatText text={text} /></span>
                   {showAnswer && isCorrect && <CheckCircle2 className="h-5 w-5 text-green-600" />}
                 </div>
               );
@@ -224,7 +225,7 @@ export function GeneratedQuestionCard({
                         >
                           {isTrue ? 'V' : 'F'}
                         </div>
-                        <span className="flex-grow">{option}</span>
+                        <span className="flex-grow"><FormatText text={option} /></span>
                       </div>
                     );
                   })}
@@ -250,13 +251,13 @@ export function GeneratedQuestionCard({
                         key={idx}
                         className="p-3 border rounded-md bg-muted/20 flex flex-col sm:flex-row sm:items-center gap-3"
                       >
-                        <div className="flex-1 text-sm font-medium text-foreground/80">{itemA}</div>
+                        <div className="flex-1 text-sm font-medium text-foreground/80"><FormatText text={itemA} /></div>
                         <div className="hidden sm:flex shrink-0 text-muted-foreground">→</div>
                         <div className="flex-1 flex items-center gap-2">
                           <Badge variant="outline" className="font-mono">
                             {letter}
                           </Badge>
-                          <span className="text-sm text-foreground">{itemB}</span>
+                          <span className="text-sm text-foreground"><FormatText text={itemB} /></span>
                         </div>
                       </div>
                     );
@@ -302,7 +303,7 @@ export function GeneratedQuestionCard({
                         >
                           {isCorrect && <CheckCircle2 className="h-3.5 w-3.5" />}
                         </div>
-                        <span className="leading-relaxed">{option}</span>
+                        <span className="leading-relaxed"><FormatText text={option} /></span>
                       </div>
                     );
                   })}
@@ -363,7 +364,7 @@ export function GeneratedQuestionCard({
                     </div>
                   ) : (
                     <div className="text-sm text-foreground/90 whitespace-pre-wrap leading-relaxed">
-                      {question.correct_answer || 'Modelo de resposta não disponível.'}
+                      <FormatText text={question.correct_answer || 'Modelo de resposta não disponível.'} />
                     </div>
                   )}
                 </div>
@@ -384,7 +385,7 @@ export function GeneratedQuestionCard({
                           <div className="mt-0.5 h-5 w-5 rounded border-2 border-primary/30 flex items-center justify-center shrink-0 text-primary">
                             <CheckCircle2 className="h-3.5 w-3.5" />
                           </div>
-                          <span className="text-sm text-foreground/80">{criteria}</span>
+                          <span className="text-sm text-foreground/80"><FormatText text={criteria} /></span>
                         </div>
                       ))}
                     </div>

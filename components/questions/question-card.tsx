@@ -7,6 +7,7 @@ import { Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Question } from '@/types/questions';
 import { QuestionDetailsDialog } from './question-details-dialog';
+import { FormatText } from '@/components/ui/format-text';
 
 // Helper: Type Mapping (Taxonomy)
 const TYPE_MAP = {
@@ -104,7 +105,7 @@ export function QuestionCard({ question, onDelete }: QuestionCardProps) {
                 className="text-xs text-muted-foreground truncate flex items-start gap-2"
               >
                 <span className="shrink-0 text-muted-foreground/50">•</span>
-                <span className="truncate">{text}</span>
+                <span className="truncate"><FormatText text={text} /></span>
               </li>
             );
           })}
@@ -162,7 +163,7 @@ export function QuestionCard({ question, onDelete }: QuestionCardProps) {
 
         {/* Middle: Content */}
         <div className="flex-grow mb-4">
-          <p className="text-sm font-medium text-foreground line-clamp-4 leading-relaxed">{stem}</p>
+          <div className="text-sm font-medium text-foreground line-clamp-4 leading-relaxed"><FormatText text={stem} /></div>
           {optionsPreview}
         </div>
 
