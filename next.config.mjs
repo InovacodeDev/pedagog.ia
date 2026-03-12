@@ -47,6 +47,20 @@ const nextConfig = {
     }
     return config;
   },
+  async rewrites() {
+    return [
+      {
+        // Proxy Amplitude Analytics to avoid CORS on localhost and ad-blockers
+        source: '/api/amplitude-analytics/:path*',
+        destination: 'https://api.amplitude.com/:path*',
+      },
+      {
+        // Proxy Amplitude Session Replay
+        source: '/api/amplitude-replay/:path*',
+        destination: 'https://api-session-replay.amplitude.com/:path*',
+      },
+    ];
+  },
 };
 
 export default withSerwist(nextConfig);

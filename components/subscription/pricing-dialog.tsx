@@ -68,8 +68,8 @@ export function PricingDialog({ trigger, isOpen, onOpenChange }: PricingDialogPr
               <li className="flex items-center gap-2">
                 <Check className="w-4 h-4 text-emerald-500" /> Até 15 questões
               </li>
-              <li className="flex items-center gap-2 text-muted-foreground">
-                <X className="w-4 h-4 text-muted-foreground" /> Gestão de Múltiplas Turmas
+              <li className="flex items-center gap-2">
+                <Check className="w-4 h-4 text-emerald-500" /> Gestão de Uma Turma
               </li>
               <li className="flex items-center gap-2 text-muted-foreground">
                 <X className="w-4 h-4 text-muted-foreground" /> Analytics de Turmas
@@ -96,11 +96,11 @@ export function PricingDialog({ trigger, isOpen, onOpenChange }: PricingDialogPr
               <li className="flex items-center gap-2">
                 <Check className="w-4 h-4 text-emerald-500" /> Até 100 questões/mês
               </li>
-              <li className="flex items-center gap-2 text-muted-foreground">
-                <Check className="w-4 h-4 text-muted-foreground" /> Gestão de Múltiplas Turmas
+              <li className="flex items-center gap-2">
+                <Check className="w-4 h-4 text-emerald-500" /> Gestão de Múltiplas Turmas
               </li>
-              <li className="flex items-center gap-2 text-muted-foreground">
-                <Check className="w-4 h-4 text-muted-foreground" /> Analytics de Turmas
+              <li className="flex items-center gap-2">
+                <Check className="w-4 h-4 text-emerald-500" /> Analytics de Turmas
               </li>
             </ul>
             <Button

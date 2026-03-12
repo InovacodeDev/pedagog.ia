@@ -81,7 +81,7 @@ export default async function ClassDetailsPage({ params }: ClassDetailsPageProps
           <TabsTrigger value="exams">Provas</TabsTrigger>
           <TabsTrigger value="grades">Notas</TabsTrigger>
         </TabsList>
-        
+
         <TabsContent value="analytics" className="mt-6">
           {isPro ? (
             <ClassAnalytics classData={classData} />
@@ -93,12 +93,13 @@ export default async function ClassDetailsPage({ params }: ClassDetailsPageProps
               <div className="space-y-2 max-w-md">
                 <h3 className="text-xl font-bold">Analytics de Turmas é um recurso Pro</h3>
                 <p className="text-muted-foreground">
-                  Acompanhe o desempenho detalhado de seus alunos, médias por disciplina e muito mais com o plano Pro.
+                  Acompanhe o desempenho detalhado de seus alunos, médias por disciplina e muito
+                  mais com o plano Pro.
                 </p>
               </div>
-              <PricingDialog 
+              <PricingDialog
                 trigger={
-                  <Button className="bg-indigo-600 hover:bg-indigo-700">
+                  <Button className="bg-indigo-600 hover:bg-indigo-700 text-white">
                     Fazer Upgrade Agora
                   </Button>
                 }
@@ -116,7 +117,11 @@ export default async function ClassDetailsPage({ params }: ClassDetailsPageProps
         </TabsContent>
 
         <TabsContent value="attendance" className="mt-6">
-          <AttendanceForm classId={classData.id} students={students || []} lessonDays={classData.lesson_days} />
+          <AttendanceForm
+            classId={classData.id}
+            students={students || []}
+            lessonDays={classData.lesson_days}
+          />
         </TabsContent>
 
         <TabsContent value="exams" className="mt-6">
@@ -124,10 +129,13 @@ export default async function ClassDetailsPage({ params }: ClassDetailsPageProps
         </TabsContent>
 
         <TabsContent value="grades" className="mt-6">
-          <ClassGradesList classId={classData.id} students={students || []} schoolPeriod={schoolPeriod} />
+          <ClassGradesList
+            classId={classData.id}
+            students={students || []}
+            schoolPeriod={schoolPeriod}
+          />
         </TabsContent>
       </Tabs>
     </div>
   );
 }
-
