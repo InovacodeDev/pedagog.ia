@@ -40,25 +40,17 @@ export function Hero() {
                 size="lg"
                 className="w-full sm:w-auto bg-indigo-600 text-white hover:bg-indigo-700 shadow-xl shadow-indigo-200 dark:shadow-none h-14 px-8 text-lg hover:scale-105 transition-transform duration-200"
               >
-                <Link 
+                <Link
                   href="/login"
-                  onClick={() => amplitude.track('Landing CTA Clicked', { location: 'Hero', label: 'Começar Grátis' })}
+                  onClick={() =>
+                    amplitude.track('Landing CTA Clicked', {
+                      location: 'Hero',
+                      label: 'Começar Grátis',
+                    })
+                  }
                 >
                   Começar Grátis
                   <ArrowRight className="ml-2 h-5 w-5" />
-                </Link>
-              </Button>
-              <Button
-                asChild
-                variant="outline"
-                size="lg"
-                className="w-full sm:w-auto h-14 px-8 text-lg border-slate-200 text-slate-700 hover:text-indigo-600 hover:border-indigo-200 hover:bg-indigo-50 dark:border-slate-700 dark:text-slate-300 dark:hover:text-indigo-400 dark:hover:border-indigo-800 dark:hover:bg-indigo-950/50"
-              >
-                <Link 
-                  href="#como-funciona"
-                  onClick={() => amplitude.track('Landing CTA Clicked', { location: 'Hero', label: 'Ver Demonstração' })}
-                >
-                  Ver Demonstração
                 </Link>
               </Button>
             </div>
