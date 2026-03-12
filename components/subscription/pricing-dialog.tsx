@@ -10,7 +10,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { createCheckoutSessionAction } from '@/server/actions/stripe';
-import { Check, Loader2, X } from 'lucide-react';
+import { Check, Loader2 } from 'lucide-react';
 import { useState } from 'react';
 import { Logo } from '@/components/ui/logo';
 import { toast } from 'sonner';
@@ -66,12 +66,12 @@ export function PricingDialog({ trigger, isOpen, onOpenChange }: PricingDialogPr
               <li className="flex items-center gap-2">
                 <Check className="w-4 h-4 text-emerald-500" /> Até 15 questões
               </li>
-              <li className="flex items-center gap-2">
-                <Check className="w-4 h-4 text-emerald-500" /> Gestão de Múltiplas Turmas
+              {/* <li className="flex items-center gap-2 text-muted-foreground">
+                <X className="w-4 h-4 text-muted-foreground" /> Gestão de Múltiplas Turmas
               </li>
               <li className="flex items-center gap-2 text-muted-foreground">
                 <X className="w-4 h-4 text-muted-foreground" /> Analytics de Turmas
-              </li>
+              </li> */}
             </ul>
             <Button variant="outline" disabled className="mt-auto">
               Plano Atual
@@ -94,12 +94,12 @@ export function PricingDialog({ trigger, isOpen, onOpenChange }: PricingDialogPr
               <li className="flex items-center gap-2">
                 <Check className="w-4 h-4 text-emerald-500" /> Até 100 questões/mês
               </li>
-              <li className="flex items-center gap-2">
-                <Check className="w-4 h-4 text-emerald-500" /> Gestão de Múltiplas Turmas
+              {/* <li className="flex items-center gap-2 text-muted-foreground">
+                <X className="w-4 h-4 text-muted-foreground" /> Gestão de Múltiplas Turmas
               </li>
-              <li className="flex items-center gap-2">
-                <Check className="w-4 h-4 text-emerald-500" /> Analytics de Turmas
-              </li>
+              <li className="flex items-center gap-2 text-muted-foreground">
+                <X className="w-4 h-4 text-muted-foreground" /> Analytics de Turmas
+              </li> */}
             </ul>
             <Button
               onClick={handleSubscribe}

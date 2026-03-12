@@ -1,24 +1,17 @@
-import { getClassesWithGradesAction } from '@/server/actions/classes';
-import { ClassesList } from './classes-list';
+
 
 export const metadata = {
   title: 'Minhas Turmas | Pedagog.IA',
   description: 'Gerencie suas turmas e alunos.',
 };
 
-interface ClassesPageProps {
-  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
-}
-
-export default async function ClassesPage({ searchParams }: ClassesPageProps) {
-  const resolvedSearchParams = await searchParams;
-  const term = typeof resolvedSearchParams.term === 'string' ? resolvedSearchParams.term : '1_bimestre';
-  
-  const classes = await getClassesWithGradesAction(term);
-
+export default async function ClassesPage() {
   return (
-    <div className="container py-8">
-      <ClassesList initialClasses={classes} currentTerm={term} />
+    <div className="container py-8 flex flex-col items-center justify-center min-h-[60vh] text-center space-y-4">
+      <h1 className="text-3xl font-display font-bold">Turmas (Em Breve)</h1>
+      <p className="text-muted-foreground max-w-md">
+        A gestão de turmas e visualização de analytics estão em desenvolvimento e serão liberadas em breve.
+      </p>
     </div>
   );
 }

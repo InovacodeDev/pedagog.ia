@@ -31,6 +31,7 @@ const routes = [
     icon: Users,
     href: '/classes',
     color: 'text-pink-700',
+    disabled: true,
   },
   {
     label: 'Correção',
