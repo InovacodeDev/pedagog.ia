@@ -3,7 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
+
 import { CreditCard, Zap, Loader2, AlertTriangle } from 'lucide-react';
 import { PricingDialog } from '@/components/subscription/pricing-dialog';
 import { createPortalSessionAction } from '@/server/actions/stripe';
@@ -24,9 +24,6 @@ export function SettingsBilling({ isPro = false, subscription }: SettingsBilling
   const [isLoadingPortal, setIsLoadingPortal] = useState(false);
   const [isPricingOpen, setIsPricingOpen] = useState(false);
 
-  // Mock usage data for now, can be fetched similarly if needed
-  const usage = 3;
-  const limit = 10;
 
   const handleManageSubscription = async () => {
     try {
@@ -103,17 +100,8 @@ export function SettingsBilling({ isPro = false, subscription }: SettingsBilling
         </div>
 
         {!isPro && (
-          <div className="space-y-2">
-            <div className="flex justify-between text-sm">
-              <span>Uso de Provas (Mensal)</span>
-              <span className="text-muted-foreground">
-                {usage} / {limit}
-              </span>
-            </div>
-            <Progress value={(usage / limit) * 100} className="h-2" />
-            <p className="text-xs text-muted-foreground">
-              Faça upgrade para gerar provas ilimitadas.
-            </p>
+          <div className="text-xs text-muted-foreground pt-4 border-t">
+            Faça upgrade para gerar provas ilimitadas e ter acesso a recursos avançados.
           </div>
         )}
       </CardContent>

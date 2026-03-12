@@ -90,6 +90,7 @@ export function AuthForm() {
         throw error;
       }
 
+      setOtp('');
       setTimeLeft(60);
       toast.success('Código reenviado!', {
         description: 'Verifique seu email para pegar o novo código.',

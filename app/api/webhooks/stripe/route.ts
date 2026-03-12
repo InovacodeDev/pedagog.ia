@@ -124,11 +124,43 @@ export async function POST(req: Request) {
         console.error('Supabase Upsert Error:', error);
         return new NextResponse('Database Error', { status: 500 });
       }
+
+      // Add credits on first subscription activation
+      if (subscription.status === 'active') {
+        const MONTHLY_CREDITS: number = 100;
+
+        console.log(`Adding ${MONTHLY_CREDITS} credits for user: ${userId} (checkout completed)`);
+
+        const rpcResult = await supabaseAdmin.rpc('deduct_user_credits', {
+          p_user_id: userId,
+          p_amount: -MONTHLY_CREDITS,
+        });
+
+        if (rpcResult.error) {
+          console.error('Error adding credits on checkout:', rpcResult.error);
+        }
+
+        // Log the credit addition
+        await supabaseAdmin.from('ia_cost_log').insert({
+          user_id: userId,
+          feature: 'subscription_activated',
+          model_used: 'plan_pro',
+          input_tokens: 0,
+          output_tokens: 0,
+          cost_credits: -MONTHLY_CREDITS,
+          provider_cost_brl: 0,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        } as any);
+      }
     }
 
     if (event.type === 'invoice.payment_succeeded') {
       const invoice = event.data.object as StripeInvoice;
       const subscriptionId = invoice.subscription as string;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const billingReason: string | null = (invoice as any).billing_reason ?? null;
+
+      console.log(`Invoice payment succeeded: sub=${subscriptionId}, billing_reason=${billingReason}`);
 
       if (subscriptionId) {
         const subscription = (await stripe.subscriptions.retrieve(
@@ -141,31 +173,33 @@ export async function POST(req: Request) {
           const { error } = await supabaseAdmin
             .from('subscriptions')
             .update({
+              stripe_subscription_id: subscriptionId,
               stripe_price_id: subscription.items.data[0].price.id,
               stripe_current_period_end: currentPeriodEnd,
               status: subscription.status,
               updated_at: new Date().toISOString(),
             })
-            .eq('stripe_subscription_id', subscriptionId);
+            .eq('stripe_customer_id', invoice.customer as string);
 
           if (error) {
             console.error('Error updating subscription (invoice):', error);
             return new NextResponse('Database Error', { status: 500 });
           }
 
-          // 2. Add Monthly Credits (if active)
-          // We assume any successful invoice payment for a subscription implies a renewal/start of a period
-          // For now, we give 300 credits for Pro.
-          if (subscription.status === 'active') {
-            // Find user_id from subscription table first
+          // 2. Add Monthly Credits only on RENEWAL (not first subscription)
+          // First subscription credits are handled by checkout.session.completed
+          const isRenewal: boolean = billingReason === 'subscription_cycle';
+          if (subscription.status === 'active' && isRenewal) {
             const { data: subData } = await supabaseAdmin
               .from('subscriptions')
               .select('user_id')
-              .eq('stripe_subscription_id', subscriptionId)
-              .single();
+              .eq('stripe_customer_id', invoice.customer as string)
+              .maybeSingle();
 
             if (subData?.user_id) {
-              const MONTHLY_CREDITS = 100;
+              const MONTHLY_CREDITS: number = 100;
+
+              console.log(`Adding ${MONTHLY_CREDITS} renewal credits for user: ${subData.user_id}`);
 
               // Add credits
               await supabaseAdmin.rpc('deduct_user_credits', {
@@ -192,23 +226,21 @@ export async function POST(req: Request) {
 
     if (event.type === 'customer.subscription.updated') {
       const subscription = event.data.object as StripeSubscription;
-      const cancelAt = toISOString(subscription.cancel_at);
+      const currentPeriodEnd = toISOString(subscription.current_period_end) || toISOString(subscription.cancel_at);
 
-      if (cancelAt) {
-        const { error } = await supabaseAdmin
-          .from('subscriptions')
-          .update({
-            stripe_price_id: subscription.items.data[0].price.id,
-            stripe_current_period_end: cancelAt,
-            status: subscription.status,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('stripe_subscription_id', subscription.id);
+      const { error } = await supabaseAdmin
+        .from('subscriptions')
+        .update({
+          stripe_price_id: subscription.items.data[0].price.id,
+          stripe_current_period_end: currentPeriodEnd,
+          status: subscription.status,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('stripe_subscription_id', subscription.id);
 
-        if (error) {
-          console.error('Error updating subscription (updated):', error);
-          return new NextResponse('Database Error', { status: 500 });
-        }
+      if (error) {
+        console.error('Error updating subscription (updated):', error);
+        return new NextResponse('Database Error', { status: 500 });
       }
     }
 

@@ -16,9 +16,9 @@ export async function updateProfileAction(formData: FormData) {
   const supabase = await createClient();
 
   const rawData = {
-    name: formData.get('name'),
-    school_name: formData.get('school_name'),
-    disciplines: formData.get('disciplines'),
+    name: formData.get('name') ?? undefined,
+    school_name: formData.get('school_name') ?? undefined,
+    disciplines: formData.get('disciplines') ?? undefined,
   };
 
   const validatedFields = profileSchema.safeParse(rawData);
@@ -45,6 +45,8 @@ export async function updateProfileAction(formData: FormData) {
     const { error } = await supabase.auth.updateUser({
       data: {
         full_name: name,
+        name: name,
+        display_name: name,
         school_name: school_name,
         disciplines: disciplinesArray,
       },
