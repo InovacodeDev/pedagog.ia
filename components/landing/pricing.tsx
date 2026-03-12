@@ -12,7 +12,7 @@ const PLANS = [
     price: 'Grátis',
     description: 'Ideal para conhecer a plataforma.',
     features: ['Até 15 questões'],
-    notIncluded: [], // ['Gestão de Múltiplas Turmas', 'Analytics de Turmas'],
+    notIncluded: ['Gestão de Múltiplas Turmas', 'Analytics de Turmas'],
     cta: 'Começar Grátis',
     href: '/login',
     variant: 'outline',
@@ -22,8 +22,8 @@ const PLANS = [
     price: 'R$ 29,90',
     period: '/mês',
     description: 'Liberdade total para focar em ensinar.',
-    features: ['Até 100 questões/mês'],
-    notIncluded: [], // ['Gestão de Múltiplas Turmas', 'Analytics de Turmas'],
+    features: ['Até 100 questões/mês', 'Gestão de Múltiplas Turmas', 'Analytics de Turmas'],
+    notIncluded: [],
     cta: 'Assinar Agora',
     href: '/login?plan=pro',
     variant: 'default',
@@ -100,12 +100,14 @@ export function Pricing() {
                 }`}
                 variant={plan.variant === 'outline' ? 'outline' : 'default'}
               >
-                <Link 
+                <Link
                   href={plan.href}
-                  onClick={() => amplitude.track('Landing Pricing Option Clicked', { 
-                    plan: plan.name,
-                    label: plan.cta 
-                  })}
+                  onClick={() =>
+                    amplitude.track('Landing Pricing Option Clicked', {
+                      plan: plan.name,
+                      label: plan.cta,
+                    })
+                  }
                 >
                   {plan.cta}
                 </Link>
