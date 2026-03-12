@@ -163,7 +163,7 @@ export function FeaturesGrid() {
           </motion.div>
         </div>
 
-        <div className="grid gap-12 lg:grid-cols-2 lg:gap-16 items-center max-w-6xl mx-auto">
+        <div className="flex flex-col-reverse lg:grid lg:grid-cols-2 gap-12 lg:gap-16 items-start max-w-6xl mx-auto">
           {/* Left: Interactive List */}
           <motion.div
             className="space-y-4"
@@ -235,7 +235,7 @@ export function FeaturesGrid() {
             whileInView={{ opacity: 1, scale: 1 }}
             viewport={{ once: true }}
             transition={{ duration: 0.5, delay: 0.2 }}
-            className="relative aspect-[4/3] lg:aspect-square rounded-3xl overflow-hidden bg-white dark:bg-slate-900 shadow-2xl dark:shadow-sm border border-slate-100 dark:border-slate-800 ring-1 ring-slate-900/5 dark:ring-white/5 sticky top-24"
+            className="relative aspect-[4/3] lg:aspect-square rounded-3xl overflow-hidden bg-white dark:bg-slate-900 shadow-2xl dark:shadow-sm border border-slate-100 dark:border-slate-800 ring-1 ring-slate-900/5 dark:ring-white/5 sticky top-20 z-20 lg:top-24"
           >
             <AnimatePresence mode="wait">
               <motion.div

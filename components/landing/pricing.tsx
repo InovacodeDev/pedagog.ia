@@ -53,7 +53,7 @@ export function Pricing() {
               transition={{ delay: index * 0.1 }}
               className={`relative rounded-3xl bg-white dark:bg-slate-950 p-8 shadow-xl dark:shadow-2xl dark:shadow-indigo-900/20 border ${
                 plan.popular
-                  ? 'border-indigo-600 ring-4 ring-indigo-600/10 dark:ring-indigo-500/20 scale-105 z-10'
+                  ? 'border-indigo-600 ring-4 ring-indigo-600/10 dark:ring-indigo-500/20 md:scale-105 z-10'
                   : 'border-slate-100 dark:border-slate-800 shadow-slate-200/50 dark:shadow-none'
               }`}
             >

@@ -3,7 +3,6 @@
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
-import { Menu } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { Logo } from '@/components/ui/logo';
 
@@ -40,12 +39,12 @@ export function Navbar() {
           </Link>
         </nav>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 sm:gap-4">
           <ThemeToggle />
           <Button
             asChild
             variant="ghost"
-            className="text-slate-600 hover:text-indigo-600 dark:text-slate-200 dark:hover:text-indigo-400"
+            className="hidden sm:inline-flex text-slate-600 hover:text-indigo-600 dark:text-slate-200 dark:hover:text-indigo-400"
           >
             <Link href="/login">Entrar</Link>
           </Button>
@@ -55,11 +54,6 @@ export function Navbar() {
           >
             <Link href="/login">Começar Grátis</Link>
           </Button>
-          <div className="md:hidden">
-            <Button variant="ghost" size="icon">
-              <Menu className="h-6 w-6 text-slate-600 dark:text-slate-200" />
-            </Button>
-          </div>
         </div>
       </div>
     </motion.header>

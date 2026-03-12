@@ -63,7 +63,7 @@ function StatItem({ label, value }: { label: string; value: string | null }) {
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
       transition={{ duration: 0.5, ease: 'easeOut' }}
-      className="space-y-2 min-w-[200px]"
+      className="space-y-2 flex-1 min-w-[150px] md:flex-none"
     >
       <h3 className="text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-violet-600 font-display tracking-tight">
         {value}

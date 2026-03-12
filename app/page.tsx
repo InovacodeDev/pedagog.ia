@@ -12,7 +12,7 @@ export default async function LandingPage() {
   const stats = await getLandingStats();
 
   return (
-    <main className="min-h-screen bg-background selection:bg-indigo-100 selection:text-indigo-900 dark:selection:bg-indigo-900 dark:selection:text-indigo-100">
+    <main className="min-h-screen overflow-x-hidden bg-background selection:bg-indigo-100 selection:text-indigo-900 dark:selection:bg-indigo-900 dark:selection:text-indigo-100">
       <Navbar />
       <Hero />
       <SocialProof stats={stats} />

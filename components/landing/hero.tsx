@@ -34,11 +34,11 @@ export function Hero() {
               </p>
             </div>
 
-            <div className="flex flex-col gap-3 min-[400px]:flex-row">
+            <div className="flex flex-col sm:flex-row gap-3">
               <Button
                 asChild
                 size="lg"
-                className="bg-indigo-600 text-white hover:bg-indigo-700 shadow-xl shadow-indigo-200 dark:shadow-none h-14 px-8 text-lg hover:scale-105 transition-transform duration-200"
+                className="w-full sm:w-auto bg-indigo-600 text-white hover:bg-indigo-700 shadow-xl shadow-indigo-200 dark:shadow-none h-14 px-8 text-lg hover:scale-105 transition-transform duration-200"
               >
                 <Link 
                   href="/login"
@@ -52,7 +52,7 @@ export function Hero() {
                 asChild
                 variant="outline"
                 size="lg"
-                className="h-14 px-8 text-lg border-slate-200 text-slate-700 hover:text-indigo-600 hover:border-indigo-200 hover:bg-indigo-50 dark:border-slate-700 dark:text-slate-300 dark:hover:text-indigo-400 dark:hover:border-indigo-800 dark:hover:bg-indigo-950/50"
+                className="w-full sm:w-auto h-14 px-8 text-lg border-slate-200 text-slate-700 hover:text-indigo-600 hover:border-indigo-200 hover:bg-indigo-50 dark:border-slate-700 dark:text-slate-300 dark:hover:text-indigo-400 dark:hover:border-indigo-800 dark:hover:bg-indigo-950/50"
               >
                 <Link 
                   href="#como-funciona"
@@ -85,7 +85,7 @@ export function Hero() {
             <motion.div
               animate={{ y: [0, -15, 0] }}
               transition={{ repeat: Infinity, duration: 6, ease: 'easeInOut' }}
-              className="relative w-[350px] h-[350px] md:w-[450px] md:h-[450px]"
+              className="relative w-[280px] h-[280px] sm:w-[350px] sm:h-[350px] md:w-[450px] md:h-[450px]"
             >
               {/* Glowing Background */}
               <div className="absolute inset-0 bg-gradient-to-tr from-indigo-500/30 to-teal-500/30 blur-[60px] rounded-full" />
