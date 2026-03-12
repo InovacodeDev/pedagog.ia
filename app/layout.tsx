@@ -1,5 +1,6 @@
 import { Inter, Space_Grotesk } from 'next/font/google';
 import './globals.css';
+import { Analytics } from '@vercel/analytics/next';
 import { cn } from '@/lib/utils';
 import type { Metadata } from 'next';
 import { Toaster } from '@/components/ui/sonner';
@@ -50,6 +51,7 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           {children}
+          <Analytics />
           <Toaster />
         </ThemeProvider>
       </body>
