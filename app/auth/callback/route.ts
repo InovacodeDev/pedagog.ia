@@ -28,10 +28,18 @@ export async function GET(request: NextRequest) {
     // Exchange the code for a session
     const response = NextResponse.redirect(`${origin}${next}`);
 
-    // This will set the session cookies on the response object
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
+    const { error, data } = await supabase.auth.exchangeCodeForSession(code);
 
     if (!error) {
+      if (data?.session?.user) {
+        try {
+          // Import dynamicly to avoid Server Actions edge compatibility issues if any
+          const { initializeUserAccountAction } = await import('@/server/actions/onboarding');
+          await initializeUserAccountAction();
+        } catch (err) {
+          console.error('Failed to initialize user account', err);
+        }
+      }
       return response;
     }
   }

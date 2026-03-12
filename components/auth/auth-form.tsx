@@ -18,6 +18,7 @@ import { toast } from 'sonner';
 import { Loader2, ArrowLeft, Mail } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { Logo } from '@/components/ui/logo';
+import { initializeUserAccountAction } from '@/server/actions/onboarding';
 
 export function AuthForm() {
   const [isLoading, setIsLoading] = React.useState(false);
@@ -137,6 +138,9 @@ export function AuthForm() {
           throw magicLinkError;
         }
       }
+
+      // Automatically setup Stripe customer & free credits if not configured yet
+      await initializeUserAccountAction();
 
       toast.success('Login realizado com sucesso!');
       router.refresh();

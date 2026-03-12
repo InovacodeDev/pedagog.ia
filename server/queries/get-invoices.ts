@@ -27,7 +27,7 @@ export async function getUserInvoices(userId: string): Promise<Invoice[]> {
   const customerId = user.user_metadata?.stripe_customer_id;
 
   if (!customerId) {
-    console.warn('No stripe_customer_id found for user', userId);
+    // New users won't have a stripe_customer_id yet
     return [];
   }
 

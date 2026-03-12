@@ -51,7 +51,9 @@ export async function getCreditBalance() {
     .maybeSingle();
 
   if (error) {
-    console.error('Error fetching credit balance:', error);
+    if (error.code !== 'PGRST116') {
+      console.error('Error fetching credit balance:', error);
+    }
     return 0;
   }
 
