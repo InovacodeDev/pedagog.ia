@@ -42,6 +42,7 @@ import { cn } from '@/lib/utils';
 interface ClassesListProps {
   initialClasses: ClassWithGrades[];
   currentTerm: string;
+  schoolPeriod: string;
 }
 
 const TERM_LABELS: Record<string, string> = {
@@ -56,8 +57,14 @@ const TERM_LABELS: Record<string, string> = {
   '2_semestre': '2º Semestre',
 };
 
-export function ClassesList({ initialClasses, currentTerm }: ClassesListProps) {
+export function ClassesList({ initialClasses, currentTerm, schoolPeriod }: ClassesListProps) {
   const router = useRouter();
+  
+  // Filter labels based on school period type
+  const filteredTermLabels = Object.fromEntries(
+    Object.entries(TERM_LABELS).filter(([key]) => key.includes(schoolPeriod))
+  );
+
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [selectedClass, setSelectedClass] = useState<ClassWithGrades | null>(null);
@@ -145,12 +152,13 @@ export function ClassesList({ initialClasses, currentTerm }: ClassesListProps) {
               <SelectValue placeholder="Selecione o período" />
             </SelectTrigger>
             <SelectContent>
-              {Object.entries(TERM_LABELS).map(([value, label]) => (
+              {Object.entries(filteredTermLabels).map(([value, label]) => (
                 <SelectItem key={value} value={value}>
                   {label}
                 </SelectItem>
               ))}
             </SelectContent>
+
           </Select>
           <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
             <DialogTrigger asChild>
@@ -170,6 +178,7 @@ export function ClassesList({ initialClasses, currentTerm }: ClassesListProps) {
                     id="name"
                     placeholder="Ex: 6º Ano A"
                     value={className}
+                    className="mt-2"
                     onChange={(e) => setClassName(e.target.value)}
                   />
                 </div>
@@ -189,7 +198,10 @@ export function ClassesList({ initialClasses, currentTerm }: ClassesListProps) {
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {initialClasses.map((cls) => (
-          <Card key={cls.id} className="relative group hover:border-primary/50 transition-colors flex flex-col">
+          <Card
+            key={cls.id}
+            className="relative group hover:border-primary/50 transition-colors flex flex-col"
+          >
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <Link href={`/classes/${cls.id}`} className="hover:underline">
                 <CardTitle className="text-lg font-medium">{cls.name}</CardTitle>
@@ -222,29 +234,36 @@ export function ClassesList({ initialClasses, currentTerm }: ClassesListProps) {
                 <span>{cls.students && cls.students.length > 0 ? cls.students[0].count : 0}</span>
                 <span className="text-sm font-normal text-muted-foreground">alunos</span>
               </div>
-              
+
               <div className="mt-auto border-t pt-4">
-                 <p className="text-xs font-semibold text-muted-foreground mb-3 uppercase tracking-wider">
-                   Média Geral ({TERM_LABELS[currentTerm] || currentTerm})
-                 </p>
-                 <ScrollArea className="h-[200px] -mr-4 pr-4">
-                   <div className="space-y-3">
-                     {cls.students_with_grades && cls.students_with_grades.length > 0 ? (
-                       cls.students_with_grades.map(student => (
-                          <div key={student.id} className="flex justify-between items-center text-sm group/student hover:bg-muted/50 p-1 rounded transition-colors">
-                              <span className="truncate font-medium text-slate-700 dark:text-slate-300">{student.name}</span>
-                              <span className={cn("font-bold tabular-nums", getGradeColor(student.average))}>
-                                  {student.average !== null ? student.average.toFixed(1) : '-'}
-                              </span>
-                          </div>
-                       ))
-                     ) : (
-                       <div className="flex flex-col items-center justify-center h-full py-8 text-center text-muted-foreground text-sm">
-                          <p>Nenhum aluno cadastrado.</p>
-                       </div>
-                     )}
-                   </div>
-                 </ScrollArea>
+                <p className="text-xs font-semibold text-muted-foreground mb-3 uppercase tracking-wider">
+                  Média Geral ({TERM_LABELS[currentTerm] || currentTerm})
+                </p>
+                <ScrollArea className="h-[200px] -mr-4 pr-4">
+                  <div className="space-y-3">
+                    {cls.students_with_grades && cls.students_with_grades.length > 0 ? (
+                      cls.students_with_grades.map((student) => (
+                        <div
+                          key={student.id}
+                          className="flex justify-between items-center text-sm group/student hover:bg-muted/50 p-1 rounded transition-colors"
+                        >
+                          <span className="truncate font-medium text-slate-700 dark:text-slate-300">
+                            {student.name}
+                          </span>
+                          <span
+                            className={cn('font-bold tabular-nums', getGradeColor(student.average))}
+                          >
+                            {student.average !== null ? student.average.toFixed(1) : '-'}
+                          </span>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="flex flex-col items-center justify-center h-full py-8 text-center text-muted-foreground text-sm">
+                        <p>Nenhum aluno cadastrado.</p>
+                      </div>
+                    )}
+                  </div>
+                </ScrollArea>
               </div>
             </CardContent>
           </Card>

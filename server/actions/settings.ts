@@ -3,7 +3,14 @@
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 
+export async function getSchoolPeriodAction(): Promise<string> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  return user?.user_metadata?.school_period || 'bimestre';
+}
+
 export async function updateSchoolPeriodAction(period: string) {
+
   const supabase = await createClient();
   const { error } = await supabase.auth.updateUser({
     data: { school_period: period },

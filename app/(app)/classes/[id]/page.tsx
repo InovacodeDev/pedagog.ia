@@ -8,6 +8,11 @@ import { DataUnavailable } from '@/components/ui/data-unavailable';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ClassExamsList } from '@/components/classes/class-exams-list';
 import { ClassGradesList } from '@/components/classes/class-grades-list';
+import { ClassAnalytics } from '@/components/classes/class-analytics';
+import { AttendanceForm } from '@/components/students/attendance-form';
+
+
+import { getSchoolPeriodAction } from '@/server/actions/settings';
 
 interface ClassDetailsPageProps {
   params: Promise<{ id: string }>;
@@ -18,6 +23,8 @@ export default async function ClassDetailsPage({ params }: ClassDetailsPageProps
   const classData = await getClassAction(id);
   const { students, success, error } = await getStudentsAction(id);
   const exams = await getExamsByClassAction(id);
+  const schoolPeriod = await getSchoolPeriodAction();
+
 
   if (!classData) {
     return (
@@ -67,8 +74,10 @@ export default async function ClassDetailsPage({ params }: ClassDetailsPageProps
       <Tabs defaultValue="students" className="w-full">
         <TabsList>
           <TabsTrigger value="students">Alunos</TabsTrigger>
-          <TabsTrigger value="exams">Provas da Turma</TabsTrigger>
-          <TabsTrigger value="grades">Notas da Turma</TabsTrigger>
+          <TabsTrigger value="attendance">Presença</TabsTrigger>
+          <TabsTrigger value="exams">Provas</TabsTrigger>
+          <TabsTrigger value="grades">Notas</TabsTrigger>
+          <TabsTrigger value="analytics">Analytics</TabsTrigger>
         </TabsList>
         <TabsContent value="students" className="mt-6">
           {!success ? (
@@ -77,13 +86,22 @@ export default async function ClassDetailsPage({ params }: ClassDetailsPageProps
             <ClassStudentList initialStudents={students || []} classId={classData.id} />
           )}
         </TabsContent>
+        <TabsContent value="attendance" className="mt-6">
+          <AttendanceForm classId={classData.id} students={students || []} />
+        </TabsContent>
         <TabsContent value="exams" className="mt-6">
           <ClassExamsList exams={exams} />
         </TabsContent>
         <TabsContent value="grades" className="mt-6">
-          <ClassGradesList />
+          <ClassGradesList classId={classData.id} students={students || []} schoolPeriod={schoolPeriod} />
+        </TabsContent>
+
+
+        <TabsContent value="analytics" className="mt-6">
+          <ClassAnalytics classId={classData.id} />
         </TabsContent>
       </Tabs>
+
     </div>
   );
 }

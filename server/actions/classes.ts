@@ -158,7 +158,8 @@ export async function deleteClassAction(id: string) {
 
 export interface StudentGradeInfo {
   id: string;
-  name: string;
+  name: string | null;
+
   average: number | null;
 }
 
@@ -278,3 +279,58 @@ export async function getExamsByClassAction(classId: string) {
   // Flatten the result to return just the exam objects
   return data.map((item: any) => item.exam).filter(Boolean);
 }
+
+export async function getClassDisciplineAnalyticsAction(classId: string) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) throw new Error('Unauthorized');
+
+  // 1. Get exams linked to this class
+  const { data: examRefs, error: refError } = await (supabase as any)
+    .from('exam_classes')
+    .select('exam_id')
+    .eq('class_id', classId);
+
+  if (refError || !examRefs) return { success: false, error: 'Erro ao buscar provas da turma' };
+
+  const examIds = examRefs.map((r: any) => r.exam_id);
+  if (examIds.length === 0) return { success: true, data: [] };
+
+  // 2. Get exams details (discipline) and their results
+  const { data: exams, error: examsError } = await (supabase as any)
+    .from('exams')
+    .select('id, discipline')
+    .in('id', examIds);
+
+  if (examsError) return { success: false, error: 'Erro ao buscar disciplinas' };
+
+  const { data: results, error: resultsError } = await (supabase as any)
+    .from('exam_results')
+    .select('exam_id, score')
+    .in('exam_id', examIds);
+
+  if (resultsError) return { success: false, error: 'Erro ao buscar resultados' };
+
+  // 3. Aggregate by discipline
+  const disciplineGrades: Record<string, { total: number; count: number }> = {};
+
+  results.forEach((res: any) => {
+    const exam = exams.find((e: any) => e.id === res.exam_id);
+    const discipline = exam?.discipline || 'Outros';
+    
+    if (!disciplineGrades[discipline]) {
+      disciplineGrades[discipline] = { total: 0, count: 0 };
+    }
+    disciplineGrades[discipline].total += Number(res.score) || 0;
+    disciplineGrades[discipline].count += 1;
+  });
+
+  const chartData = Object.entries(disciplineGrades).map(([discipline, stats]) => ({
+    discipline,
+    average: parseFloat((stats.total / stats.count).toFixed(1))
+  }));
+
+  return { success: true, data: chartData };
+}
+
