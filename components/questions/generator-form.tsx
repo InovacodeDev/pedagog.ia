@@ -6,6 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Loader2, Wand2, Save, Upload, X, FileText } from 'lucide-react';
 import { toast } from 'sonner';
+import amplitude from '@/lib/amplitude';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -373,6 +374,15 @@ export function GeneratorForm({
       }
 
       console.log({ questions: result.questions });
+      amplitude.track('Questions Generated', {
+        quantity: values.quantity,
+        discipline: values.discipline,
+        style: values.style,
+        subject: values.subject,
+        model_tier: values.model_tier,
+        use_internet_search: values.use_internet_search,
+        filesCount: selectedFiles.length,
+      });
       setGeneratedQuestions(result.questions);
       setSelectedIndices(result.questions.map((_, i) => i));
       toast.success('Questões geradas com sucesso!');
@@ -407,6 +417,10 @@ export function GeneratorForm({
     try {
       const result = await saveQuestionsAction(questionsToSave);
       if (result.success) {
+        amplitude.track('Questions Saved', {
+          count: questionsToSave.length,
+          isImport: !!onImport,
+        });
         toast.success('Questões salvas no Banco de Questões!');
         setGeneratedQuestions(null);
         setSelectedIndices([]);

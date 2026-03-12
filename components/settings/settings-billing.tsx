@@ -10,6 +10,7 @@ import { createPortalSessionAction } from '@/server/actions/stripe';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import amplitude from '@/lib/amplitude';
 
 interface SettingsBillingProps {
   isPro?: boolean;
@@ -27,6 +28,7 @@ export function SettingsBilling({ isPro = false, subscription }: SettingsBilling
 
   const handleManageSubscription = async () => {
     try {
+      amplitude.track('Billing Portal Opened');
       setIsLoadingPortal(true);
       const { url } = await createPortalSessionAction();
       if (url) {
@@ -89,7 +91,10 @@ export function SettingsBilling({ isPro = false, subscription }: SettingsBilling
           ) : (
             <PricingDialog
               isOpen={isPricingOpen}
-              onOpenChange={setIsPricingOpen}
+              onOpenChange={(open) => {
+                setIsPricingOpen(open);
+                if (open) amplitude.track('Pricing Dialog Opened', { location: 'Settings' });
+              }}
               trigger={
                 <Button className="gap-2">
                   <Zap className="h-4 w-4" /> Fazer Upgrade

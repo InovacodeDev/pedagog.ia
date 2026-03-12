@@ -23,6 +23,7 @@ import {
 import { createStudentAction } from '@/server/actions/students';
 import { getClassesAction, ClassItem } from '@/server/actions/classes';
 import { toast } from 'sonner';
+import amplitude from '@/lib/amplitude';
 
 interface NewStudentDialogProps {
   defaultClassId?: string;
@@ -64,6 +65,7 @@ export function NewStudentDialog({ defaultClassId }: NewStudentDialogProps) {
       });
 
       if (result.success) {
+        amplitude.track('Student Created', { classId: targetClassId });
         toast.success('Aluno criado com sucesso!');
         setOpen(false);
         setName('');

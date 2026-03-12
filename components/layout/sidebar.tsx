@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils';
 import { LayoutDashboard, FileText, Users, Camera, Settings, FileQuestion } from 'lucide-react';
 import { Logo } from '@/components/ui/logo';
 import { SidebarFooter } from '@/components/layout/sidebar-footer';
+import amplitude from '@/lib/amplitude';
 
 const routes = [
   {
@@ -88,6 +89,10 @@ export function Sidebar({ isPro = false }: SidebarProps) {
               <Link
                 key={route.href}
                 href={route.href}
+                onClick={() => amplitude.track('Navigation Clicked', { 
+                  destination: route.label,
+                  path: route.href 
+                })}
                 className={cn(
                   'text-sm group flex p-3 w-full justify-start font-medium cursor-pointer rounded-lg transition-all duration-200 hover:translate-x-1',
                   isActive

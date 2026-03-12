@@ -14,6 +14,7 @@ import { Check, Loader2 } from 'lucide-react';
 import { useState } from 'react';
 import { Logo } from '@/components/ui/logo';
 import { toast } from 'sonner';
+import amplitude from '@/lib/amplitude';
 
 interface PricingDialogProps {
   trigger?: React.ReactNode;
@@ -25,6 +26,7 @@ export function PricingDialog({ trigger, isOpen, onOpenChange }: PricingDialogPr
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSubscribe = async () => {
+    amplitude.track('Subscription Checkout Started');
     try {
       setIsLoading(true);
       const { url } = await createCheckoutSessionAction();

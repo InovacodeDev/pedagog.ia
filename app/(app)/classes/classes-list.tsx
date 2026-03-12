@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import amplitude from '@/lib/amplitude';
 import {
   ClassWithGrades,
   createClassAction,
@@ -94,6 +95,12 @@ export function ClassesList({ initialClasses }: ClassesListProps) {
         periodStarts.filter((d) => d !== '')
       );
       if (result.success) {
+        amplitude.track('Class Created', {
+          className,
+          academicYear,
+          periodType,
+          disciplinesCount: disciplines.length,
+        });
         toast.success(result.message);
         setIsCreateOpen(false);
         resetForm();
@@ -131,6 +138,13 @@ export function ClassesList({ initialClasses }: ClassesListProps) {
         periodStarts.filter((d) => d !== '')
       );
       if (result.success) {
+        amplitude.track('Class Updated', {
+          classId: selectedClass.id,
+          className,
+          academicYear,
+          periodType,
+          disciplinesCount: disciplines.length,
+        });
         toast.success(result.message);
         setIsEditOpen(false);
         resetForm();
@@ -151,6 +165,7 @@ export function ClassesList({ initialClasses }: ClassesListProps) {
     try {
       const result = await deleteClassAction(id);
       if (result.success) {
+        amplitude.track('Class Deleted', { classId: id });
         toast.success(result.message);
       } else {
         toast.error(result.message);
@@ -365,7 +380,10 @@ export function ClassesList({ initialClasses }: ClassesListProps) {
         {initialClasses.map((cls) => (
           <Card
             key={cls.id}
-            onClick={() => router.push(`/classes/${cls.id}`)}
+            onClick={() => {
+              amplitude.track('Class Viewed', { classId: cls.id, className: cls.name });
+              router.push(`/classes/${cls.id}`);
+            }}
             className={cn(
               'hover:shadow-lg transition-all flex flex-col relative overflow-hidden cursor-pointer group hover:border-primary/30',
               isClassFinished(cls) && 'opacity-80 grayscale-[0.2]'

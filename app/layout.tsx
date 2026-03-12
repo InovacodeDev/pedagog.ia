@@ -5,6 +5,9 @@ import { cn } from '@/lib/utils';
 import type { Metadata, Viewport } from 'next';
 import { Toaster } from '@/components/ui/sonner';
 import { ThemeProvider } from '@/components/theme-provider';
+import { AmplitudeProvider } from '@/components/amplitude-provider';
+import { Amplitude } from '@/lib/amplitude';
+import { createClient } from '@/lib/supabase/server';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -73,11 +76,16 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
-}): React.ReactElement {
+}): Promise<React.ReactElement> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
   return (
     <html lang="pt-BR" dir="ltr" suppressHydrationWarning>
       <body
@@ -94,7 +102,10 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          {children}
+          <Amplitude />
+          <AmplitudeProvider userId={user?.id}>
+            {children}
+          </AmplitudeProvider>
           <Analytics />
           <Toaster />
         </ThemeProvider>

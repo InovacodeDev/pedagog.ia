@@ -23,6 +23,7 @@ import { duplicateExamAction, deleteExamAction } from '@/server/actions/exams';
 import { toast } from 'sonner';
 import { useRealtimeSubscription } from '@/hooks/use-realtime-subscription';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import amplitude from '@/lib/amplitude';
 
 interface Exam {
   id: string;
@@ -53,6 +54,7 @@ export function ExamsRealtimeList({ initialExams }: ExamsRealtimeListProps) {
   });
 
   const handleDuplicate = async (examId: string) => {
+    amplitude.track('Exam Duplicated', { examId });
     toast.promise(duplicateExamAction(examId), {
       loading: 'Duplicando prova...',
       success: (result) => {
@@ -76,6 +78,7 @@ export function ExamsRealtimeList({ initialExams }: ExamsRealtimeListProps) {
   const confirmDelete = async () => {
     if (!examToDelete) return;
 
+    amplitude.track('Exam Deleted', { examId: examToDelete });
     toast.promise(deleteExamAction(examToDelete), {
       loading: 'Excluindo prova...',
       success: (result) => {
@@ -162,6 +165,7 @@ export function ExamsRealtimeList({ initialExams }: ExamsRealtimeListProps) {
                             <DropdownMenuItem asChild disabled={isManual}>
                               <Link
                                 href={isManual ? '#' : `/exams/${exam.id}`}
+                                onClick={() => amplitude.track('Exam Viewed', { examId: exam.id })}
                                 className={isManual ? 'pointer-events-none opacity-50' : ''}
                               >
                                 <Eye className="mr-2 h-4 w-4" /> Visualizar
@@ -170,6 +174,7 @@ export function ExamsRealtimeList({ initialExams }: ExamsRealtimeListProps) {
                             <DropdownMenuItem
                               disabled={isManual}
                               className={isManual ? 'opacity-50' : ''}
+                              onClick={() => amplitude.track('Exam PDF Exported', { examId: exam.id })}
                             >
                               <FileDown className="mr-2 h-4 w-4" /> Exportar PDF
                             </DropdownMenuItem>
@@ -188,6 +193,11 @@ export function ExamsRealtimeList({ initialExams }: ExamsRealtimeListProps) {
                                   : ''
                               }
                               asChild={!isManual && (exam.correction_count || 0) === 0}
+                              onClick={() => {
+                                if (!isManual && (exam.correction_count || 0) === 0) {
+                                  amplitude.track('Exam Edit Started', { examId: exam.id });
+                                }
+                              }}
                             >
                               {!isManual && (exam.correction_count || 0) === 0 ? (
                                 <Link href={`/exams/${exam.id}/edit`}>

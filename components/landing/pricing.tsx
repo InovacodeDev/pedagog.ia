@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { Check, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
+import amplitude from '@/lib/amplitude';
 
 const PLANS = [
   {
@@ -99,7 +100,15 @@ export function Pricing() {
                 }`}
                 variant={plan.variant === 'outline' ? 'outline' : 'default'}
               >
-                <Link href={plan.href}>{plan.cta}</Link>
+                <Link 
+                  href={plan.href}
+                  onClick={() => amplitude.track('Landing Pricing Option Clicked', { 
+                    plan: plan.name,
+                    label: plan.cta 
+                  })}
+                >
+                  {plan.cta}
+                </Link>
               </Button>
             </motion.div>
           ))}

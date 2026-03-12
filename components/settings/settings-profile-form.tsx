@@ -20,6 +20,7 @@ import { Pencil } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTransition } from 'react';
 import { updateProfileAction } from '@/server/actions/profile';
+import amplitude from '@/lib/amplitude';
 
 const profileFormSchema = z.object({
   name: z.string().min(2, {
@@ -65,8 +66,12 @@ export function SettingsProfileForm({ user }: SettingsProfileFormProps) {
       if (data.disciplines) formData.append('disciplines', data.disciplines);
 
       const result = await updateProfileAction(formData);
-
+      
       if (result.success) {
+        amplitude.track('Profile Updated', {
+          has_school_name: !!data.school_name,
+          disciplines_count: data.disciplines?.split(',').length || 0
+        });
         toast.success(result.message);
       } else {
         toast.error(result.message);

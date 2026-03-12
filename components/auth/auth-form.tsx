@@ -19,6 +19,7 @@ import { Loader2, ArrowLeft, Mail } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { Logo } from '@/components/ui/logo';
 import { initializeUserAccountAction } from '@/server/actions/onboarding';
+import amplitude from '@/lib/amplitude';
 
 export function AuthForm() {
   const [isLoading, setIsLoading] = React.useState(false);
@@ -51,9 +52,11 @@ export function AuthForm() {
       });
 
       if (error) {
+        amplitude.track('OTP Send Failed', { error: error.message });
         throw error;
       }
 
+      amplitude.track('OTP Sent');
       setStep('otp');
       setTimeLeft(60);
       toast.success('Código enviado!', {
@@ -88,9 +91,11 @@ export function AuthForm() {
       });
 
       if (error) {
+        amplitude.track('OTP Resend Failed', { error: error.message });
         throw error;
       }
 
+      amplitude.track('OTP Resent');
       setOtp('');
       setTimeLeft(60);
       toast.success('Código reenviado!', {
@@ -135,9 +140,12 @@ export function AuthForm() {
         });
 
         if (magicLinkError) {
+          amplitude.track('OTP Verification Failed', { error: magicLinkError.message });
           throw magicLinkError;
         }
       }
+
+      amplitude.track('User Logged In', { method: 'magiclink_otp' });
 
       // Automatically setup Stripe customer & free credits if not configured yet
       await initializeUserAccountAction();

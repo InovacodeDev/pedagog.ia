@@ -21,6 +21,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { ClassItem } from '@/server/actions/classes';
+import amplitude from '@/lib/amplitude';
 
 interface Student {
   id: string;
@@ -58,7 +59,13 @@ export function StudentsRealtimeTable({ initialStudents, classes }: StudentsReal
     <div className="space-y-4">
       <div className="flex justify-end">
         <div className="w-[200px]">
-          <Select value={selectedClassId} onValueChange={setSelectedClassId}>
+          <Select 
+            value={selectedClassId} 
+            onValueChange={(value) => {
+              setSelectedClassId(value);
+              amplitude.track('Student List Filtered', { classId: value });
+            }}
+          >
             <SelectTrigger>
               <SelectValue placeholder="Filtrar por turma" />
             </SelectTrigger>

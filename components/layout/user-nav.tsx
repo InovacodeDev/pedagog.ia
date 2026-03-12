@@ -15,6 +15,7 @@ import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import { User } from '@supabase/supabase-js';
 import { useEffect, useState } from 'react';
+import amplitude from '@/lib/amplitude';
 
 export function UserNav() {
   const router = useRouter();
@@ -32,6 +33,7 @@ export function UserNav() {
   }, [supabase]);
 
   const handleSignOut = async () => {
+    amplitude.track('User Signed Out');
     await supabase.auth.signOut();
     router.push('/login');
   };
@@ -57,10 +59,16 @@ export function UserNav() {
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
-          <DropdownMenuItem onClick={() => router.push('/settings')}>
+          <DropdownMenuItem onClick={() => {
+            amplitude.track('Navigation Clicked', { destination: 'Settings' });
+            router.push('/settings');
+          }}>
             Configurações
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => router.push('/settings?tab=billing')}>
+          <DropdownMenuItem onClick={() => {
+            amplitude.track('Navigation Clicked', { destination: 'Billing' });
+            router.push('/settings?tab=billing');
+          }}>
             Assinatura
           </DropdownMenuItem>
         </DropdownMenuGroup>
