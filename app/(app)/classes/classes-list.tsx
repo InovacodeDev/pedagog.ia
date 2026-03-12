@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   ClassWithGrades,
   createClassAction,
@@ -54,7 +55,7 @@ interface ClassesListProps {
 }
 
 export function ClassesList({ initialClasses }: ClassesListProps) {
-
+  const router = useRouter();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [selectedClass, setSelectedClass] = useState<ClassWithGrades | null>(null);
@@ -194,7 +195,6 @@ export function ClassesList({ initialClasses }: ClassesListProps) {
     );
   };
 
-
   const getGradeColor = (grade: number | null) => {
     if (grade === null) return 'text-muted-foreground';
     if (grade >= 7) return 'text-green-600';
@@ -261,7 +261,10 @@ export function ClassesList({ initialClasses }: ClassesListProps) {
 
                 <div className="space-y-3">
                   <Label>Tipo de Período</Label>
-                  <Select value={periodType} onValueChange={(v) => setPeriodType(v as typeof periodType)}>
+                  <Select
+                    value={periodType}
+                    onValueChange={(v) => setPeriodType(v as typeof periodType)}
+                  >
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -284,8 +287,12 @@ export function ClassesList({ initialClasses }: ClassesListProps) {
                           {i + 1}º {periodType.charAt(0).toUpperCase() + periodType.slice(1)}
                         </Label>
                         <DatePicker
-                          date={periodStarts[i] ? new Date(periodStarts[i] + 'T00:00:00') : undefined}
-                          onChange={(date) => handlePeriodStartChange(i, date ? date.toISOString().split('T')[0] : '')}
+                          date={
+                            periodStarts[i] ? new Date(periodStarts[i] + 'T00:00:00') : undefined
+                          }
+                          onChange={(date) =>
+                            handlePeriodStartChange(i, date ? date.toISOString().split('T')[0] : '')
+                          }
                         />
                       </div>
                     ))}
@@ -358,8 +365,9 @@ export function ClassesList({ initialClasses }: ClassesListProps) {
         {initialClasses.map((cls) => (
           <Card
             key={cls.id}
+            onClick={() => router.push(`/classes/${cls.id}`)}
             className={cn(
-              'hover:shadow-lg transition-shadow flex flex-col relative overflow-hidden',
+              'hover:shadow-lg transition-all flex flex-col relative overflow-hidden cursor-pointer group hover:border-primary/30',
               isClassFinished(cls) && 'opacity-80 grayscale-[0.2]'
             )}
           >
@@ -370,10 +378,16 @@ export function ClassesList({ initialClasses }: ClassesListProps) {
             )}
             <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
               <div className="space-y-1">
-                <Link href={`/classes/${cls.id}`} className="hover:underline transition-all">
-                  <CardTitle className="text-xl font-bold">{cls.name}</CardTitle>
+                <Link
+                  href={`/classes/${cls.id}`}
+                  className="hover:underline transition-all"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <CardTitle className="text-xl font-bold group-hover:text-primary transition-colors">
+                    {cls.name}
+                  </CardTitle>
                 </Link>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 mt-1">
                   <Badge variant="outline" className="text-[10px] h-5">
                     {cls.academic_year || currentYear}
                   </Badge>
@@ -383,27 +397,29 @@ export function ClassesList({ initialClasses }: ClassesListProps) {
                 </div>
               </div>
               {!isClassFinished(cls) && (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="h-8 w-8 p-0">
-                      <span className="sr-only">Abrir menu</span>
-                      <MoreVertical className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => openEdit(cls)}>
-                      <Settings2 className="mr-2 h-4 w-4" />
-                      Configurar turma
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => handleDelete(cls.id)}
-                      className="text-red-600 focus:text-red-600"
-                    >
-                      <Trash2 className="mr-2 h-4 w-4" />
-                      Excluir
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                <div onClick={(e) => e.stopPropagation()}>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" className="h-8 w-8 p-0">
+                        <span className="sr-only">Abrir menu</span>
+                        <MoreVertical className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => openEdit(cls)}>
+                        <Settings2 className="mr-2 h-4 w-4" />
+                        Configurar turma
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => handleDelete(cls.id)}
+                        className="text-red-600 focus:text-red-600"
+                      >
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Excluir
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
               )}
             </CardHeader>
             <CardContent className="flex-1 flex flex-col">
@@ -493,7 +509,10 @@ export function ClassesList({ initialClasses }: ClassesListProps) {
 
             <div className="space-y-3">
               <Label>Tipo de Período</Label>
-              <Select value={periodType} onValueChange={(v) => setPeriodType(v as typeof periodType)}>
+              <Select
+                value={periodType}
+                onValueChange={(v) => setPeriodType(v as typeof periodType)}
+              >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -517,7 +536,9 @@ export function ClassesList({ initialClasses }: ClassesListProps) {
                     </Label>
                     <DatePicker
                       date={periodStarts[i] ? new Date(periodStarts[i] + 'T00:00:00') : undefined}
-                      onChange={(date) => handlePeriodStartChange(i, date ? date.toISOString().split('T')[0] : '')}
+                      onChange={(date) =>
+                        handlePeriodStartChange(i, date ? date.toISOString().split('T')[0] : '')
+                      }
                     />
                   </div>
                 ))}
