@@ -569,61 +569,6 @@ export function GeneratorForm({
                         )}
                       />
                     )}
-
-                    {/* Subtypes Logic: Render one select per selected type if applicable */}
-                    {selectedTypes.length > 0 && (
-                      <div className="col-span-1 lg:col-span-3 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-2 border-t pt-4">
-                        {selectedTypes.map((typeId) => {
-                          const options = QUESTION_SUBTYPES[typeId];
-                          const typeLabel =
-                            QUESTION_TYPES.find((t) => t.id === typeId)?.label || typeId;
-                          if (!options) return null;
-
-                          const isEnemEssay = selectedStyle === 'enem' && typeId === 'essay';
-
-                          return (
-                            <FormField
-                              key={typeId}
-                              control={form.control}
-                              name={`subtypes.${typeId}`}
-                              render={({ field }) => (
-                                <FormItem className="col-span-1">
-                                  <FormLabel
-                                    className="truncate block"
-                                    title={`Formato (${typeLabel})`}
-                                  >
-                                    Formato ({typeLabel})
-                                  </FormLabel>
-                                  <Select
-                                    value={
-                                      isEnemEssay
-                                        ? 'dissertativo_argumentativo'
-                                        : (field.value as string) || ''
-                                    }
-                                    disabled={isEnemEssay}
-                                    onValueChange={field.onChange}
-                                  >
-                                    <FormControl>
-                                      <SelectTrigger className="text-left">
-                                        <SelectValue placeholder="Selecione um formato..." />
-                                      </SelectTrigger>
-                                    </FormControl>
-                                    <SelectContent>
-                                      {options.map((opt) => (
-                                        <SelectItem key={opt.value} value={opt.value}>
-                                          {opt.label}
-                                        </SelectItem>
-                                      ))}
-                                    </SelectContent>
-                                  </Select>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
-                          );
-                        })}
-                      </div>
-                    )}
                   </div>
 
                   <FormField
@@ -632,7 +577,7 @@ export function GeneratorForm({
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Assunto</FormLabel>
-                        <FormControl>
+                        <FormControl className="mt-2">
                           <Input placeholder="Ex: Equação de 2º Grau" {...field} />
                         </FormControl>
                         <FormMessage />
@@ -642,7 +587,7 @@ export function GeneratorForm({
 
                   <div className="space-y-4">
                     <FormLabel>Arquivos de Contexto (PDF, Imagens, Texto)</FormLabel>
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-4 mt-2">
                       <Button
                         type="button"
                         variant="outline"
@@ -729,7 +674,7 @@ export function GeneratorForm({
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Quantidade: {field.value}</FormLabel>
-                        <FormControl>
+                        <FormControl className="mt-2">
                           <Slider
                             min={1}
                             max={10}
@@ -749,7 +694,7 @@ export function GeneratorForm({
                     render={() => (
                       <FormItem>
                         <FormLabel>Tipos de Questão</FormLabel>
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-2 gap-4 mt-2">
                           {QUESTION_TYPES.map((type) => (
                             <FormField
                               key={type.id}
@@ -823,6 +768,61 @@ export function GeneratorForm({
                       </FormItem>
                     )}
                   />
+
+                  {/* Subtypes Logic: Render one select per selected type if applicable */}
+                  {selectedTypes.length > 0 && (
+                    <div className="col-span-1 lg:col-span-3 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-2 border-t pt-4">
+                      {selectedTypes.map((typeId) => {
+                        const options = QUESTION_SUBTYPES[typeId];
+                        const typeLabel =
+                          QUESTION_TYPES.find((t) => t.id === typeId)?.label || typeId;
+                        if (!options) return null;
+
+                        const isEnemEssay = selectedStyle === 'enem' && typeId === 'essay';
+
+                        return (
+                          <FormField
+                            key={typeId}
+                            control={form.control}
+                            name={`subtypes.${typeId}`}
+                            render={({ field }) => (
+                              <FormItem className="col-span-1">
+                                <FormLabel
+                                  className="truncate block"
+                                  title={`Formato (${typeLabel})`}
+                                >
+                                  Formato ({typeLabel})
+                                </FormLabel>
+                                <Select
+                                  value={
+                                    isEnemEssay
+                                      ? 'dissertativo_argumentativo'
+                                      : (field.value as string) || ''
+                                  }
+                                  disabled={isEnemEssay}
+                                  onValueChange={field.onChange}
+                                >
+                                  <FormControl>
+                                    <SelectTrigger className="text-left">
+                                      <SelectValue placeholder="Selecione um formato..." />
+                                    </SelectTrigger>
+                                  </FormControl>
+                                  <SelectContent>
+                                    {options.map((opt) => (
+                                      <SelectItem key={opt.value} value={opt.value}>
+                                        {opt.label}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        );
+                      })}
+                    </div>
+                  )}
 
                   <Button type="submit" className="w-full cursor-pointer" disabled={isLoading}>
                     {isLoading ? (
