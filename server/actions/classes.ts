@@ -412,20 +412,18 @@ export async function getClassesWithGradesAction(term?: string) {
         }
       });
       
-      const examsConfig = (cls.exams_config || {}) as Record<string, number>;
-
       // Calculate General Average
-      let average = null;
-      if (studentResults.length > 0) {
-        const sum = studentResults.reduce((acc, curr) => acc + (Number(curr.score) || 0), 0);
+      let average: number | null = null;
+      
+      if (allClassDisciplines.length > 0) {
+        const hasAnyGrade: boolean = Object.values(disciplineGrades).some((g: number | null) => g !== null);
         
-        // Sum of exams count configured for all disciplines in this class (from exams_config)
-        const totalExamsConfig = allClassDisciplines.reduce((acc, disc) => {
-          return acc + (examsConfig[disc] || 4);
-        }, 0);
-
-        const divisor = totalExamsConfig || studentResults.length || 1;
-        average = parseFloat((sum / divisor).toFixed(2));
+        if (hasAnyGrade) {
+          const sumOfAverages: number = allClassDisciplines.reduce((acc: number, disc: string) => {
+            return acc + (disciplineGrades[disc] ?? 0);
+          }, 0);
+          average = parseFloat((sumOfAverages / allClassDisciplines.length).toFixed(2));
+        }
       }
 
       // Calculate Frequency

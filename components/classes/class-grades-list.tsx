@@ -228,14 +228,14 @@ export function ClassGradesList({ classId, students: allStudents, schoolPeriod }
                       {discipline}
                     </TableHead>
                   ))}
-                  <TableHead className="text-center min-w-[120px] font-bold border-r bg-primary/5 text-primary">
-                    Média Geral
-                  </TableHead>
                   <TableHead className="text-center min-w-[100px] font-bold border-r">
                     Frequência
                   </TableHead>
-                  <TableHead className="text-center min-w-[130px] font-bold">
+                  <TableHead className="text-center min-w-[130px] font-bold border-r">
                     Status Final
+                  </TableHead>
+                  <TableHead className="text-center min-w-[120px] font-bold bg-primary/5 text-primary">
+                    Média Geral
                   </TableHead>
                 </TableRow>
               </TableHeader>
@@ -253,7 +253,13 @@ export function ClassGradesList({ classId, students: allStudents, schoolPeriod }
                         )}
                       </TableCell>
                     ))}
-                    <TableCell className="text-center font-bold border-r bg-primary/5">
+                    <TableCell className="text-center border-r">
+                      {getFrequencyBadge(student.frequency)}
+                    </TableCell>
+                    <TableCell className="text-center border-r">
+                      {getStatusBadge(student.status)}
+                    </TableCell>
+                    <TableCell className="text-center font-bold bg-primary/5">
                       {getGradeBadge(
                         student.average,
                         disciplines
@@ -264,12 +270,6 @@ export function ClassGradesList({ classId, students: allStudents, schoolPeriod }
                           })),
                         'Médias por Matéria'
                       )}
-                    </TableCell>
-                    <TableCell className="text-center border-r">
-                      {getFrequencyBadge(student.frequency)}
-                    </TableCell>
-                    <TableCell className="text-center">
-                      {getStatusBadge(student.status)}
                     </TableCell>
                   </TableRow>
                 ))}
