@@ -212,13 +212,12 @@ export function ExamAnalyticsComponent({ analytics }: ExamAnalyticsProps) {
                 <TableHead>Nome do Aluno</TableHead>
                 <TableHead>Nota</TableHead>
                 <TableHead>Data de Realização</TableHead>
-                <TableHead className="text-right">Status</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {students.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={3} className="text-center py-8 text-muted-foreground">
                     Nenhum aluno realizou esta prova ainda.
                   </TableCell>
                 </TableRow>
@@ -233,9 +232,6 @@ export function ExamAnalyticsComponent({ analytics }: ExamAnalyticsProps) {
                     </TableCell>
                     <TableCell>
                       {new Date(student.date).toLocaleDateString('pt-BR')}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Badge variant="outline">{student.score >= 6 ? 'Aprovado' : 'Abaixo da média'}</Badge>
                     </TableCell>
                   </TableRow>
                 ))

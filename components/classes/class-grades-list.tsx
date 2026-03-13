@@ -174,18 +174,6 @@ export function ClassGradesList({ classId, students: allStudents, schoolPeriod }
     );
   };
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'Aprovado':
-        return <Badge className="bg-green-600 hover:bg-green-700">Aprovado</Badge>;
-      case 'Reprovado':
-        return <Badge variant="destructive">Reprovado</Badge>;
-      case 'Reprovado por Falta':
-        return <Badge variant="destructive" className="bg-orange-600 hover:bg-orange-700 border-none">Reprovado por Falta</Badge>;
-      default:
-        return <Badge variant="secondary">Pendente</Badge>;
-    }
-  };
 
   const getFrequencyBadge = (frequency: number | null) => {
     if (frequency === null) return <span className="text-muted-foreground text-xs font-normal">-</span>;
@@ -277,9 +265,6 @@ export function ClassGradesList({ classId, students: allStudents, schoolPeriod }
                   <TableHead className="text-center min-w-[100px] font-bold border-r">
                     Frequência
                   </TableHead>
-                  <TableHead className="text-center min-w-[130px] font-bold border-r">
-                    Status Final
-                  </TableHead>
                   <TableHead className="text-center min-w-[120px] font-bold bg-primary/5 text-primary">
                     Média Geral
                   </TableHead>
@@ -301,9 +286,6 @@ export function ClassGradesList({ classId, students: allStudents, schoolPeriod }
                     ))}
                     <TableCell className="text-center border-r">
                       {getFrequencyBadge(student.frequency)}
-                    </TableCell>
-                    <TableCell className="text-center border-r">
-                      {getStatusBadge(student.status)}
                     </TableCell>
                     <TableCell className="text-center font-bold bg-primary/5">
                       {getGradeBadge(
