@@ -25,6 +25,7 @@ import { PlusCircle, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { saveManualGradesAction } from '@/server/actions/grades';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { TERM_LABELS } from '@/lib/terms';
 
 interface Student {
   id: string;
@@ -38,17 +39,6 @@ interface AddManualGradesDialogProps {
   disciplines: string[];
 }
 
-const TERM_LABELS: Record<string, string> = {
-  '1_bimestre': '1º Bimestre',
-  '2_bimestre': '2º Bimestre',
-  '3_bimestre': '3º Bimestre',
-  '4_bimestre': '4º Bimestre',
-  '1_trimestre': '1º Trimestre',
-  '2_trimestre': '2º Trimestre',
-  '3_trimestre': '3º Trimestre',
-  '1_semestre': '1º Semestre',
-  '2_semestre': '2º Semestre',
-};
 
 export function AddManualGradesDialog({
   classId,

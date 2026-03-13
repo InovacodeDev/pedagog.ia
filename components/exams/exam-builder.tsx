@@ -35,6 +35,8 @@ export function ExamBuilder() {
       title: '',
       topic: '',
       grade: '',
+      discipline: '',
+      term: '',
       quantity: 5,
       difficulty: 'medium',
       questions: [] as Question[],
@@ -107,7 +109,7 @@ export function ExamBuilder() {
     }
   };
 
-  const onSave = async (data: { title: string; questions: Question[] }) => {
+  const onSave = async (data: { title: string; questions: Question[]; term?: string; discipline?: string }) => {
     try {
       await saveExamAction(data);
       toast.success('Prova salva com sucesso!');
@@ -136,6 +138,34 @@ export function ExamBuilder() {
             <div className="space-y-2">
               <Label>Série / Ano</Label>
               <Input {...register('grade')} placeholder="Ex: 8º Ano" />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Matéria / Disciplina</Label>
+              <Input {...register('discipline')} placeholder="Ex: História" />
+            </div>
+            <div className="space-y-2">
+              <Label>Período</Label>
+              <Select
+                onValueChange={(val: string) => setValue('term', val)}
+                defaultValue=""
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o período" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1º Bimestre">1º Bimestre</SelectItem>
+                  <SelectItem value="2º Bimestre">2º Bimestre</SelectItem>
+                  <SelectItem value="3º Bimestre">3º Bimestre</SelectItem>
+                  <SelectItem value="4º Bimestre">4º Bimestre</SelectItem>
+                  <SelectItem value="1º Trimestre">1º Trimestre</SelectItem>
+                  <SelectItem value="2º Trimestre">2º Trimestre</SelectItem>
+                  <SelectItem value="3º Trimestre">3º Trimestre</SelectItem>
+                  <SelectItem value="Semestre 1">Semestre 1</SelectItem>
+                  <SelectItem value="Semestre 2">Semestre 2</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4">

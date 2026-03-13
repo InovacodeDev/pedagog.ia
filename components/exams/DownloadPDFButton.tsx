@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Download, Loader2 } from 'lucide-react';
 import QRCode from 'qrcode';
 
-interface Exam {
+export interface Exam {
   id: string;
   title: string;
   questions_list: Question[];

@@ -1,7 +1,7 @@
 import { getExamAction } from '@/server/actions/get-exam';
+import { getExamAnalyticsAction } from '@/server/actions/get-exam-analytics';
 import { notFound, redirect } from 'next/navigation';
-import { ExamViewer } from '@/components/exams/exam-viewer';
-import { ExamBlock } from '@/components/builder/exam-block';
+import { ExamDetailsClient } from '@/components/exams/exam-details-client';
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -9,18 +9,30 @@ interface PageProps {
 
 export default async function ExamPage({ params }: PageProps) {
   const { id } = await params;
-  const { exam, success, error } = await getExamAction(id);
+  
+  // Fetch both exam info and analytics in parallel
+  const [examResult, analyticsResult] = await Promise.all([
+    getExamAction(id),
+    getExamAnalyticsAction(id)
+  ]);
 
-  if (!success || !exam) {
-    if (error === 'Unauthorized') {
+  if (!examResult.success || !examResult.exam) {
+    if (examResult.error === 'Unauthorized') {
       redirect('/login');
     }
     notFound();
   }
 
+  if (!analyticsResult.success || !analyticsResult.analytics) {
+     // If analytics fail, we might still want to show the page but with an error or empty analytics
+     // But for now, let's just handle it as a serious error
+     console.error('Failed to fetch analytics:', analyticsResult.error);
+  }
+
   return (
-    <div className="min-h-screen bg-background print:bg-white">
-      <ExamViewer examId={exam.id} blocks={exam.questions_list as unknown as ExamBlock[]} title={exam.title} />
-    </div>
+    <ExamDetailsClient 
+      exam={examResult.exam} 
+      analytics={analyticsResult.analytics!} 
+    />
   );
 }

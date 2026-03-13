@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   Table,
   TableBody,
@@ -14,26 +15,36 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { MoreHorizontal, Eye, FileDown, Copy, Edit, Trash2, Lock } from 'lucide-react';
+import { Json } from '@/types/database';
+import { getTermLabel } from '@/lib/terms';
+import {
+  MoreVertical,
+  Eye,
+  Copy,
+  Edit,
+  Trash2,
+  Lock,
+} from 'lucide-react';
 import { duplicateExamAction, deleteExamAction } from '@/server/actions/exams';
 import { toast } from 'sonner';
 import { useRealtimeSubscription } from '@/hooks/use-realtime-subscription';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import amplitude from '@/lib/amplitude';
-import { ExamResultsModal } from './exam-results-modal';
 
 interface Exam {
   id: string;
   title: string;
   created_at: string | null;
   status: string | null;
-  questions_list: unknown;
+  questions_list: Json;
   correction_count: number | null;
   discipline?: string | null;
+  term?: string | null;
 }
 
 interface ExamsRealtimeListProps {
@@ -41,11 +52,9 @@ interface ExamsRealtimeListProps {
 }
 
 export function ExamsRealtimeList({ initialExams }: ExamsRealtimeListProps) {
+  const router = useRouter();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [examToDelete, setExamToDelete] = useState<string | null>(null);
-
-  const [resultsModalOpen, setResultsModalOpen] = useState(false);
-  const [selectedExam, setSelectedExam] = useState<{ id: string; title: string } | null>(null);
 
   const exams = useRealtimeSubscription({
     table: 'exams',
@@ -61,13 +70,11 @@ export function ExamsRealtimeList({ initialExams }: ExamsRealtimeListProps) {
     amplitude.track('Exam Duplicated', { examId });
     toast.promise(duplicateExamAction(examId), {
       loading: 'Duplicando prova...',
-      success: (result) => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const res = result as any;
-        if (res.success) {
+      success: (result: { success: boolean; error?: string }) => {
+        if (result.success) {
           return 'Prova duplicada com sucesso!';
         } else {
-          throw new Error(res.error);
+          throw new Error(result.error);
         }
       },
       error: (err) => `Erro ao duplicar: ${err.message}`,
@@ -97,141 +104,141 @@ export function ExamsRealtimeList({ initialExams }: ExamsRealtimeListProps) {
     setExamToDelete(null);
   };
 
-  const handleRowClick = (examId: string, title: string) => {
-    setSelectedExam({ id: examId, title });
-    setResultsModalOpen(true);
-    amplitude.track('Exam Results Viewed', { examId });
-  };
-
   return (
     <>
-      <div className="rounded-md border">
+      <div className="rounded-md border bg-card">
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead>Título</TableHead>
               <TableHead>Matéria</TableHead>
               <TableHead>Questões</TableHead>
+              <TableHead>Período</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead>Criada em</TableHead>
-              <TableHead className="w-[50px]"></TableHead>
+              <TableHead>Data</TableHead>
+              <TableHead className="text-right">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {exams.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={7} className="text-center py-10 text-muted-foreground">
                   Nenhuma prova encontrada.
                 </TableCell>
               </TableRow>
             ) : (
               exams.map((exam) => {
-                const isManual = !exam.questions_list || (exam.questions_list as unknown[]).length === 0;
+                const isPlatformGenerated = Array.isArray(exam.questions_list) && exam.questions_list.length > 0;
+                const questionsList = Array.isArray(exam.questions_list)
+                  ? (exam.questions_list as unknown[])
+                  : [];
+                const isEditable = isPlatformGenerated && (exam.correction_count || 0) === 0;
 
                 return (
                   <TableRow
                     key={exam.id}
-                    className="cursor-pointer transition-colors hover:bg-muted/50"
-                    onClick={() => handleRowClick(exam.id, exam.title)}
+                    className="cursor-pointer hover:bg-muted/50 transition-colors"
+                    onClick={() => router.push(`/exams/${exam.id}`)}
                   >
                     <TableCell className="font-medium">
-                      {exam.title}
-                      {isManual && (
-                        <Badge variant="outline" className="ml-2 text-[10px] h-4 uppercase">
-                          Manual
-                        </Badge>
-                      )}
-                    </TableCell>
-                    <TableCell>{exam.discipline || '--'}</TableCell>
-                    <TableCell>
-                      {isManual
-                        ? '--'
-                        : ((exam.questions_list as unknown[])?.length || 2) - 2 || '--'}
-                    </TableCell>
-                    <TableCell>
                       <div className="flex items-center gap-2">
-                        {(exam.correction_count || 0) > 0 ? (
-                          <Badge variant="destructive" className="flex gap-1 items-center">
-                            <Lock className="h-3 w-3" /> Travada
+                        {exam.title}
+                        {!isPlatformGenerated && (
+                          <Badge variant="outline" className="text-[10px] h-4 uppercase bg-muted/50">
+                            Manual
                           </Badge>
-                        ) : exam.status === 'published' ? (
-                          <Badge className="bg-green-600">Pronta</Badge>
-                        ) : (
-                          <Badge variant="secondary">Rascunho</Badge>
+                        )}
+                        {(exam.correction_count || 0) > 0 && (
+                          <Badge variant="secondary" className="text-[10px] h-4 gap-1">
+                            <Lock className="h-2 w-2" /> Travada
+                          </Badge>
                         )}
                       </div>
                     </TableCell>
+                    <TableCell>{exam.discipline || '--'}</TableCell>
                     <TableCell>
+                      {isPlatformGenerated
+                        ? questionsList.length
+                        : '--'}
+                    </TableCell>
+                    <TableCell>{getTermLabel(exam.term)}</TableCell>
+                    <TableCell>
+                      <Badge
+                        variant={
+                          exam.status === 'completed' || exam.status === 'published'
+                            ? 'default'
+                            : exam.status === 'processing'
+                              ? 'secondary'
+                              : 'outline'
+                        }
+                      >
+                        {exam.status === 'completed' || exam.status === 'published'
+                          ? 'Concluída'
+                          : exam.status === 'processing'
+                            ? 'Processando'
+                            : exam.status === 'manual' ? 'Manual' : 'Erro'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
                       {exam.created_at
                         ? new Date(exam.created_at).toLocaleDateString('pt-BR')
                         : '-'}
                     </TableCell>
-                    <TableCell onClick={(e) => e.stopPropagation()}>
-                      <div className="flex items-center justify-end">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" className="h-8 w-8 p-0">
-                              <span className="sr-only">Abrir menu</span>
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem asChild disabled={isManual}>
-                              <Link
-                                href={isManual ? '#' : `/exams/${exam.id}`}
-                                onClick={() => amplitude.track('Exam Viewed', { examId: exam.id })}
-                                className={isManual ? 'pointer-events-none opacity-50' : ''}
-                              >
-                                <Eye className="mr-2 h-4 w-4" /> Visualizar
-                              </Link>
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              disabled={isManual}
-                              className={isManual ? 'opacity-50' : ''}
-                              onClick={() => amplitude.track('Exam PDF Exported', { examId: exam.id })}
+                    <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem asChild>
+                            <Link 
+                                href={`/exams/${exam.id}`}
+                                onClick={() => amplitude.track('Exam Details Viewed', { examId: exam.id })}
                             >
-                              <FileDown className="mr-2 h-4 w-4" /> Exportar PDF
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() => handleDuplicate(exam.id)}
-                              disabled={isManual}
-                              className={isManual ? 'opacity-50' : ''}
-                            >
-                              <Copy className="mr-2 h-4 w-4" /> Duplicar
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              disabled={isManual || (exam.correction_count || 0) > 0}
-                              className={
-                                isManual || (exam.correction_count || 0) > 0
-                                  ? 'opacity-50 cursor-not-allowed'
-                                  : ''
+                              <Eye className="mr-2 h-4 w-4" /> Detalhes
+                            </Link>
+                          </DropdownMenuItem>
+
+                          {isPlatformGenerated && (
+                            <>
+                              <DropdownMenuItem onClick={() => handleDuplicate(exam.id)}>
+                                <Copy className="mr-2 h-4 w-4" /> Duplicar
+                              </DropdownMenuItem>
+                            </>
+                          )}
+
+                          <DropdownMenuItem
+                            disabled={!isEditable}
+                            className={!isEditable ? 'opacity-50 cursor-not-allowed' : ''}
+                            asChild={isEditable}
+                            onClick={() => {
+                              if (isEditable) {
+                                amplitude.track('Exam Edit Started', { examId: exam.id });
                               }
-                              asChild={!isManual && (exam.correction_count || 0) === 0}
-                              onClick={() => {
-                                if (!isManual && (exam.correction_count || 0) === 0) {
-                                  amplitude.track('Exam Edit Started', { examId: exam.id });
-                                }
-                              }}
-                            >
-                              {!isManual && (exam.correction_count || 0) === 0 ? (
-                                <Link href={`/exams/${exam.id}/edit`}>
-                                  <Edit className="mr-2 h-4 w-4" /> Editar
-                                </Link>
-                              ) : (
-                                <span className="flex items-center">
-                                  <Edit className="mr-2 h-4 w-4" /> Editar
-                                </span>
-                              )}
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              className="text-destructive focus:text-destructive"
-                              onClick={() => handleDelete(exam.id)}
-                            >
-                              <Trash2 className="mr-2 h-4 w-4" /> Deletar
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
+                            }}
+                          >
+                            {isEditable ? (
+                              <Link href={`/exams/${exam.id}/edit`}>
+                                <Edit className="mr-2 h-4 w-4" /> Editar
+                              </Link>
+                            ) : (
+                              <span className="flex items-center">
+                                <Edit className="mr-2 h-4 w-4" /> Editar
+                              </span>
+                            )}
+                          </DropdownMenuItem>
+                          
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            className="text-destructive focus:text-destructive"
+                            onClick={() => handleDelete(exam.id)}
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" /> Excluir
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </TableCell>
                   </TableRow>
                 );
@@ -249,13 +256,6 @@ export function ExamsRealtimeList({ initialExams }: ExamsRealtimeListProps) {
         onConfirm={confirmDelete}
         confirmText="Excluir"
         variant="destructive"
-      />
-
-      <ExamResultsModal
-        open={resultsModalOpen}
-        onOpenChange={setResultsModalOpen}
-        examId={selectedExam?.id || null}
-        examTitle={selectedExam?.title || null}
       />
     </>
   );

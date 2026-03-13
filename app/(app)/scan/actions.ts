@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import { z } from 'zod';
+import { Json } from '@/types/database';
 
 const generateQuestionsSchema = z.object({
   topic: z.string().min(3),
@@ -57,6 +58,8 @@ interface Question {
 interface ExamData {
   title: string;
   questions: Question[];
+  term?: string;
+  discipline?: string;
 }
 
 export async function saveExamAction(examData: ExamData) {
@@ -81,13 +84,14 @@ export async function saveExamAction(examData: ExamData) {
   const { data: exam, error } = (await supabase
     .from('exams')
     .insert({
-      teacher_id: user.id,
+      user_id: user.id,
       title: examData.title,
-      status: 'published', // Or draft
-      questions_list: examData.questions,
-      answer_key: answerKey,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } as any)
+      status: 'published',
+      questions_list: examData.questions as unknown as Json,
+      answer_key: answerKey as unknown as Json,
+      term: examData.term,
+      discipline: examData.discipline,
+    })
     .select('id')
     .single()) as unknown as { data: { id: string } | null; error: unknown };
 
