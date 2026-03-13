@@ -40,6 +40,7 @@ export function ClassGradesList({ classId, students: allStudents, schoolPeriod }
 
   const [data, setData] = useState<ClassWithGrades | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [refreshKey, setRefreshKey] = useState(0);
   const [selectedTerm, setSelectedTerm] = useState<string>(
     schoolPeriod?.startsWith('trimestral') ? '1_trimestre' : '1_bimestre'
   );
@@ -62,7 +63,7 @@ export function ClassGradesList({ classId, students: allStudents, schoolPeriod }
       }
     }
     loadGrades();
-  }, [classId, selectedTerm]);
+  }, [classId, selectedTerm, refreshKey]);
 
   if (isLoading) {
     return <Skeleton className="h-[400px] w-full mt-6" />;
@@ -204,6 +205,7 @@ export function ClassGradesList({ classId, students: allStudents, schoolPeriod }
           students={allStudents} 
           schoolPeriod={selectedTerm} 
           disciplines={data?.disciplines || []}
+          onSuccess={() => setRefreshKey(prev => prev + 1)}
         />
       </div>
 

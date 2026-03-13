@@ -37,6 +37,7 @@ interface AddManualGradesDialogProps {
   students: Student[];
   schoolPeriod: string;
   disciplines: string[];
+  onSuccess?: () => void;
 }
 
 
@@ -45,6 +46,7 @@ export function AddManualGradesDialog({
   students,
   schoolPeriod,
   disciplines,
+  onSuccess,
 }: AddManualGradesDialogProps) {
   const [open, setOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -106,6 +108,9 @@ export function AddManualGradesDialog({
         setTitle('');
         setDiscipline(disciplines[0] || '');
         setGrades({});
+        if (onSuccess) {
+          onSuccess();
+        }
         router.refresh();
       } else {
         toast.error(result.error || 'Erro ao salvar notas');
