@@ -44,14 +44,63 @@ export type Database = {
         };
         Relationships: [];
       };
+      class_attendance: {
+        Row: {
+          class_id: string;
+          created_at: string;
+          date: string;
+          id: string;
+          status: string;
+          student_id: string;
+          user_id: string;
+        };
+        Insert: {
+          class_id: string;
+          created_at?: string;
+          date?: string;
+          id?: string;
+          status: string;
+          student_id: string;
+          user_id: string;
+        };
+        Update: {
+          class_id?: string;
+          created_at?: string;
+          date?: string;
+          id?: string;
+          status?: string;
+          student_id?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'class_attendance_class_id_fkey';
+            columns: ['class_id'];
+            isOneToOne: false;
+            referencedRelation: 'classes';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'class_attendance_student_id_fkey';
+            columns: ['student_id'];
+            isOneToOne: false;
+            referencedRelation: 'students';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       classes: {
         Row: {
           academic_year: number | null;
           created_at: string;
           disciplines: string[] | null;
+          exams_config: Json | null;
           id: string;
+          is_archived: boolean | null;
           lesson_days: number[] | null;
+          min_frequency: number | null;
           name: string;
+          passing_grade: number | null;
           period_starts: Json | null;
           period_type: string | null;
           user_id: string;
@@ -60,9 +109,13 @@ export type Database = {
           academic_year?: number | null;
           created_at?: string;
           disciplines?: string[] | null;
+          exams_config?: Json | null;
           id?: string;
+          is_archived?: boolean | null;
           lesson_days?: number[] | null;
+          min_frequency?: number | null;
           name: string;
+          passing_grade?: number | null;
           period_starts?: Json | null;
           period_type?: string | null;
           user_id: string;
@@ -71,9 +124,13 @@ export type Database = {
           academic_year?: number | null;
           created_at?: string;
           disciplines?: string[] | null;
+          exams_config?: Json | null;
           id?: string;
+          is_archived?: boolean | null;
           lesson_days?: number[] | null;
+          min_frequency?: number | null;
           name?: string;
+          passing_grade?: number | null;
           period_starts?: Json | null;
           period_type?: string | null;
           user_id?: string;

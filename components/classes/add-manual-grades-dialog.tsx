@@ -136,20 +136,19 @@ export function AddManualGradesDialog({
 
         <div className="grid gap-4 py-4 overflow-y-auto pr-2">
           <div className="grid grid-cols-2 gap-4 pl-1">
-            <div className="space-y-2">
+            <div className="space-y-3">
               <Label htmlFor="title">Título da Avaliação</Label>
               <Input
                 id="title"
                 placeholder="Ex: Prova Mensal"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                className="mt-2"
               />
             </div>
-            <div className="space-y-2">
+            <div className="space-y-3">
               <Label htmlFor="discipline">Disciplina</Label>
               <Select value={discipline} onValueChange={setDiscipline}>
-                <SelectTrigger id="discipline" className="mt-2">
+                <SelectTrigger id="discipline">
                   <SelectValue placeholder="Selecione a disciplina" />
                 </SelectTrigger>
                 <SelectContent>
@@ -169,8 +168,8 @@ export function AddManualGradesDialog({
             </div>
           </div>
 
-          <div className="space-y-4 pl-1">
-            <Label htmlFor="term" className="mb-2">
+          <div className="space-y-3 pl-1">
+            <Label htmlFor="term">
               Período / Bimestre
             </Label>
             <Select value={term} onValueChange={setTerm}>
@@ -187,9 +186,9 @@ export function AddManualGradesDialog({
             </Select>
           </div>
 
-          <div className="space-y-4 pl-1">
+          <div className="space-y-3 pl-1">
             <Label>Notas dos Alunos</Label>
-            <ScrollArea className="h-[300px] rounded-md border p-4 mt-2">
+            <ScrollArea className="h-[300px] rounded-md border p-4">
               <div className="space-y-4">
                 {students.length === 0 ? (
                   <p className="text-center text-sm text-muted-foreground py-4">

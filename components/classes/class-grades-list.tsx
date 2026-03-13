@@ -129,6 +129,35 @@ export function ClassGradesList({ classId, students: allStudents, schoolPeriod }
     );
   };
 
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'Aprovado':
+        return <Badge className="bg-green-600 hover:bg-green-700">Aprovado</Badge>;
+      case 'Reprovado':
+        return <Badge variant="destructive">Reprovado</Badge>;
+      case 'Reprovado por Falta':
+        return <Badge variant="destructive" className="bg-orange-600 hover:bg-orange-700 border-none">Reprovado por Falta</Badge>;
+      default:
+        return <Badge variant="secondary">Pendente</Badge>;
+    }
+  };
+
+  const getFrequencyBadge = (frequency: number | null) => {
+    if (frequency === null) return <span className="text-muted-foreground text-xs font-normal">-</span>;
+    
+    return (
+      <Badge 
+        variant="outline"
+        className={cn(
+          "h-6 px-2 font-medium",
+          frequency >= (data?.min_frequency || 75) ? "text-green-600 border-green-200 bg-green-50" : "text-destructive border-destructive/20 bg-destructive/5"
+        )}
+      >
+        {frequency.toFixed(1)}%
+      </Badge>
+    );
+  };
+
   const allTerms = [
     { label: '1º Bimestre', value: '1_bimestre' },
     { label: '2º Bimestre', value: '2_bimestre' },
@@ -141,7 +170,7 @@ export function ClassGradesList({ classId, students: allStudents, schoolPeriod }
     { label: '2º Semestre', value: '2_semestre' },
   ];
 
-  const filteredTerms = allTerms.filter(term => {
+  const filteredTerms = allTerms.filter((term: { label: string; value: string }) => {
     if (schoolPeriod === 'trimestre') {
       return term.value.includes('trimestre');
     }
@@ -199,8 +228,14 @@ export function ClassGradesList({ classId, students: allStudents, schoolPeriod }
                       {discipline}
                     </TableHead>
                   ))}
-                  <TableHead className="text-center min-w-[120px] font-bold bg-primary/5 text-primary">
+                  <TableHead className="text-center min-w-[120px] font-bold border-r bg-primary/5 text-primary">
                     Média Geral
+                  </TableHead>
+                  <TableHead className="text-center min-w-[100px] font-bold border-r">
+                    Frequência
+                  </TableHead>
+                  <TableHead className="text-center min-w-[130px] font-bold">
+                    Status Final
                   </TableHead>
                 </TableRow>
               </TableHeader>
@@ -218,7 +253,7 @@ export function ClassGradesList({ classId, students: allStudents, schoolPeriod }
                         )}
                       </TableCell>
                     ))}
-                    <TableCell className="text-center font-bold bg-primary/5">
+                    <TableCell className="text-center font-bold border-r bg-primary/5">
                       {getGradeBadge(
                         student.average,
                         disciplines
@@ -229,6 +264,12 @@ export function ClassGradesList({ classId, students: allStudents, schoolPeriod }
                           })),
                         'Médias por Matéria'
                       )}
+                    </TableCell>
+                    <TableCell className="text-center border-r">
+                      {getFrequencyBadge(student.frequency)}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      {getStatusBadge(student.status)}
                     </TableCell>
                   </TableRow>
                 ))}

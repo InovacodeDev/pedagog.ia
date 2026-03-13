@@ -15,6 +15,10 @@ export interface ClassItem {
   academic_year: number;
   period_type: 'bimestre' | 'trimestre' | 'semestre';
   period_starts: string[];
+  passing_grade: number;
+  min_frequency: number;
+  exams_config: Record<string, number>;
+  is_archived: boolean;
   students: { count: number }[];
 }
 
@@ -32,6 +36,7 @@ export async function getClassesAction() {
     .from('classes')
     .select('*, students(count)')
     .eq('user_id', user.id)
+    .eq('is_archived', false)
     .order('created_at', { ascending: false });
 
   if (error) {
@@ -68,12 +73,15 @@ export async function getClassAction(id: string) {
 }
 
 export async function createClassAction(
-  name: string, 
-  lessonDays: number[] = [], 
+  name: string,
+  lessonDays: number[] = [],
   disciplines: string[] = [],
   academicYear: number = new Date().getFullYear(),
   periodType: 'bimestre' | 'trimestre' | 'semestre' = 'bimestre',
-  periodStarts: string[] = []
+  periodStarts: string[] = [],
+  passingGrade: number = 6.0,
+  minFrequency: number = 75.0,
+  examsConfig: Record<string, number> = {}
 ) {
   const supabase = await createClient();
   const {
@@ -115,6 +123,9 @@ export async function createClassAction(
     academic_year: academicYear,
     period_type: periodType,
     period_starts: periodStarts,
+    passing_grade: passingGrade,
+    min_frequency: minFrequency,
+    exams_config: examsConfig,
   });
 
   if (error) {
@@ -139,7 +150,11 @@ export async function updateClassAction(
   disciplines: string[] = [],
   academicYear?: number,
   periodType?: 'bimestre' | 'trimestre' | 'semestre',
-  periodStarts?: string[]
+  periodStarts?: string[],
+  passingGrade?: number,
+  minFrequency?: number,
+  examsConfig?: Record<string, number>,
+  isArchived?: boolean
 ) {
   const supabase = await createClient();
   const {
@@ -159,6 +174,10 @@ export async function updateClassAction(
       academic_year: academicYear,
       period_type: periodType,
       period_starts: periodStarts,
+      passing_grade: passingGrade,
+      min_frequency: minFrequency,
+      exams_config: examsConfig,
+      is_archived: isArchived,
     })
     .eq('id', id)
     .eq('user_id', user.id);
@@ -212,6 +231,34 @@ export async function deleteClassAction(id: string) {
   return { success: true, message: 'Turma excluída com sucesso!' };
 }
 
+export async function archiveClassAction(id: string, isArchived: boolean) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { success: false, message: 'Unauthorized' };
+  }
+
+  const { error } = await supabase
+    .from('classes')
+    .update({ is_archived: isArchived })
+    .eq('id', id)
+    .eq('user_id', user.id);
+
+  if (error) {
+    console.error('Error archiving class:', error);
+    return { success: false, message: 'Failed to archive class' };
+  }
+
+  revalidatePath('/classes');
+  return {
+    success: true,
+    message: isArchived ? 'Turma arquivada com sucesso!' : 'Turma desarquivada com sucesso!',
+  };
+}
+
 // ... (previous code)
 
 export interface StudentGradeInfo {
@@ -220,6 +267,8 @@ export interface StudentGradeInfo {
   discipline_grades: Record<string, number | null>;
   discipline_exam_details: Record<string, { exam_title: string; score: number }[]>;
   average: number | null;
+  frequency: number | null;
+  status: 'Aprovado' | 'Reprovado' | 'Reprovado por Falta' | 'Pendente';
 }
 
 export interface ClassWithGrades extends ClassItem {
@@ -242,6 +291,7 @@ export async function getClassesWithGradesAction(term?: string) {
     .from('classes')
     .select('*, students(count)')
     .eq('user_id', user.id)
+    .order('is_archived', { ascending: true })
     .order('created_at', { ascending: false });
 
   if (classesError) throw new Error('Failed to fetch classes');
@@ -284,7 +334,23 @@ export async function getClassesWithGradesAction(term?: string) {
 
   if (refsError) throw new Error('Failed to fetch exam class references');
 
-  // 6. Calculate Averages per Class based on CURRENT term
+  // 6. Fetch ALL Attendance records for these classes
+  const classIds = classes?.map(c => c.id) || [];
+  let attendanceData: { student_id: string; status: string }[] = [];
+  if (classIds.length > 0) {
+    const { data: attendance, error: attendanceError } = await supabase
+      .from('class_attendance')
+      .select('student_id, status')
+      .in('class_id', classIds);
+    
+    if (attendanceError) {
+       console.error('Error fetching attendance:', attendanceError);
+    } else {
+      attendanceData = attendance || [];
+    }
+  }
+
+  // 7. Calculate Averages per Class based on CURRENT term
   const classesWithGrades = (classes || []).map((cls) => {
     const classStudents = (students || []).filter((s) => s.class_id === cls.id);
     
@@ -337,17 +403,51 @@ export async function getClassesWithGradesAction(term?: string) {
         }));
 
         if (disciplineResults.length > 0) {
+          const examsConfig = (cls.exams_config || {}) as Record<string, number>;
           const sum = disciplineResults.reduce((acc, curr) => acc + (Number(curr.score) || 0), 0);
-          disciplineGrades[discipline] = parseFloat((sum / disciplineResults.length).toFixed(2));
+          const divisor = examsConfig[discipline] || 4;
+          disciplineGrades[discipline] = parseFloat((sum / divisor).toFixed(2));
         } else {
           disciplineGrades[discipline] = null;
         }
       });
+      
+      const examsConfig = (cls.exams_config || {}) as Record<string, number>;
 
+      // Calculate General Average
       let average = null;
       if (studentResults.length > 0) {
         const sum = studentResults.reduce((acc, curr) => acc + (Number(curr.score) || 0), 0);
-        average = parseFloat((sum / studentResults.length).toFixed(2));
+        
+        // Sum of exams count configured for all disciplines in this class (from exams_config)
+        const totalExamsConfig = allClassDisciplines.reduce((acc, disc) => {
+          return acc + (examsConfig[disc] || 4);
+        }, 0);
+
+        const divisor = totalExamsConfig || studentResults.length || 1;
+        average = parseFloat((sum / divisor).toFixed(2));
+      }
+
+      // Calculate Frequency
+      const studentAttendance = attendanceData.filter(a => a.student_id === student.id);
+      const totalClasses = studentAttendance.length;
+      const presences = studentAttendance.filter(a => a.status === 'present' || a.status === 'late').length;
+      const frequency = totalClasses > 0 ? parseFloat((presences / totalClasses * 100).toFixed(2)) : null;
+
+      // Determine Status
+      let status: 'Aprovado' | 'Reprovado' | 'Reprovado por Falta' | 'Pendente' = 'Pendente';
+      
+      if (frequency !== null || average !== null) {
+        const hasFailedByFrequency = frequency !== null && frequency < (cls.min_frequency || 75);
+        const hasFailedByGrade = average !== null && average < (cls.passing_grade || 6.0);
+
+        if (hasFailedByFrequency) {
+          status = 'Reprovado por Falta';
+        } else if (hasFailedByGrade) {
+          status = 'Reprovado';
+        } else if (average !== null && frequency !== null) {
+          status = 'Aprovado';
+        }
       }
 
       return {
@@ -356,6 +456,8 @@ export async function getClassesWithGradesAction(term?: string) {
         discipline_grades: disciplineGrades,
         discipline_exam_details: disciplineExamDetails,
         average,
+        frequency,
+        status,
       };
     });
 

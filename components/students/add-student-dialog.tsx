@@ -90,7 +90,7 @@ export function AddStudentDialog({ classId }: AddStudentDialogProps) {
               {error}
             </div>
           )}
-          <div className="space-y-2">
+          <div className="space-y-3">
             <Label htmlFor="name">Nome Completo</Label>
             <Input
               id="name"
@@ -100,7 +100,6 @@ export function AddStudentDialog({ classId }: AddStudentDialogProps) {
               onChange={(e) => setName(e.target.value)}
               required
               autoComplete="off"
-              className="mt-2"
             />
           </div>
 
