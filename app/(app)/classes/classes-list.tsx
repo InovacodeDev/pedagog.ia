@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import amplitude from '@/lib/amplitude';
 import {
@@ -43,6 +43,8 @@ import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { PricingDialog } from '@/components/subscription/pricing-dialog';
+import { useRealtimeSubscription } from '@/hooks/use-realtime-subscription';
+import { createClient } from '@/lib/supabase/client';
 
 interface ClassesListProps {
   initialClasses: ClassWithGrades[];
@@ -50,6 +52,53 @@ interface ClassesListProps {
 
 export function ClassesList({ initialClasses }: ClassesListProps) {
   const router = useRouter();
+  const supabase = createClient();
+
+  // Manage classes list with realtime updates from 'classes' table
+  const classes = useRealtimeSubscription({
+    table: 'classes',
+    initialData: initialClasses,
+    orderBy: (a, b) => {
+      if (a.is_archived !== b.is_archived) return a.is_archived ? 1 : -1;
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+    },
+  });
+
+  // Listen for changes in related tables to trigger a data refresh for joined fields
+  useEffect(() => {
+    const studentsChannel = supabase
+      .channel(`classes-list-students-${Math.random()}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'students' },
+        () => {
+          console.log('Student change detected, refreshing classes list');
+          router.refresh();
+        }
+      )
+      .subscribe();
+
+    const resultsChannel = supabase
+      .channel(`classes-list-results-${Math.random()}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'exam_results' },
+        () => {
+          console.log('Exam results change detected, refreshing classes list');
+          router.refresh();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(studentsChannel);
+      supabase.removeChannel(resultsChannel);
+    };
+  }, [supabase, router]);
+
+  const activeClasses = classes.filter((cls) => !cls.is_archived);
+  const archivedClasses = classes.filter((cls) => cls.is_archived);
+
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [selectedClass, setSelectedClass] = useState<ClassWithGrades | null>(null);
   const [className, setClassName] = useState('');
@@ -222,8 +271,6 @@ export function ClassesList({ initialClasses }: ClassesListProps) {
     setPeriodStarts(newStarts);
   };
 
-  const activeClasses = initialClasses.filter((cls) => !cls.is_archived);
-  const archivedClasses = initialClasses.filter((cls) => cls.is_archived);
 
   const renderClassCard = (cls: ClassWithGrades) => (
     <Card

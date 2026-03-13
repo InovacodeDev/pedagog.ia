@@ -64,6 +64,16 @@ export function ExamsRealtimeList({ initialExams }: ExamsRealtimeListProps) {
       const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
       return dateB - dateA;
     },
+    onEvent: (payload) => {
+      if (payload.eventType === 'UPDATE') {
+        const oldExam = exams.find(e => e.id === (payload.new as Exam).id);
+        const newStatus = (payload.new as Exam).status;
+        
+        if (oldExam?.status === 'processing' && (newStatus === 'completed' || newStatus === 'published')) {
+          toast.success(`A prova "${(payload.new as Exam).title}" está pronta!`);
+        }
+      }
+    }
   });
 
   const handleDuplicate = async (examId: string) => {

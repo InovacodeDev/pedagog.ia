@@ -21,6 +21,8 @@ import { DataUnavailable } from '@/components/ui/data-unavailable';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Calendar as CalendarIcon } from 'lucide-react';
 
+import { createClient } from '@/lib/supabase/client';
+
 interface ClassAnalyticsProps {
   classData: ClassItem;
 }
@@ -43,6 +45,7 @@ interface DisciplineStats {
 const COLORS = ['#2563eb', '#7c3aed', '#db2777', '#ea580c', '#34d399'];
 
 export function ClassAnalytics({ classData }: ClassAnalyticsProps) {
+  const supabase = createClient();
   const classId = classData.id;
   const periodType = classData.period_type || 'bimestre';
   const periodStarts = useMemo(() => classData.period_starts || [], [classData.period_starts]);
@@ -66,6 +69,7 @@ export function ClassAnalytics({ classData }: ClassAnalyticsProps) {
   const [disciplineData, setDisciplineData] = useState<DisciplineStats[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [periodIndex, setPeriodIndex] = useState<number>(getInitialPeriodIndex());
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
     async function loadData() {
@@ -106,7 +110,42 @@ export function ClassAnalytics({ classData }: ClassAnalyticsProps) {
       }
     }
     loadData();
-  }, [classId, periodIndex, periodStarts, periodType, classData.academic_year]);
+  }, [classId, periodIndex, periodStarts, periodType, classData.academic_year, refreshKey]);
+
+  // Set up real-time listeners for data that affects analytics
+  useEffect(() => {
+    const channel = supabase
+      .channel(`class-analytics-realtime-${classId}-${Math.random()}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'exam_results' },
+        () => {
+          console.log('Exam results change detected, refreshing analytics');
+          setRefreshKey((prev) => prev + 1);
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'exam_grades' },
+        () => {
+          console.log('Exam grades change detected, refreshing analytics');
+          setRefreshKey((prev) => prev + 1);
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'class_attendance' },
+        () => {
+          console.log('Attendance change detected, refreshing analytics');
+          setRefreshKey((prev) => prev + 1);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [supabase, classId]);
 
   if (isLoading) {
     return (

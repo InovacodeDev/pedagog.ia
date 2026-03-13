@@ -25,6 +25,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { useRealtimeSubscription } from '@/hooks/use-realtime-subscription';
 
 interface Exam {
   id: string;
@@ -35,17 +36,27 @@ interface Exam {
   correction_count: number | null;
   discipline?: string | null;
   term?: string | null;
+  class_id?: string | null;
 }
 
 interface ClassExamsListProps {
   exams: Exam[];
+  classId: string;
 }
 
-export function ClassExamsList({ exams }: ClassExamsListProps) {
+export function ClassExamsList({ exams: initialExams, classId }: ClassExamsListProps) {
+  const router = useRouter();
+  
+  const exams = useRealtimeSubscription({
+    table: 'exams',
+    initialData: initialExams,
+    filter: `class_id=eq.${classId}`,
+    orderBy: (a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime(),
+  });
+
   const [isPending, startTransition] = useTransition();
   const [examToDelete, setExamToDelete] = useState<string | null>(null);
   const [termFilter, setTermFilter] = useState<string>('all');
-  const router = useRouter();
 
   const handleRowClick = (examId: string) => {
     router.push(`/exams/${examId}`);

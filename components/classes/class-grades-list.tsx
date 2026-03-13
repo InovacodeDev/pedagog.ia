@@ -29,6 +29,7 @@ import {
 } from '@/components/ui/popover';
 import { Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { createClient } from '@/lib/supabase/client';
 
 interface ClassGradesListProps {
   classId: string;
@@ -37,7 +38,7 @@ interface ClassGradesListProps {
 }
 
 export function ClassGradesList({ classId, students: allStudents, schoolPeriod }: ClassGradesListProps) {
-
+  const supabase = createClient();
   const [data, setData] = useState<ClassWithGrades | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [refreshKey, setRefreshKey] = useState(0);
@@ -64,6 +65,49 @@ export function ClassGradesList({ classId, students: allStudents, schoolPeriod }
     }
     loadGrades();
   }, [classId, selectedTerm, refreshKey]);
+
+  // Set up real-time listeners for data that affects grades
+  useEffect(() => {
+    const channel = supabase
+      .channel(`class-grades-realtime-${classId}-${Math.random()}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'exam_results' },
+        () => {
+          console.log('Exam results change detected, refreshing grades');
+          setRefreshKey((prev) => prev + 1);
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'exam_grades' },
+        () => {
+          console.log('Exam grades change detected, refreshing grades');
+          setRefreshKey((prev) => prev + 1);
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'class_attendance' },
+        () => {
+          console.log('Attendance change detected, refreshing grades');
+          setRefreshKey((prev) => prev + 1);
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'students', filter: `class_id=eq.${classId}` },
+        () => {
+          console.log('Student change detected, refreshing grades');
+          setRefreshKey((prev) => prev + 1);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [supabase, classId]);
 
   if (isLoading) {
     return <Skeleton className="h-[400px] w-full mt-6" />;

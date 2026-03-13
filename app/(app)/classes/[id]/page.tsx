@@ -125,7 +125,7 @@ export default async function ClassDetailsPage({ params }: ClassDetailsPageProps
         </TabsContent>
 
         <TabsContent value="exams" className="mt-6">
-          <ClassExamsList exams={exams} />
+          <ClassExamsList exams={exams} classId={classData.id} />
         </TabsContent>
 
         <TabsContent value="grades" className="mt-6">

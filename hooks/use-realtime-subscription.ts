@@ -2,18 +2,22 @@ import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
 
-interface UseRealtimeSubscriptionProps<T> {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+interface UseRealtimeSubscriptionProps<T extends { id: string; [key: string]: any }> {
   table: string;
   initialData: T[];
   filter?: string;
   orderBy?: (a: T, b: T) => number;
+  onEvent?: (payload: RealtimePostgresChangesPayload<T>) => void;
 }
 
-export function useRealtimeSubscription<T extends { id: string }>({
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function useRealtimeSubscription<T extends { id: string; [key: string]: any }>({
   table,
   initialData,
   filter,
   orderBy,
+  onEvent,
 }: UseRealtimeSubscriptionProps<T>) {
   const [data, setData] = useState<T[]>(initialData);
   const supabase = createClient();
@@ -25,7 +29,7 @@ export function useRealtimeSubscription<T extends { id: string }>({
 
   useEffect(() => {
     const channel = supabase
-      .channel(`realtime-${table}`)
+      .channel(`realtime-${table}-${Math.random()}`)
       .on(
         'postgres_changes',
         {
@@ -35,7 +39,11 @@ export function useRealtimeSubscription<T extends { id: string }>({
           filter: filter,
         },
         (payload: RealtimePostgresChangesPayload<T>) => {
-          console.log('Realtime event received:', payload);
+          console.log(`Realtime event received for ${table}:`, payload);
+
+          if (onEvent) {
+            onEvent(payload);
+          }
 
           if (payload.eventType === 'INSERT') {
             setData((currentData) => {
@@ -45,7 +53,9 @@ export function useRealtimeSubscription<T extends { id: string }>({
           } else if (payload.eventType === 'UPDATE') {
             setData((currentData) => {
               const newData = currentData.map((item) =>
-                item.id === (payload.new as T).id ? (payload.new as T) : item
+                item.id === (payload.new as T).id 
+                  ? { ...item, ...(payload.new as T) } 
+                  : item
               );
               return orderBy ? newData.sort(orderBy) : newData;
             });
@@ -61,7 +71,7 @@ export function useRealtimeSubscription<T extends { id: string }>({
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [table, filter, orderBy, supabase]);
+  }, [table, filter, orderBy, supabase, onEvent]);
 
   return data;
 }
