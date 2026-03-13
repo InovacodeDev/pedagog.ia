@@ -59,6 +59,18 @@ export async function POST(req: Request) {
 
       // Handle Credit Top-Up
       if (session.metadata?.type === 'top_up') {
+        // Check for idempotency (session might have been processed by success page)
+        const { data: existingLog } = await supabaseAdmin
+          .from('ia_cost_log')
+          .select('id')
+          .eq('stripe_session_id', session.id)
+          .maybeSingle();
+
+        if (existingLog) {
+          console.log(`Webhook: Session ${session.id} already processed, skipping top-up.`);
+          return new NextResponse(null, { status: 200 });
+        }
+
         const creditAmount = parseInt(session.metadata.credit_amount || '0', 10);
         if (creditAmount > 0) {
           console.log(`Processing top-up for user: ${userId}, amount: ${creditAmount}`);
@@ -81,7 +93,8 @@ export async function POST(req: Request) {
             input_tokens: 0,
             output_tokens: 0,
             cost_credits: -creditAmount,
-            provider_cost_brl: 0, // We could track real BRL cost here if we had it from metadata
+            stripe_session_id: session.id, // Store session ID for idempotency
+            provider_cost_brl: 0,
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
           } as any);
         }
@@ -89,6 +102,18 @@ export async function POST(req: Request) {
       }
 
       console.log(`Processing subscription for user: ${userId}`);
+
+      // Check for idempotency for subscriptions
+      const { data: existingSubLog } = await supabaseAdmin
+        .from('ia_cost_log')
+        .select('id')
+        .eq('stripe_session_id', session.id)
+        .maybeSingle();
+
+      if (existingSubLog) {
+        console.log(`Webhook: Session ${session.id} already processed, skipping subscription creation.`);
+        return new NextResponse(null, { status: 200 });
+      }
 
       const subscriptionId = session.subscription as string;
       if (!subscriptionId) {
@@ -148,6 +173,7 @@ export async function POST(req: Request) {
           input_tokens: 0,
           output_tokens: 0,
           cost_credits: -MONTHLY_CREDITS,
+          stripe_session_id: session.id, // Store session ID for idempotency
           provider_cost_brl: 0,
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } as any);

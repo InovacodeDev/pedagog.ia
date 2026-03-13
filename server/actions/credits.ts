@@ -38,7 +38,7 @@ export async function buyCreditsAction(amount: number) {
       type: 'top_up',
       credit_amount: amount.toString(),
     },
-    success_url: `${process.env.NEXT_PUBLIC_APP_URL}/settings?tab=invoices&success=true`,
+    success_url: `${process.env.NEXT_PUBLIC_APP_URL}/settings?tab=credits&session_id={CHECKOUT_SESSION_ID}&success=true`,
     cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/settings?tab=invoices&canceled=true`,
   });
 

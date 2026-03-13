@@ -67,7 +67,7 @@ export async function createCheckoutSessionAction() {
         quantity: 1,
       },
     ],
-    success_url: `${origin}/settings?success=true`,
+    success_url: `${origin}/settings?session_id={CHECKOUT_SESSION_ID}&success=true`,
     cancel_url: `${origin}/settings?canceled=true`,
     metadata: {
       userId: user.id,

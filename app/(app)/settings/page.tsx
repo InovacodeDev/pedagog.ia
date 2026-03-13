@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import { stripe } from '@/lib/stripe';
+import { verifyAndProcessStripeSession } from '@/server/lib/stripe-verify';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { SettingsProfileForm } from '@/components/settings/settings-profile-form';
 import { SettingsBilling } from '@/components/settings/settings-billing';
@@ -18,6 +19,7 @@ export default async function SettingsPage({
 }) {
   const resolvedSearchParams = await searchParams;
   const tab = typeof resolvedSearchParams.tab === 'string' ? resolvedSearchParams.tab : 'general';
+  const sessionId = typeof resolvedSearchParams.session_id === 'string' ? resolvedSearchParams.session_id : null;
 
   const supabase = await createClient();
   const {
@@ -26,6 +28,16 @@ export default async function SettingsPage({
 
   if (!user) {
     redirect('/login');
+  }
+
+  // Real-time verification if redirected from Stripe
+  if (sessionId) {
+    try {
+      await verifyAndProcessStripeSession(sessionId, user.id);
+    } catch (error) {
+      console.error('Real-time session verification failed:', error);
+      // We don't block the page load, the webhook will still run as fallback
+    }
   }
 
   // Fetch subscription
