@@ -449,25 +449,29 @@ async function calculateAndLogCost(
   const usage = usageMetadata || { promptTokenCount: 0, candidatesTokenCount: 0 };
   const USD_TO_BRL = 6.0;
 
-  // Pricing (Per 1M Tokens)
-  const FLASH_INPUT_COST = 0.075;
-  const FLASH_OUTPUT_COST = 0.3;
-  const PRO_INPUT_COST = 1.25;
-  const PRO_OUTPUT_COST = 5.0;
+  // Pricing (Per 1M Tokens) - STANDARD
+  const FLASH3_INPUT_COST = 0.50;
+  const FLASH3_OUTPUT_COST = 3.00;
+
+  const PRO_INPUT_COST_UNDER_200K = 2.00;
+  const PRO_OUTPUT_COST_UNDER_200K = 12.00;
+  const PRO_INPUT_COST_OVER_200K = 4.00;
+  const PRO_OUTPUT_COST_OVER_200K = 18.00;
 
   let rateInput = 0;
   let rateOutput = 0;
 
-  if (modelName.includes('flash')) {
-    rateInput = FLASH_INPUT_COST;
-    rateOutput = FLASH_OUTPUT_COST;
-  } else if (modelName.includes('pro')) {
-    rateInput = PRO_INPUT_COST;
-    rateOutput = PRO_OUTPUT_COST;
-  }
-
   const inputTokens = usage.promptTokenCount || 0;
   const outputTokens = usage.candidatesTokenCount || 0;
+  const isLargeContext = inputTokens + outputTokens > 200_000;
+
+  if (modelName.includes('flash')) {
+    rateInput = FLASH3_INPUT_COST;
+    rateOutput = FLASH3_OUTPUT_COST;
+  } else if (modelName.includes('pro')) {
+    rateInput = isLargeContext ? PRO_INPUT_COST_OVER_200K : PRO_INPUT_COST_UNDER_200K;
+    rateOutput = isLargeContext ? PRO_OUTPUT_COST_OVER_200K : PRO_OUTPUT_COST_UNDER_200K;
+  }
 
   const inputCost = (inputTokens / 1_000_000) * rateInput;
   const outputCost = (outputTokens / 1_000_000) * rateOutput;
@@ -553,7 +557,7 @@ export async function generateQuestionsV2Action(
 
     const genAI = new GoogleGenerativeAI(geminiApiKey);
     const modelTier = data.model_tier || 'fast';
-    const modelName = modelTier === 'quality' ? 'gemini-2.5-pro' : 'gemini-2.5-flash';
+    const modelName = modelTier === 'quality' ? 'gemini-3.1-pro-preview' : 'gemini-3-flash-preview';
     const model = genAI.getGenerativeModel({ model: modelName });
 
     // 4. Build Prompt

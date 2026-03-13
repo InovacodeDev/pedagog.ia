@@ -6,9 +6,9 @@ if (!process.env.GEMINI_API_KEY) {
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-// Use the gemini-1.5-flash model for speed and cost efficiency
+// Use the gemini-3-flash model for high speed and intelligence
 export const geminiModel = genAI.getGenerativeModel({
-  model: 'gemini-2.5-flash',
+  model: 'gemini-3-flash-preview',
   generationConfig: {
     responseMimeType: 'application/json',
   },

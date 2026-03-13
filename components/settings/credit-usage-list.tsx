@@ -116,6 +116,9 @@ function formatFeatureName(feature: string): string {
 
 function formatModelName(model: string): string {
   const map: Record<string, string> = {
+    'gemini-3.1-pro-preview': 'Gemini 3.1 Pro',
+    'gemini-3.1-flash-lite-preview': 'Gemini 3.1 Flash Lite',
+    'gemini-3-flash-preview': 'Gemini 3 Flash',
     'gemini-2.5-flash': 'Gemini Flash',
     'gemini-2.5-pro': 'Gemini Pro',
     db_selection: 'Banco de Questões',

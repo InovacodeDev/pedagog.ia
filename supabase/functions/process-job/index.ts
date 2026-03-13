@@ -100,24 +100,29 @@ function scrubPII(text: string): string {
 
 const USD_TO_BRL = 6.0;
 
-// Gemini Flash (Per 1M Tokens)
-const FLASH_INPUT_COST = 0.075;
-const FLASH_OUTPUT_COST = 0.3;
+// Gemini 3.1 Flash Lite - STANDARD pricing (Per 1M Tokens)
+const FLASH3_INPUT_COST = 0.25;
+const FLASH3_OUTPUT_COST = 1.50;
 
-// Gemini Pro (Per 1M Tokens)
-const PRO_INPUT_COST = 1.25;
-const PRO_OUTPUT_COST = 5.0;
+// Gemini 2.5 Pro - STANDARD pricing (Per 1M Tokens)
+const PRO_INPUT_COST_UNDER_200K = 1.25;
+const PRO_OUTPUT_COST_UNDER_200K = 10.00;
+const PRO_INPUT_COST_OVER_200K = 2.5;
+const PRO_OUTPUT_COST_OVER_200K = 15.00;
 
 function calculateProviderCost(model: string, inputTokens: number, outputTokens: number): number {
   let rateInput = 0;
   let rateOutput = 0;
 
+  const totalTokens = inputTokens + outputTokens;
+  const isLargeContext = totalTokens > 200_000;
+
   if (model.includes('flash')) {
-    rateInput = FLASH_INPUT_COST;
-    rateOutput = FLASH_OUTPUT_COST;
+    rateInput = FLASH3_INPUT_COST;
+    rateOutput = FLASH3_OUTPUT_COST;
   } else if (model.includes('pro')) {
-    rateInput = PRO_INPUT_COST;
-    rateOutput = PRO_OUTPUT_COST;
+    rateInput = isLargeContext ? PRO_INPUT_COST_OVER_200K : PRO_INPUT_COST_UNDER_200K;
+    rateOutput = isLargeContext ? PRO_OUTPUT_COST_OVER_200K : PRO_OUTPUT_COST_UNDER_200K;
   }
 
   const inputCost = (inputTokens / 1_000_000) * rateInput;
@@ -130,8 +135,8 @@ function calculateProviderCost(model: string, inputTokens: number, outputTokens:
 function calculateCost(job: BackgroundJob): { cost: number; model: string } {
   const tier = (job.payload.model_tier as 'fast' | 'quality') || 'fast';
   const multiplier = tier === 'quality' ? 2 : 1;
-  // Map 'quality' to pro and 'fast' to flash
-  const model = tier === 'quality' ? 'gemini-1.5-pro' : 'gemini-1.5-flash';
+  // Map 'quality' to Gemini 3.1 Pro and 'fast' to Gemini 3 Flash
+  const model = tier === 'quality' ? 'gemini-2.5-pro' : 'gemini-3.1-flash-lite-preview';
 
   let baseCost = 0;
 
