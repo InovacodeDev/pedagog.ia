@@ -11,6 +11,7 @@ type StripeInvoice = Stripe.Invoice & {
   subscription: string | Stripe.Subscription | null;
 };
 import { NextResponse } from 'next/server';
+import { trackServerEvent } from '@/lib/amplitude-server';
 
 function toISOString(timestamp: number | null | undefined): string | null {
   if (!timestamp) return null;
@@ -177,6 +178,12 @@ export async function POST(req: Request) {
           provider_cost_brl: 0,
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } as any);
+
+        // Track Upgrade in Amplitude
+        await trackServerEvent('Subscription Upgraded', userId, {
+          Plan_Name: 'Pro',
+          MRR: 29.9,
+        });
       }
     }
 

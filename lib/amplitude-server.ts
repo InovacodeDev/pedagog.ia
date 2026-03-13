@@ -4,11 +4,10 @@ import { init, track, identify, flush, Identify } from '@amplitude/analytics-nod
 // Initialize once
 init(process.env.AMPLITUDE_API_KEY!);
 
-export async function trackServerEvent(
-  eventName: string,
+export async function trackServerEvent<T extends import('./analytics-events').EventName>(
+  eventName: T,
   userId?: string,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  eventProperties?: Record<string, any>
+  eventProperties?: import('./analytics-events').EventProperties<T>
 ) {
   try {
     track(eventName, eventProperties, {
@@ -22,15 +21,18 @@ export async function trackServerEvent(
   }
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export async function identifyServerUser(userId: string, userProperties?: Record<string, any>) {
+export async function identifyServerUser(
+  userId: string,
+  userProperties?: import('./analytics-events').UserProperties
+) {
   try {
     const identifyObj = new Identify();
 
-    // Set user properties if provided
     if (userProperties) {
       Object.entries(userProperties).forEach(([key, value]) => {
-        identifyObj.set(key, value);
+        if (value !== undefined) {
+          identifyObj.set(key, value);
+        }
       });
     }
 

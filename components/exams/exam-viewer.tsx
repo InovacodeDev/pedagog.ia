@@ -10,6 +10,7 @@ import { BuilderPDFDocument } from '@/components/builder/BuilderPDF';
 import { saveAs } from 'file-saver';
 // import { generateDocx } from '@/lib/docx-generator';
 // import { toast } from 'sonner';
+import { trackEvent } from '@/lib/amplitude';
 
 interface ExamViewerProps {
   examId: string;
@@ -21,6 +22,7 @@ export function ExamViewer({ examId, blocks, title }: ExamViewerProps) {
   const exportPDF = async () => {
     const blob = await pdf(<BuilderPDFDocument blocks={blocks} />).toBlob();
     saveAs(blob, `${title}.pdf`);
+    trackEvent('Exam Exported', { Format: 'PDF' });
   };
 
   /*

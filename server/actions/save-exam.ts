@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
+import { trackServerEvent } from '@/lib/amplitude-server';
 
 const saveExamSchema = z.object({
   examId: z.string().uuid(),
@@ -86,6 +87,12 @@ export async function saveExamAction(input: z.infer<typeof saveExamSchema>) {
 
   revalidatePath(`/exams/${examId}`);
   revalidatePath('/exams');
+
+  // Track event
+  await trackServerEvent('Exam Created', user.id, {
+    Creation_Method: 'IA', // For now, assume IA if blocks are passed, or refine if manual exists
+    Questions_Count: blocks.length,
+  });
 
   return { success: true };
 }

@@ -14,7 +14,8 @@ import { Check, Loader2, X } from 'lucide-react';
 import { useState } from 'react';
 import { Logo } from '@/components/ui/logo';
 import { toast } from 'sonner';
-import amplitude from '@/lib/amplitude';
+import { trackEvent } from '@/lib/amplitude';
+import { useEffect } from 'react';
 
 interface PricingDialogProps {
   trigger?: React.ReactNode;
@@ -26,7 +27,10 @@ export function PricingDialog({ trigger, isOpen, onOpenChange }: PricingDialogPr
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSubscribe = async () => {
-    amplitude.track('Subscription Checkout Started');
+    trackEvent('Checkout Started', {
+      Plan_Name: 'Pro',
+      Price: 29.9,
+    });
     try {
       setIsLoading(true);
       const { url } = await createCheckoutSessionAction();
@@ -39,6 +43,12 @@ export function PricingDialog({ trigger, isOpen, onOpenChange }: PricingDialogPr
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (isOpen) {
+      trackEvent('Upgrade Modal Viewed', { Trigger_Source: 'Sidebar' });
+    }
+  }, [isOpen]);
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>

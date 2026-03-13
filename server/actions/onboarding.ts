@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { stripe } from '@/lib/stripe';
+import { trackServerEvent } from '@/lib/amplitude-server';
 
 export async function initializeUserAccountAction() {
   const supabase = await createClient();
@@ -54,6 +55,11 @@ export async function initializeUserAccountAction() {
       console.error('Erro ao inserir assinatura inicial:', insertError);
       return { success: false, message: 'Erro ao configurar conta' };
     }
+
+    // Track Sign Up
+    await trackServerEvent('User Signed Up', user.id, {
+      Method: 'Google', // Currently the main method via callback
+    });
 
     return { success: true, message: 'Conta configurada com sucesso' };
   } catch (error) {

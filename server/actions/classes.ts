@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
+import { trackServerEvent } from '@/lib/amplitude-server';
 import { ExamRow } from '@/types/app';
 
 export interface ClassItem {
@@ -120,6 +121,11 @@ export async function createClassAction(
     console.error('Error creating class:', error);
     return { success: false, message: 'Failed to create class' };
   }
+
+  // Track event
+  await trackServerEvent('Class Created', user.id, {
+    Subjects: disciplines || [],
+  });
 
   revalidatePath('/classes');
   return { success: true, message: 'Turma criada com sucesso!' };

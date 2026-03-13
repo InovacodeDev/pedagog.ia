@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
+import { trackServerEvent } from '@/lib/amplitude-server';
 import { CreateSecureStudentParams } from '@/types/app';
 
 // =====================================================
@@ -117,6 +118,12 @@ export async function createStudentAction(data: {
 
     revalidatePath('/students');
     revalidatePath(`/classes/${validation.data.class_id}`);
+
+    // Track event
+    await trackServerEvent('Student Added', user.id, {
+      Method: 'Manual',
+    });
+
     return {
       success: true,
       studentId: studentId as string,

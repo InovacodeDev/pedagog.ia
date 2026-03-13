@@ -38,5 +38,38 @@ if (typeof window !== 'undefined') {
   initAmplitude();
 }
 
+/**
+ * Identify a user and set their properties in Amplitude.
+ */
+export function identifyUser(userId: string, properties?: import('./analytics-events').UserProperties) {
+  if (typeof window === 'undefined') return;
+
+  const identifyObj = new amplitude.Identify();
+
+  if (properties) {
+    Object.entries(properties).forEach(([key, value]) => {
+      if (value !== undefined) {
+        identifyObj.set(key, value);
+      }
+    });
+  }
+
+  amplitude.identify(identifyObj, {
+    user_id: userId,
+  });
+}
+
+/**
+ * Track a business event with strongly typed properties.
+ */
+export function trackEvent<T extends import('./analytics-events').EventName>(
+  eventName: T,
+  eventProperties?: import('./analytics-events').EventProperties<T>
+) {
+  if (typeof window === 'undefined') return;
+  
+  amplitude.track(eventName, eventProperties);
+}
+
 export const Amplitude = () => null;
 export default amplitude;

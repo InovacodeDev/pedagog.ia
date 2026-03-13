@@ -7,6 +7,7 @@ import { extractTextFromFile } from '@/lib/file-processing';
 import { GeneratedQuestion } from '@/types/questions';
 import { Database, Json } from '@/types/database';
 import { GoogleGenerativeAI, Tool } from '@google/generative-ai';
+import { trackServerEvent } from '@/lib/amplitude-server';
 
 // ==========================================
 // CONSTANTS & SCHEMAS
@@ -536,6 +537,15 @@ export async function generateQuestionsV2Action(
     combinedContent += fileTexts.join('\n');
   }
 
+  // Track Started
+  await trackServerEvent('Questions Generation Started', user.id, {
+    Subject: discipline,
+    Quantity: quantity,
+    Types: types,
+    With_Files: !!(files && files.length > 0),
+    Use_Internet_Search: !!use_internet_search,
+  });
+
   try {
     // 3. Initialize AI
     const geminiApiKey = process.env.GEMINI_API_KEY;
@@ -588,6 +598,10 @@ export async function generateQuestionsV2Action(
       generatedQuestions = JSON.parse(cleanJson(responseText));
     } catch {
       console.error('Failed to parse Gemini response:', responseText);
+      await trackServerEvent('Questions Generation Failed', user.id, {
+        Error_Reason: 'Parse Error',
+        Subject: discipline,
+      });
       return { success: false, error: 'Erro ao processar resposta da IA.' };
     }
 
@@ -617,9 +631,21 @@ export async function generateQuestionsV2Action(
 
     revalidatePath('/', 'layout');
 
+    await trackServerEvent('Questions Generation Success', user.id, {
+      Subject: discipline,
+      Quantity_Generated: generatedQuestions.length,
+      With_Files: !!(files && files.length > 0),
+      Use_Internet_Search: !!use_internet_search,
+    });
+
     return { success: true, questions: generatedQuestions };
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Unexpected Error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown API Error';
+    await trackServerEvent('Questions Generation Failed', user.id, {
+      Error_Reason: errorMessage,
+      Subject: discipline,
+    });
     return { success: false, error: 'Erro inesperado ao gerar questões.' };
   }
 }
