@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useTransition, useMemo } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
   Table,
@@ -13,19 +12,19 @@ import {
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Eye, Lock, Trash2, Loader2, Filter } from 'lucide-react';
+import { Lock, Trash2, Loader2, Filter } from 'lucide-react';
 import { deleteExamAction } from '@/server/actions/exams';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { getTermLabel } from '@/lib/terms';
 import { toast } from 'sonner';
 import { Json } from '@/types/database';
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select";
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 interface Exam {
   id: string;
@@ -79,13 +78,13 @@ export function ClassExamsList({ exams }: ClassExamsListProps) {
   };
 
   const terms = useMemo(() => {
-    const uniqueTerms = new Set(exams.map(e => e.term).filter(Boolean));
+    const uniqueTerms = new Set(exams.map((e) => e.term).filter(Boolean));
     return Array.from(uniqueTerms).sort();
   }, [exams]);
 
   const filteredExams = useMemo(() => {
     if (termFilter === 'all') return exams;
-    return exams.filter(e => e.term === termFilter);
+    return exams.filter((e) => e.term === termFilter);
   }, [exams, termFilter]);
 
   return (
@@ -93,19 +92,21 @@ export function ClassExamsList({ exams }: ClassExamsListProps) {
       {/* Filters */}
       <div className="flex items-center gap-4">
         <div className="flex items-center gap-2">
-            <Filter className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm font-medium">Filtrar por Período:</span>
+          <Filter className="h-4 w-4 text-muted-foreground" />
+          <span className="text-sm font-medium">Filtrar por Período:</span>
         </div>
         <Select value={termFilter} onValueChange={setTermFilter}>
-            <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Todos os períodos" />
-            </SelectTrigger>
-            <SelectContent>
-                <SelectItem value="all">Todos os períodos</SelectItem>
-                {terms.map(term => (
-                    <SelectItem key={term} value={term!}>{getTermLabel(term)}</SelectItem>
-                ))}
-            </SelectContent>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Todos os períodos" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos os períodos</SelectItem>
+            {terms.map((term) => (
+              <SelectItem key={term} value={term!}>
+                {getTermLabel(term)}
+              </SelectItem>
+            ))}
+          </SelectContent>
         </Select>
       </div>
 
@@ -131,11 +132,13 @@ export function ClassExamsList({ exams }: ClassExamsListProps) {
               </TableRow>
             ) : (
               filteredExams.map((exam) => {
-                const questionsList = Array.isArray(exam.questions_list) ? (exam.questions_list as unknown[]) : [];
+                const questionsList = Array.isArray(exam.questions_list)
+                  ? (exam.questions_list as unknown[])
+                  : [];
                 const isPlatformGenerated = questionsList.length > 0;
-                
+
                 return (
-                  <TableRow 
+                  <TableRow
                     key={exam.id}
                     className="cursor-pointer hover:bg-muted/50 transition-colors"
                     onClick={() => handleRowClick(exam.id)}
@@ -144,11 +147,14 @@ export function ClassExamsList({ exams }: ClassExamsListProps) {
                       <div className="flex items-center gap-2">
                         {exam.title || 'Sem título'}
                         {!isPlatformGenerated && (
-                          <Badge variant="outline" className="text-[10px] h-4 uppercase bg-muted/50">
+                          <Badge
+                            variant="outline"
+                            className="text-[10px] h-4 uppercase bg-muted/50"
+                          >
                             Manual
                           </Badge>
                         )}
-                         {(exam.correction_count || 0) > 0 && (
+                        {(exam.correction_count || 0) > 0 && (
                           <Badge variant="secondary" className="text-[10px] h-4 gap-1">
                             <Lock className="h-2 w-2" /> Travada
                           </Badge>
@@ -156,9 +162,7 @@ export function ClassExamsList({ exams }: ClassExamsListProps) {
                       </div>
                     </TableCell>
                     <TableCell>{exam.discipline || '--'}</TableCell>
-                    <TableCell>
-                      {isPlatformGenerated ? questionsList.length : '--'}
-                    </TableCell>
+                    <TableCell>{isPlatformGenerated ? questionsList.length : '--'}</TableCell>
                     <TableCell>{getTermLabel(exam.term)}</TableCell>
                     <TableCell>
                       <Badge
@@ -174,23 +178,21 @@ export function ClassExamsList({ exams }: ClassExamsListProps) {
                           ? 'Pronta'
                           : exam.status === 'processing'
                             ? 'Processando'
-                            : exam.status === 'manual' ? 'Manual' : 'Erro'}
+                            : exam.status === 'manual'
+                              ? 'Manual'
+                              : 'Erro'}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-muted-foreground">
-                      {exam.created_at ? new Date(exam.created_at).toLocaleDateString('pt-BR') : '--'}
+                      {exam.created_at
+                        ? new Date(exam.created_at).toLocaleDateString('pt-BR')
+                        : '--'}
                     </TableCell>
                     <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                       <div className="flex items-center justify-end gap-2">
-                        <Button variant="ghost" size="icon" asChild>
-                          <Link href={`/exams/${exam.id}`}>
-                            <Eye className="h-4 w-4" />
-                          </Link>
-                        </Button>
-                        
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
+                        <Button
+                          variant="ghost"
+                          size="icon"
                           onClick={(e) => handleDelete(e, exam.id)}
                           className="text-destructive hover:text-destructive hover:bg-destructive/10"
                           disabled={isPending}

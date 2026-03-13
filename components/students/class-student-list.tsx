@@ -99,7 +99,7 @@ export function ClassStudentList({ initialStudents, classId }: ClassStudentListP
               <TableCell>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="h-8 w-8 p-0">
+                    <Button variant="ghost" className="h-8 w-8 p-0 hover:bg-primary/10">
                       <span className="sr-only">Abrir menu</span>
                       <MoreVertical className="h-4 w-4" />
                     </Button>

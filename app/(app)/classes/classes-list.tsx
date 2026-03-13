@@ -259,13 +259,13 @@ export function ClassesList({ initialClasses }: ClassesListProps) {
         <div onClick={(e) => e.stopPropagation()}>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="h-8 w-8 p-0">
+              <Button variant="ghost" className="h-8 w-8 p-0 hover:bg-primary/10">
                 <span className="sr-only">Abrir menu</span>
                 <MoreVertical className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => openEdit(cls)}>
+              <DropdownMenuItem onClick={() => openEdit(cls)} className="hover:bg-primary/10">
                 <Settings2 className="mr-2 h-4 w-4" />
                 Configurar turma
               </DropdownMenuItem>
