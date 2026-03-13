@@ -24,6 +24,7 @@ import { toast } from 'sonner';
 import { useRealtimeSubscription } from '@/hooks/use-realtime-subscription';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import amplitude from '@/lib/amplitude';
+import { ExamResultsModal } from './exam-results-modal';
 
 interface Exam {
   id: string;
@@ -42,6 +43,9 @@ interface ExamsRealtimeListProps {
 export function ExamsRealtimeList({ initialExams }: ExamsRealtimeListProps) {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [examToDelete, setExamToDelete] = useState<string | null>(null);
+
+  const [resultsModalOpen, setResultsModalOpen] = useState(false);
+  const [selectedExam, setSelectedExam] = useState<{ id: string; title: string } | null>(null);
 
   const exams = useRealtimeSubscription({
     table: 'exams',
@@ -93,6 +97,12 @@ export function ExamsRealtimeList({ initialExams }: ExamsRealtimeListProps) {
     setExamToDelete(null);
   };
 
+  const handleRowClick = (examId: string, title: string) => {
+    setSelectedExam({ id: examId, title });
+    setResultsModalOpen(true);
+    amplitude.track('Exam Results Viewed', { examId });
+  };
+
   return (
     <>
       <div className="rounded-md border">
@@ -119,7 +129,11 @@ export function ExamsRealtimeList({ initialExams }: ExamsRealtimeListProps) {
                 const isManual = !exam.questions_list || (exam.questions_list as unknown[]).length === 0;
 
                 return (
-                  <TableRow key={exam.id}>
+                  <TableRow
+                    key={exam.id}
+                    className="cursor-pointer transition-colors hover:bg-muted/50"
+                    onClick={() => handleRowClick(exam.id, exam.title)}
+                  >
                     <TableCell className="font-medium">
                       {exam.title}
                       {isManual && (
@@ -152,7 +166,7 @@ export function ExamsRealtimeList({ initialExams }: ExamsRealtimeListProps) {
                         ? new Date(exam.created_at).toLocaleDateString('pt-BR')
                         : '-'}
                     </TableCell>
-                    <TableCell>
+                    <TableCell onClick={(e) => e.stopPropagation()}>
                       <div className="flex items-center justify-end">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
@@ -235,6 +249,13 @@ export function ExamsRealtimeList({ initialExams }: ExamsRealtimeListProps) {
         onConfirm={confirmDelete}
         confirmText="Excluir"
         variant="destructive"
+      />
+
+      <ExamResultsModal
+        open={resultsModalOpen}
+        onOpenChange={setResultsModalOpen}
+        examId={selectedExam?.id || null}
+        examTitle={selectedExam?.title || null}
       />
     </>
   );
